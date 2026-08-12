@@ -1,4 +1,18 @@
+#define __STDC_WANT_LIB_EXT1__ 1
 #include <stdio.h>
+
+#if defined(_WIN32)
+    #define HAVE_FOPEN_S 1
+#elif defined(__STDC_LIB_EXT1__)
+    #define HAVE_FOPEN_S 1
+#else
+    #define HAVE_FOPEN_S 0
+#endif
+
+#ifndef HAVE_FOPEN_S
+    #error "fopen_s is not available on this platform"
+#endif 
+
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -103,15 +117,16 @@ int read_config_file() {
     return R_ERROR;
 }
 
-int command_init() {
+int command_init(int argc, char* argv[]) {
     // first check current directory
     if(access(".scratch", F_OK) == 0) {
         log_error(".scratch already exists in current directory\n");
         return R_ERROR;
     }
 
-    FILE *config_file = fopen(".scratch", "w");
-    if(config_file == NULL) {
+    FILE *config_file = NULL;
+    errno_t err = fopen_s(&config_file, ".scratch", "w");
+    if(err != 0 || config_file == NULL) {
         log_error("Error creating .scratch file in current directory\n");
         return R_ERROR;
     }
@@ -141,7 +156,7 @@ int main(int argc, char* argv[]) {
 
     if(argc > 1) {
         if(strcmp(argv[1], "init") == 0) {
-            if(command_init() != R_OK) {
+            if(command_init(argc, argv) != R_OK) {
                 return EXIT_COMMAND_FAILED;
             }
             return EXIT_SUCCESS;
