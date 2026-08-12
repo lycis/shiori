@@ -43,6 +43,16 @@
 #include <langinfo.h>
 #endif
 
+// --------------------- GLobals
+struct configuration {
+    int version;
+};
+
+struct configuration g_config;
+bool g_debug_enabled = false;
+
+// --------------------- GLobals
+
 void log_error(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -70,6 +80,10 @@ void log_success(const char* fmt, ...) {
 }
 
 void log_debug(const char* fmt, ...) {
+    if(!g_debug_enabled) {
+        return;
+    }
+    
     va_list args;
     va_start(args, fmt);
     char buffer[DEFAULT_BUFFER_SIZE];
@@ -138,12 +152,6 @@ void get_user_home(char* buffer, size_t size) {
     #error "get_user_home is only implemented for Windows"
     #endif
 }
-
-struct configuration {
-    int version;
-};
-
-struct configuration g_config;
 
 int read_config_file() {
     char* cf_file_path = ".scratch";
@@ -317,6 +325,7 @@ int main(int argc, char* argv[]) {
 
         // enable debug log
         if(has_switch(argc, argv, "--debug")) {
+            g_debug_enabled = true;
             log_debug("Debug logging enabled\n");
         }
 
