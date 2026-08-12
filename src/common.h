@@ -16,6 +16,10 @@
 #define APP_NAME "shiori"
 #define APP_VERSION "0.1.0"
 
+#define TODO_FILE "TODOS.md"
+
 char *trim(char *str);
+int create_file_if_not_exists(char* fname);
+int get_base_dir_file_path(char *filename, char *buffer, size_t buffer_size);
 
 #endif

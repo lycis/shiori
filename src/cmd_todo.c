@@ -1,9 +1,11 @@
+#include <corecrt.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "platform.h"
 #include "cli.h"
@@ -14,6 +16,7 @@ struct todo {
     char text[DEFAULT_BUFFER_SIZE * 2];
     time_t created;
     unsigned long long id;
+    enum {OPEN, IN_PROGRESS, DONE} status;
 };
 
 struct todo_metadata {
@@ -406,16 +409,17 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     }
 
     struct todo_metadata md;
-    if(read_todo_metadata("TODOS.md", &md) != R_OK) {
+    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
         log_critical("Could not read TODO metadata.");
         return R_ERROR;
     }
 
     item->id = md.last_id++;
     item->created = time(NULL);
+    item->status = OPEN;
 
     log_debug("Updating todo metadata with last_id change.");
-    if(write_todo_metadata("TODOS.md", &md) != R_OK) {
+    if(write_todo_metadata(TODO_FILE, &md) != R_OK) {
         return R_ERROR;
     }
 
@@ -469,11 +473,189 @@ int command_todo_add(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    if(write_todo("TODOS.md", &item) != R_OK) {
+    if(write_todo(TODO_FILE, &item) != R_OK) {
         return R_ERROR;
     }
 
     log_success("Task noted.\n");
+    return R_OK;
+}
+
+static int create_todo_from_markdown(const char* markdown, struct todo *item) {
+    if(strncmp(markdown, "* [", 3) != 0) {
+        log_error("Invalid markdown line passed");
+        return R_ERROR;
+    }
+
+    markdown += 3;
+
+    if(markdown[0] == ' ') item->status = OPEN;
+    else if(markdown[0] == 'X' || markdown[0] == 'x') item->status = DONE;
+    else if(markdown[0] == '/') item->status = IN_PROGRESS;
+    else {
+        log_error("Invalid TODO status '%s'\n", markdown[0]);
+        return R_ERROR;
+    }
+
+    if(markdown[1] != ']') {
+        log_error("Malformed TODO checkbox.\n");
+        return R_ERROR;
+    }
+    markdown += 2;
+
+    if(markdown[0] == ' ') markdown++; // there may be a space after the closing bracket
+
+    const char *id_tag = strstr(markdown, "#shiori/id/");
+    const char *created_tag = strstr(markdown, "#shiori/created/");
+
+    if(id_tag == NULL || created_tag == NULL) {
+        log_error("Missing TODO metadata (id or creation date).\n");
+        return R_ERROR;
+    }
+
+    if(created_tag < id_tag) {
+        log_error("Invalid TODO metadata order (creation before id).\n");
+        return R_ERROR;
+    }
+
+    // now let's extract the text
+    size_t text_len = (size_t)(id_tag - markdown);
+
+    // remove white spaces before the tags
+    while(text_len > 0 && isspace((unsigned char)markdown[text_len - 1])) {
+        text_len--;
+    }
+
+    if(text_len >= sizeof(item->text)) {
+        log_error("TODO text is too long.\n");
+        return R_ERROR;
+    }
+
+    memcpy(item->text, markdown, text_len);
+    item->text[text_len] = '\0';
+
+    // next extract the ID tag
+    const char *id_value = id_tag + strlen("#shiori/id/");
+    char *id_end = NULL;
+
+    item->id = strtoull(id_value, &id_end, 10);
+
+    if(id_end == id_value) {
+        log_error("Invalid TODO ID.\n");
+        return R_ERROR;
+    }
+
+    if(*id_end != '\0' && !isspace((unsigned char)*id_end)) {
+        log_error("Invalid TODO ID.\n");
+        return R_ERROR;
+    }
+
+    // now extract the creation date
+    const char *created_value = created_tag + strlen("#shiori/created/");
+    char date_str[11];
+
+    if(strlen(created_value) < 10) {
+        log_error("Invalid TODO creation date.\n");
+        return R_ERROR;
+    }
+
+    memcpy(date_str, created_value, 10);
+    date_str[10] = '\0';
+
+    struct tm created = {0};
+
+    if(sscanf_s(
+        date_str,
+        "%d-%d-%d",
+        &created.tm_year,
+        &created.tm_mon,
+        &created.tm_mday
+    ) != 3) {
+        log_error("Invalid TODO creation date.\n");
+        return R_ERROR;
+    }
+
+    created.tm_year -= 1900;
+    created.tm_mon -= 1;
+    created.tm_hour = 12;
+    created.tm_isdst = -1;
+
+    item->created = mktime(&created);
+
+    if(item->created == (time_t)-1) {
+        log_error("Failed converting TODO creation date.\n");
+        return R_ERROR;
+    }
+
+    return R_OK;
+}
+
+static int command_todo_list(int argc, char* argv[]) {
+    log_debug("Listing todos (c=%d)\n", argc);
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(TODO_FILE, file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(create_file_if_not_exists(file_path) != R_OK) {
+        return R_ERROR;
+    }
+
+    FILE *file = NULL;
+
+    errno_t err = fopen_s(&file, file_path, "r");
+    if(err != 0 || file == NULL) {
+        log_error("Failed opening %s.\n", file_path);
+        return R_ERROR;
+    }
+
+    char line[DEFAULT_BUFFER_SIZE];
+    unsigned int lnr = 0;
+    bool in_metadata = false;
+    bool metadata_skipped = false;
+    while(fgets(line, sizeof(line), file) != NULL) {
+        lnr++;
+
+        // skip meta data section
+        if(strcmp(trim(line), "---") == 0) {
+            if(metadata_skipped) {
+                log_critical("Corrupted TODOS.md (line %d): Invalid ---\n", lnr);
+                fclose(file);
+                return R_ERROR;
+            }
+            if(in_metadata) {
+                in_metadata = false;
+                metadata_skipped = true;
+            } else {
+                in_metadata = true;
+            }
+
+            continue;
+        }
+
+        if(in_metadata) continue;
+        if(strlen(trim(line)) == 0) {
+            continue;
+        }
+
+        // now we are in the real todo data :)
+        if(strncmp(line, "* [", 3) != 0) {
+            log_critical("Corrupted TODOS.md (line %d): Invalid TODO item format\n", lnr);
+            fclose(file);
+            return R_ERROR;
+        }
+
+        struct todo current_item;
+        if(create_todo_from_markdown(line, &current_item) != R_OK) {
+            fclose(file);
+            log_critical("Corrupted TODOS.md (line %d): See above.\n", lnr);
+            return R_ERROR;
+        }
+
+        printf("item (%llu): status=%d text=%s\n", current_item.id, current_item.status, current_item.text);
+    }
+
+    fclose(file);
     return R_OK;
 }
 
@@ -498,6 +680,8 @@ int command_todo(int argc, char* argv[]) {
     if(strcmp(command, "add") == 0) {
         log_debug("Running `todo add` command.\n");
         return command_todo_add(argc, argv);
+    } else if(strcmp(command, "list") == 0) {
+        return command_todo_list(argc, argv);
     }
 
     return R_OK;

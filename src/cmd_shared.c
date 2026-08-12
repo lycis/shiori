@@ -33,25 +33,6 @@ bool heading_matches(const char *line, const char *heading){
             line[len] == '\0');
 }
 
-int create_file_if_not_exists(char* fname) {
-    log_debug("Checking if file '%s' exists.\n", fname);
-
-    if(access(fname, F_OK) == 0) return R_OK;
-
-    log_debug("File does not exist. Creating it now.\n");
-    FILE *f = NULL;
-    log_debug("Opening daily note at: %s\n", fname);
-    errno_t err = fopen_s(&f, fname, "w");
-    if(err != 0  || f == NULL) {
-        log_error("Failed creating file: %s\n", fname);
-        return R_ERROR;
-    }
-
-    log_success("Created %s\n", fname);
-    fclose(f);
-    return R_OK;
-}
-
 int add_markdown_item(int argc, char *argv[], const char *filename, const char *prefix, const char *heading) {
     log_debug("Writing markdown item (c=%d)\n", argc);
     char file_path[DEFAULT_BUFFER_SIZE];
