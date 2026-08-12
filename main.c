@@ -1,4 +1,3 @@
-#include <corecrt.h>
 #define __STDC_WANT_LIB_EXT1__ 1
 #include <stdio.h>
 
@@ -425,6 +424,25 @@ bool heading_matches(const char *line, const char *heading){
             line[len] == '\0');
 }
 
+int create_file_if_not_exists(char* fname) {
+    log_debug("Checking if file '%s' exists.\n", fname);
+
+    if(access(fname, F_OK) == 0) return R_OK;
+
+    log_debug("File does not exist. Creating it now.\n");
+    FILE *f = NULL;
+    log_debug("Opening daily note at: %s\n", fname);
+    errno_t err = fopen_s(&f, fname, "w");
+    if(err != 0  || f == NULL) {
+        log_error("Failed creating file: %s\n", fname);
+        return R_ERROR;
+    }
+
+    log_success("Created %s\n", fname);
+    fclose(f);
+    return R_OK;
+}
+
 int command_add(int argc, char* argv[]) {
     log_debug("Adding a new note.\n");
 
@@ -435,10 +453,14 @@ int command_add(int argc, char* argv[]) {
     }
     log_debug("Daily heading = %s\n", heading);
 
-    // we are going to read from NOTES.md to a temporary file
-    FILE *source = NULL;
+    // if NOTES.MD does not exist we need to create it
     char notes_md[DEFAULT_BUFFER_SIZE];
     sprintf(notes_md, "%s%s%s", g_config.base_dir, get_path_separator(), "NOTES.md");
+    if(create_file_if_not_exists(notes_md) != R_OK)
+        return R_ERROR;
+
+    // we are going to read from NOTES.md to a temporary file
+    FILE *source = NULL;
     log_debug("Opening daily note at: %s\n", notes_md);
     errno_t err = fopen_s(&source, notes_md, "r");
     if(err != 0  || source == NULL) {
@@ -490,15 +512,23 @@ int command_add(int argc, char* argv[]) {
     fclose(source);
     fclose(temp);
 
-    log_debug("Deleting old NOTES.md\n");
-    if(remove(notes_md) != 0) {
-        log_error("Failed to delete old NOTES.md\n");
+    log_debug("backing up NOTES.md\n");
+    char nb_fname[2 * DEFAULT_BUFFER_SIZE];
+    sprintf(nb_fname, "%s.bak", notes_md);
+    if(rename(notes_md, nb_fname) != 0) {
+        log_error("Failed to backup NOTES.md\n");
         return R_ERROR;
     }
 
     log_debug("Renaming temporary file to NOTES.md\n");
     if(rename(temp_path, notes_md) != 0) {
         log_error("Failed to rename temporary notes file.\n");
+        return R_ERROR;
+    }
+
+    log_debug("Deleting old NOTES.md.bak\n");
+    if(remove(nb_fname) != 0) {
+        log_error("Failed to delete old %s\n", nb_fname);
         return R_ERROR;
     }
 
