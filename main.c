@@ -178,12 +178,16 @@ int terminal_enable_utf8(void) {
     #endif
 }
 
-void get_user_home(char* buffer, size_t size) {
+int get_user_home(char* buffer, size_t size) {
     #ifdef _WIN32
-    if(_dupenv_s(&buffer, &size, "USERPROFILE") != 0) {
-        log_error("Error getting USERPROFILE environment variable\n");
-        exit(EXIT_FAILURE);
+    size_t required = 0;
+
+    if (getenv_s(&required, buffer, size, "USERPROFILE") != 0 ||
+        required == 0) {
+        return R_ERROR;
     }
+
+    return R_OK;
     #else
     #error "get_user_home is only implemented for Windows"
     #endif
@@ -201,20 +205,24 @@ char* get_current_path(char *buffer, size_t size) {
 
 int read_config_file() {
     char* cf_file_path = CONFIG_FILE_NAME;
-    
-    // first check current directory
-    if(access(cf_file_path, F_OK) != 0) {
-        char user_home[DEFAULT_BUFFER_SIZE];
-        get_user_home(user_home, sizeof(user_home));
+    char config_path[DEFAULT_BUFFER_SIZE];
 
-        char buffer[DEFAULT_BUFFER_SIZE];
-        sprintf(buffer, "%s/%s", user_home, CONFIG_FILE_NAME);
-        if(access(buffer, F_OK) != 0) {
-            log_error("%s config file not found. please run `%s init` first.\n", CONFIG_FILE_NAME, APP_NAME);
+    if(access(CONFIG_FILE_NAME, F_OK) == 0) {
+        strcpy_s(config_path, sizeof(config_path), CONFIG_FILE_NAME);
+    } else {
+        char user_home[DEFAULT_BUFFER_SIZE];
+
+        if(get_user_home(user_home, sizeof(user_home)) != R_OK) {
+            log_error("Could not determine user home directory.\n");
             return R_ERROR;
         }
 
-        cf_file_path = buffer;
+        snprintf(config_path, sizeof(config_path),"%s%s%s", user_home, get_path_separator(), CONFIG_FILE_NAME);
+
+        if(access(config_path, F_OK) != 0) {
+            log_error("%s config file not found. Please run `%s init` first.\n", CONFIG_FILE_NAME, APP_NAME);
+            return R_ERROR;
+        }
     }
 
     FILE *config_file = NULL;
