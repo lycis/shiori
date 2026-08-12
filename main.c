@@ -51,7 +51,7 @@ int run_command(char* command, int argc, char* argv[]);
 // --------------------- GLobals
 struct configuration {
     int version;
-    char* base_dir;
+    char base_dir[4096];
 };
 
 struct configuration g_config;
@@ -230,6 +230,10 @@ int read_config_file() {
                 fclose(config_file);
                 return R_ERROR;
             }
+        } else if(strcmp(key, "base_dir") == 0) {
+            char lc = value[strlen(value)-1];
+            if(lc == '\\' || lc == '/') value[strlen(value)-1] = '\0';
+            strcpy_s(g_config.base_dir, sizeof(g_config.base_dir), value);
         }
     }
 
@@ -316,6 +320,7 @@ int command_config(int argc, char* argv[]) {
 
     if(strcmp(argv[0], "show") == 0) {
         printf("version: %d\n", g_config.version);
+        printf("base_dir: %s\n", g_config.base_dir);
     } else {
         log_error("Unknown config command. See --help\n", argv[0]);
         return R_ERROR;

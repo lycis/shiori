@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/scratch.exe",
-            "args": ["--debug", "init", "--reinit"],
+            "args": ["--debug", "console"],
             "cwd": "${workspaceFolder}",
 
             "MIMode": "gdb",
