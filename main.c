@@ -33,6 +33,7 @@
 #ifdef _WIN32
 #include <io.h>
 #include <windows.h>
+#include <direct.h>
 #define access _access
 #define F_OK 0
 #endif
@@ -50,6 +51,7 @@ int run_command(char* command, int argc, char* argv[]);
 // --------------------- GLobals
 struct configuration {
     int version;
+    char* base_dir;
 };
 
 struct configuration g_config;
@@ -155,6 +157,16 @@ void get_user_home(char* buffer, size_t size) {
     #else
     #error "get_user_home is only implemented for Windows"
     #endif
+}
+
+char* get_current_path(char *buffer, size_t size) {
+    #ifdef _WIN32
+    char* ptr = _getcwd(buffer, (int) size);
+    #else
+    char* ptr =  getcwd(buffer, size);
+    #endif
+
+    return ptr;
 }
 
 int read_config_file() {
@@ -277,6 +289,11 @@ int command_init(int argc, char* argv[]) {
     // write up to date config file version
     fprintf(config_file, "version: %d\n", CONFIG_VERSION);
 
+    // by default the base dir for keeping notes is the current work dir
+    char buffer[DEFAULT_BUFFER_SIZE];
+    get_current_path(buffer, DEFAULT_BUFFER_SIZE);
+    fprintf(config_file, "base_dir: %s\n", buffer);
+
     fclose(config_file);
 
     log_success(".scratch config file created in current directory\n");
@@ -377,7 +394,8 @@ int main(int argc, char* argv[]) {
 
         // check for init command
         if(strcmp(argv[1], "init") == 0) {
-            if(command_init(argc, argv) != R_OK) {
+            strip_leading_flags(&argc, &argv);
+            if(command_init(--argc, &argv[1]) != R_OK) {
                 return EXIT_COMMAND_FAILED;
             }
             return EXIT_SUCCESS;
