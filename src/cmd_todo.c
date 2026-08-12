@@ -640,6 +640,21 @@ static int read_todos(const char *filename, struct todo_list *list) {
     return R_OK;
 }
 
+struct todo_filter {
+    bool show_open;
+    bool show_in_progress;
+    bool show_done;
+};
+
+static bool todo_matches_filter(const struct todo *item, const struct todo_filter *filter) {
+    switch(item->status) {
+        case OPEN: return filter->show_open;
+        case IN_PROGRESS: return filter->show_in_progress;
+        case DONE: return filter->show_done;
+        default: return false;
+    }
+}
+
 static int command_todo_list(int argc, char* argv[]) {
     log_debug("Listing todos (c=%d)\n", argc);
     char file_path[DEFAULT_BUFFER_SIZE];
@@ -659,6 +674,28 @@ static int command_todo_list(int argc, char* argv[]) {
         return R_ERROR;
     }
 
+    // default filter is open and in progress
+    struct todo_filter filter = {
+        .show_open = true,
+        .show_in_progress = true,
+        .show_done = false
+    };
+
+    // if something else is passed, we set all to false by default
+    if(argc > 0) {
+        filter.show_open = false;
+        filter.show_in_progress = false;
+    }
+
+    if(has_switch(argc, argv, "--open")) filter.show_open = true;
+    if(has_switch(argc, argv, "--in-progress")) filter.show_in_progress = true;
+    if(has_switch(argc, argv, "--done")) filter.show_done = true;
+    if(has_switch(argc, argv, "--all")) {
+        filter.show_open = true;
+        filter.show_in_progress = true;
+        filter.show_done = true;
+    }
+
     for(size_t i = 0; i < todos.count; ++i) {
         struct todo *item = &todos.items[i];
         char date[11];
@@ -667,13 +704,15 @@ static int command_todo_list(int argc, char* argv[]) {
             strcpy_s(date, sizeof(date), "??????????");
         }
 
-        printf(
-            "%s %-4llu %-40s 📅 %s\n",
-            todo_status_icon(item->status),
-            item->id,
-            item->text,
-            date
-        );
+        if(todo_matches_filter(item, & filter)) {
+            printf(
+                "%s %-4llu %-40s 📅 %s\n",
+                todo_status_icon(item->status),
+                item->id,
+                item->text,
+                date
+            );
+        }
     }
 
     todo_list_free(&todos);
