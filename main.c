@@ -7,6 +7,11 @@
 
 #define DEFAULT_BUFFER_SIZE 2048
 
+#define EXIT_SUCCESS 0
+#define EXIT_CONFIG_ERROR 1
+#define EXIT_NO_COMMAND 2
+#define EXIT_COMMAND_FAILED 3
+
 #ifdef _WIN32
 #include <io.h>
 #include <windows.h>
@@ -94,10 +99,14 @@ int command_init() {
     return 0;
 }
 
-#define EXIT_SUCCESS 0
-#define EXIT_CONFIG_ERROR 1
-#define EXIT_NO_COMMAND 2
-#define EXIT_COMMAND_FAILED 3
+int run_command(int argc, char* argv[]) {
+       if(read_config_file() != R_OK) {
+        exit(EXIT_CONFIG_ERROR);
+    }
+    
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     terminal_enable_utf8();
 
@@ -106,17 +115,17 @@ int main(int argc, char* argv[]) {
             if(command_init() != R_OK) {
                 return EXIT_COMMAND_FAILED;
             }
-
             return EXIT_SUCCESS;
         }
+
+        if(run_command(argc, argv) != R_OK) {
+            return EXIT_COMMAND_FAILED;
+        }
+        return EXIT_SUCCESS;
     } else {
         log_error("No command provided. Please provide a command.\n");
         return EXIT_NO_COMMAND;
     }
 
-    if(read_config_file() != R_OK) {
-        return EXIT_CONFIG_ERROR;
-    }
-    
     return EXIT_SUCCESS;
 }
