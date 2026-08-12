@@ -210,7 +210,7 @@ int read_config_file() {
         char buffer[DEFAULT_BUFFER_SIZE];
         sprintf(buffer, "%s/%s", user_home, CONFIG_FILE_NAME);
         if(access(buffer, F_OK) != 0) {
-            log_error("%s config file not found. please run `shiori init` first.\n", CONFIG_FILE_NAME);
+            log_error("%s config file not found. please run `%s init` first.\n", CONFIG_FILE_NAME, APP_NAME);
             return R_ERROR;
         }
 
@@ -364,7 +364,7 @@ int command_console(int argc, char* argv[]) {
     if(has_switch(argc, argv, "--help") || has_switch(argc, argv, "-h")) {
         printf("Starts an interactive console mode.\n");
         printf("\n");
-        printf("You can enter shiori commands directly in the console. This helps as you do not have to run `shiori <command>` all the time. Useful if you want to work continuously.");
+        printf("You can enter %s commands directly in the console. This helps as you do not have to run `%s <command>` all the time. Useful if you want to work continuously.", APP_NAME, APP_NAME);
         return R_OK;
     }
 
@@ -372,7 +372,7 @@ int command_console(int argc, char* argv[]) {
     printf("Type 'exit' or 'quit' to exit the console.\n");
 
     char input[DEFAULT_BUFFER_SIZE];
-    printf("shiori 🦊> ");
+    printf("%s 🦊> ", APP_NAME);
     while(fgets(input, sizeof(input), stdin) != NULL) {
         char *command = trim(input);
         if(strlen(command) == 0) {
@@ -395,7 +395,7 @@ int command_console(int argc, char* argv[]) {
         }
 
         run_command(argv[0], argc - 1, &argv[1]);
-        printf("shiori> ");
+        printf("%s 🦊> ", APP_NAME);
     }
 
     return R_OK;
@@ -585,14 +585,14 @@ int run_command(char* command, int argc, char* argv[]) {
     } if(strcmp(command, "add") == 0) {
         return command_add(argc, argv);
     } else if(strcmp(command, "help") == 0) {
-        printf("shiori is a console shioripad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.");
-        printf("usage: shiori [options] <command> [options] [subcommand] ...\n");
+        printf("%s is a console scratchpad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.", APP_NAME);
+        printf("usage: %s [options] <command> [options] [subcommand] ...\n", APP_NAME);
         printf("\n");
         printf("Options:\n");
         printf("  %-16s %s\n", "--debug", "Show debug and plumbing output.");
         printf("\n");
         printf("Available commands:\n");
-        printf("  %-16s %s\n", "init",   "Initialize a new shiori configuration");
+        printf("  %-16s %s\n", "init",   "Initialize a new configuration");
         printf("  %-16s %s\n", "config", "Show or modify configuration");
         printf("  %-16s %s\n", "add",    "Add a new note or thought to the day");
         printf("  %-16s %s\n", "help",   "Show this help");
