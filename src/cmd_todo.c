@@ -696,6 +696,49 @@ static bool todo_matches_filter(const struct todo *item, const struct todo_filte
 }
 
 static int command_todo_list(int argc, char* argv[]) {
+    if(has_switch(argc, argv, "--help", true) || has_switch(argc, argv, "-h", true)) {
+         printf(
+            "Usage:\n"
+            "  %s todo list [options]\n"
+            "\n"
+            "Lists todos from %s.\n"
+            "\n"
+            "By default, open and in-progress todos are shown.\n"
+            "\n"
+            "Options:\n"
+            "  %-18s Show open todos\n"
+            "  %-18s Show in-progress todos\n"
+            "  %-18s Show completed todos\n"
+            "  %-18s Show todos of all statuses\n"
+            "  %-18s Filter by tag; may be specified multiple times\n"
+            "  %-18s Show this help\n"
+            "\n"
+            "Examples:\n"
+            "  %s todo list\n"
+            "  %s todo list --done\n"
+            "  %s todo list --all\n"
+            "  %s todo list --tag work\n"
+            "  %s todo list --tag work --tag urgent\n"
+            "  %s todo list --done --tag work\n",
+            APP_NAME,
+            TODO_FILE,
+            "--open",
+            "--in-progress",
+            "--done",
+            "--all",
+            "--tag <tag>",
+            "-h, --help",
+            APP_NAME,
+            APP_NAME,
+            APP_NAME,
+            APP_NAME,
+            APP_NAME,
+            APP_NAME
+        );
+
+        return R_OK;
+    }
+
     log_debug("Listing todos (c=%d)\n", argc);
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_file_path(TODO_FILE, file_path, sizeof(file_path)) != R_OK) {
@@ -806,6 +849,7 @@ int command_todo(int argc, char* argv[]) {
         printf("\n");
         printf("Subcommands:\n");
         printf("  %-16s %s\n", "add",   "add a new todo item to the list");
+        printf("  %-16s %s\n", "list",  "get a list of your todos that can be filtered");
         return R_OK;
     }
 
