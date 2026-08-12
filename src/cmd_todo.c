@@ -1033,19 +1033,7 @@ int write_todo_list(
     return R_OK;
 }
 
-int command_todo_start(int argc, char* argv[]) {
-    log_debug("Moving item into progress\n");
-    
-    if(argc < 1) {
-        log_error("You must specify a task id to start.\n");
-        return R_ERROR;
-    }
-
-    unsigned long long id;
-    if(parse_todo_id(argv[0], &id) != R_OK) {
-        return R_ERROR;
-    }
-
+static int set_todo_status(unsigned long long id, todo_status status) {
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_file_path(TODO_FILE, file_path, sizeof(file_path)) != R_OK) {
         return R_ERROR;
@@ -1070,7 +1058,7 @@ int command_todo_start(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    item->status = IN_PROGRESS;
+    item->status = status;
     log_debug("moved item status to in progess\n");
 
     // write todo list back to file
@@ -1086,8 +1074,25 @@ int command_todo_start(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    log_success("Moved %d (%s) to IN PROGRESS.\n", id, item->text);
+    log_success("Moved %d (%s) to %s.\n", id, item->text, todo_status_string(item->status));
     todo_list_free(&todos);
+    return R_OK;
+}
+
+static int command_todo_start(int argc, char* argv[]) {
+    log_debug("Moving item into progress\n");
+    
+    if(argc < 1) {
+        log_error("You must specify a task id to start.\n");
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    set_todo_status(id, IN_PROGRESS);
     return R_OK;
 }
 

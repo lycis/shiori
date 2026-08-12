@@ -45,3 +45,19 @@ const char *todo_status_mark(todo_status status) {
             return "?";
     }
 }
+
+const char *todo_status_string(todo_status status) {
+     switch(status) {
+        case OPEN:
+            return "OPEN";
+
+        case IN_PROGRESS:
+            return "IN PROGRESS";
+
+        case DONE:
+            return "DONE";
+
+        default:
+            return "????";
+    }
+}
