@@ -1096,6 +1096,40 @@ static int command_todo_start(int argc, char* argv[]) {
     return R_OK;
 }
 
+static int command_todo_done(int argc, char* argv[]) {
+    log_debug("Moving item into done\n");
+    
+    if(argc < 1) {
+        log_error("You must specify a task id to mark done.\n");
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    set_todo_status(id, DONE);
+    return R_OK;
+}
+
+static int command_todo_reopen(int argc, char* argv[]) {
+    log_debug("Moving item into open\n");
+    
+    if(argc < 1) {
+        log_error("You must specify a task id to reopen.\n");
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    set_todo_status(id, OPEN);
+    return R_OK;
+}
+
 int command_todo(int argc, char* argv[]) {
     if(argc < 1) {
         log_error("Please specify a todo command. Refer to --help if required.");
@@ -1109,6 +1143,8 @@ int command_todo(int argc, char* argv[]) {
         printf("  %-16s %s\n", "add <text>",   "add a new todo item to the list");
         printf("  %-16s %s\n", "list",  "get a list of your todos that can be filtered");
         printf("  %-16s %s\n", "start <id>",  "move the item with the id in progress");
+        printf("  %-16s %s\n", "done <id>",  "mark the item with the id as done");
+        printf("  %-16s %s\n", "reopen <id>",  "move the item with the id back to open status");
         return R_OK;
     }
 
@@ -1123,6 +1159,10 @@ int command_todo(int argc, char* argv[]) {
         return command_todo_list(argc, argv);
     } else if(strcmp(command, "start") == 0) {
         return command_todo_start(argc, argv);
+    } else if(strcmp(command, "done") == 0) {
+        return command_todo_done(argc, argv);
+    } else if(strcmp(command, "reopen") == 0) {
+        return command_todo_reopen(argc, argv);
     } else {
         log_error("Invalid `todo` command. See --help for reference.");
         return R_ERROR;
