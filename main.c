@@ -156,6 +156,9 @@ int command_init(int argc, char* argv[]) {
     ctime_s(date_str, 26, &now);
     fprintf(config_file, "# Initialized: %s", date_str);
 
+    // write up to date config file version
+    fprintf(config_file, "version=%d\n", CONFIG_VERSION);
+
     fclose(config_file);
 
     log_success(".scratch config file created in current directory\n");
