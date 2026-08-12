@@ -1,3 +1,4 @@
+#include <corecrt.h>
 #define __STDC_WANT_LIB_EXT1__ 1
 #include <stdio.h>
 
@@ -129,6 +130,14 @@ void strip_leading_flags(int *argc, char ***argv)
         (*argv)++;
         (*argc)--;
     }
+}
+
+char* get_path_separator() {
+    #ifdef _WIN32
+    return "\\";
+    #else
+    return "/";
+    #endif
 }
 
 int terminal_enable_utf8(void) {
@@ -371,6 +380,47 @@ int command_console(int argc, char* argv[]) {
     return R_OK;
 }
 
+int command_add(int argc, char* argv[]) {
+    log_debug("Adding a new note.\n");
+
+    FILE *daily_note = NULL;
+    char note_path[DEFAULT_BUFFER_SIZE];
+    sprintf(note_path, "%s%s%s", g_config.base_dir, get_path_separator(), "NOTES.md");
+    log_debug("Opening daily note at: %s\n", note_path);
+    errno_t err = fopen_s(&daily_note, note_path, "w");
+    if(err != F_OK  || daily_note == NULL) {
+        log_error("Failed opening note file.");
+        return R_ERROR;
+    }
+
+    time_t now = time(NULL);
+    struct tm local_time;
+    if(localtime_s(&local_time, &now) != 0) {
+        log_error("Failed to get local time.");
+        fclose(daily_note);
+        return R_ERROR;
+    }
+
+    char date_str[11];
+    if(strftime(date_str, sizeof(date_str), "%Y-%m-%d", &local_time) == 0) {
+        log_error("Feild to format local date.");
+        fclose(daily_note);
+        return R_ERROR;
+    }
+
+    fprintf(daily_note, "# %s\n", date_str);
+    fprintf(daily_note, "* ");
+    for(int i=0; i<argc; ++i) {
+        fprintf(daily_note, "%s", argv[i]);
+        if(i != argc-1) fprintf(daily_note, " ");
+    }
+    fprintf(daily_note, "\n");
+
+    log_debug("New note added.\n");
+    fclose(daily_note);
+    return R_OK;
+}
+
 int run_command(char* command, int argc, char* argv[]) {
     if(read_config_file() != R_OK) {
         exit(EXIT_CONFIG_ERROR);
@@ -380,6 +430,8 @@ int run_command(char* command, int argc, char* argv[]) {
         return command_config(argc, argv);
     } else if(strcmp(command, "console") == 0) {
         return command_console(argc, argv);
+    } if(strcmp(command, "add") == 0) {
+        return command_add(argc, argv);
     } else if(strcmp(command, "help") == 0) {
         printf("scratch is a console scratchpad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.");
         printf("usage: scratch [options] <command> [options] [subcommand] ...\n");
