@@ -43,6 +43,10 @@
 #include <langinfo.h>
 #endif
 
+// --------------------- Prototypes
+int run_command(char* command, int argc, char* argv[]);
+// --------------------- Prototypes
+
 // --------------------- GLobals
 struct configuration {
     int version;
@@ -303,13 +307,57 @@ int command_config(int argc, char* argv[]) {
     return R_OK;
 }
 
+int command_console(int argc, char* argv[]) {
+
+    if(has_switch(argc, argv, "--help") || has_switch(argc, argv, "-h")) {
+        printf("Starts an interactive console mode.\n");
+        printf("\n");
+        printf("You can enter scratch commands directly in the console. This helps as you do not have to run `scratch <command>` all the time. Useful if you want to work continuously.");
+        return R_OK;
+    }
+
+    log_info("Starting interactive console mode\n");
+    printf("Type 'exit' or 'quit' to exit the console.\n");
+
+    char input[DEFAULT_BUFFER_SIZE];
+    printf("scratch> ");
+    while(fgets(input, sizeof(input), stdin) != NULL) {
+        char *command = trim(input);
+        if(strlen(command) == 0) {
+            continue;
+        }
+
+        if(strcmp(command, "exit") == 0 || strcmp(command, "quit") == 0) {
+            log_info("Exiting console mode\n");
+            break;
+        }
+
+        // split command into arguments
+        char *argv[DEFAULT_BUFFER_SIZE];
+        int argc = 0;
+        char *context = NULL;
+        char *token = strtok_s(command, " ", &context);
+        while(token != NULL && argc < DEFAULT_BUFFER_SIZE) {
+            argv[argc++] = token;
+            token = strtok_s(NULL, " ", &context);
+        }
+
+        run_command(argv[0], argc - 1, &argv[1]);
+        printf("scratch> ");
+    }
+
+    return R_OK;
+}
+
 int run_command(char* command, int argc, char* argv[]) {
     if(read_config_file() != R_OK) {
         exit(EXIT_CONFIG_ERROR);
     }
 
     if(strcmp(command, "config") == 0) {
-        return command_config(--argc, &argv[1]);
+        return command_config(argc, argv);
+    } else if (strcmp(command, "console") == 0) {
+        return command_console(argc, argv);
     } else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
@@ -346,6 +394,8 @@ int main(int argc, char* argv[]) {
 
         char command[DEFAULT_BUFFER_SIZE];
         strcpy_s(command, sizeof(command), argv[0]);
+        argc--;
+        argv++;
 
         if(run_command(command, argc, argv) != R_OK) {
             return EXIT_COMMAND_FAILED;
