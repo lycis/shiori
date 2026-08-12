@@ -4,14 +4,9 @@
         {
             "label": "build",
             "type": "shell",
-            "command": "clang",
+            "command": "make",
             "args": [
-                "-std=c23",
-                "-O0",
-                "-gdwarf-4",
-                "main.c",
-                "-o",
-                "scratch.exe"
+                "debug"
             ],
             "group": {
                 "kind": "build",
