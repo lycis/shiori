@@ -661,11 +661,18 @@ static int command_todo_list(int argc, char* argv[]) {
 
     for(size_t i = 0; i < todos.count; ++i) {
         struct todo *item = &todos.items[i];
+        char date[11];
+
+        if(format_todo_date(item->created, date, sizeof(date)) != R_OK) {
+            strcpy_s(date, sizeof(date), "??????????");
+        }
+
         printf(
-            "%llu: status=%d text=%s\n",
+            "%s %-4llu %-40s 📅 %s\n",
+            todo_status_icon(item->status),
             item->id,
-            item->status,
-            item->text
+            item->text,
+            date
         );
     }
 
