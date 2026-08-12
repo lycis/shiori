@@ -1,22 +1,39 @@
 CC := clang
 CFLAGS := -std=c23 -Wall -Wextra -Wpedantic
 DEBUGFLAGS := -O0 -gdwarf-4
+RELEASEFLAGS := -O2
 
-TARGET := scratch.exe
 SOURCES := main.c
 
-.PHONY: all debug release clean
+ifeq ($(OS),Windows_NT)
+    EXE := .exe
+else
+    EXE :=
+endif
+
+TARGET := scratch$(EXE)
+
+ifeq ($(OS),Windows_NT)
+    RM_CMD := cmd /C if exist "$(TARGET)" del /Q "$(TARGET)"
+else
+    RM_CMD := rm -f "$(TARGET)"
+endif
+
+.PHONY: all debug release clean run
 
 all: debug
 
 debug: CFLAGS += $(DEBUGFLAGS)
 debug: $(TARGET)
 
-release: CFLAGS += -O2
+release: CFLAGS += $(RELEASEFLAGS)
 release: $(TARGET)
 
 $(TARGET): $(SOURCES)
 	$(CC) $(CFLAGS) $(SOURCES) -o $(TARGET)
 
+run: $(TARGET)
+	./$(TARGET)
+
 clean:
-	$(RM) $(TARGET)
+	$(RM_CMD)
