@@ -245,21 +245,17 @@ int read_config_file() {
             return R_ERROR;
         }
 
-        char *line_ptr = line;
+        char *colon = strchr(line, ':');
 
-        char *key = strtok_s(line, ":", &line_ptr);
-        if(key == NULL) {
+        if(colon == NULL) {
             log_error("Invalid config entry at line %d\n", lnr);
-            fclose(config_file);
             return R_ERROR;
         }
-        key = trim(key);
 
-        char *value = strtok_s(NULL, "=", &line_ptr);
-        if(value == NULL) {
-            value = "";
-        }
-        value = trim(value);
+        *colon = '\0';
+
+        char *key = trim(line);
+        char *value = trim(colon + 1);
 
         if(strcmp(key, "version") == 0) {
             g_config.version = atoi(value);
