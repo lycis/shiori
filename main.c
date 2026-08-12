@@ -653,22 +653,13 @@ void print_c_standard(void)
 }
 
 int run_command(char* command, int argc, char* argv[]) {
-    if(read_config_file() != R_OK) {
-        exit(SHIORI_EXIT_CONFIG_ERROR);
-    }
-
-    if(strcmp(command, "config") == 0) {
-        return command_config(argc, argv);
-    } else if(strcmp(command, "console") == 0) {
-        return command_console(argc, argv);
-    } else if(strcmp(command, "add") == 0) {
-        return command_add(argc, argv);
-    } else if(strcmp(command, "version") == 0) {
+    if(strcmp(command, "version") == 0) {
          printf("%s %s\n", APP_NAME, APP_VERSION);
          print_compiler();
          print_platform();
          print_architecture();
          print_c_standard();
+         return R_OK;
     } else if(strcmp(command, "help") == 0) {
         printf("%s is a console scratchpad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.", APP_NAME);
         printf("usage: %s [options] <command> [options] [subcommand] ...\n", APP_NAME);
@@ -682,6 +673,19 @@ int run_command(char* command, int argc, char* argv[]) {
         printf("  %-16s %s\n", "add",    "Add a new note or thought to the day");
         printf("  %-16s %s\n", "help",   "Show this help");
         printf("  %-16s %s\n", "version","Display current version information");
+        return R_OK;
+    }
+
+    if(read_config_file() != R_OK) {
+        exit(SHIORI_EXIT_CONFIG_ERROR);
+    }
+
+    if(strcmp(command, "config") == 0) {
+        return command_config(argc, argv);
+    } else if(strcmp(command, "console") == 0) {
+        return command_console(argc, argv);
+    } else if(strcmp(command, "add") == 0) {
+        return command_add(argc, argv);
     } else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
