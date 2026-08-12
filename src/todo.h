@@ -22,4 +22,6 @@ struct todo_metadata {
 
 const char *todo_status_icon(todo_status status);
 int format_todo_date(time_t timestamp, char *buffer, size_t size);
+const char *todo_status_mark(todo_status status);
+
 #endif

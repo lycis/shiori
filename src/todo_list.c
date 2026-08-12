@@ -40,3 +40,13 @@ int todo_list_add(struct todo_list *list, const struct todo *item) {
 
     return R_OK;
 }
+
+struct todo *todo_list_find_by_id(struct todo_list *list, unsigned long long id) {
+    for(size_t i = 0; i < list->count; ++i) {
+        if(list->items[i].id == id) {
+            return &list->items[i];
+        }
+    }
+
+    return NULL;
+}

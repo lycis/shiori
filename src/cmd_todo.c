@@ -838,6 +838,259 @@ static int command_todo_list(int argc, char* argv[]) {
     return R_OK;
 }
 
+static int parse_todo_id(const char *value, unsigned long long *id)
+{
+    char *end = NULL;
+
+    unsigned long long parsed = strtoull(value, &end, 10);
+
+    if(end == value || *end != '\0') {
+        log_error("Invalid todo ID: %s\n", value);
+        return R_ERROR;
+    }
+
+    *id = parsed;
+    return R_OK;
+}
+
+int write_todo_list(
+    const char *filename,
+    const struct todo_list *list,
+    const struct todo_metadata *md
+) {
+    char temp_path[DEFAULT_BUFFER_SIZE];
+    char backup_path[DEFAULT_BUFFER_SIZE];
+
+    int written = snprintf(
+        temp_path,
+        sizeof(temp_path),
+        "%s.tmp",
+        filename
+    );
+
+    if(written < 0 || (size_t)written >= sizeof(temp_path)) {
+        log_error("Temporary file path too long.\n");
+        return R_ERROR;
+    }
+
+    written = snprintf(
+        backup_path,
+        sizeof(backup_path),
+        "%s.bak",
+        filename
+    );
+
+    if(written < 0 || (size_t)written >= sizeof(backup_path)) {
+        log_error("Backup file path too long.\n");
+        return R_ERROR;
+    }
+
+    FILE *temp = NULL;
+
+    errno_t err = fopen_s(&temp, temp_path, "w");
+
+    if(err != 0 || temp == NULL) {
+        log_error("Failed opening temporary TODO file.\n");
+        return R_ERROR;
+    }
+
+    /*
+     * Write front matter.
+     */
+    if(fprintf(
+        temp,
+        "---\n"
+        "version: %d\n"
+        "last_id: %llu\n"
+        "---\n\n",
+        md->version,
+        md->last_id
+    ) < 0) {
+        log_error("Failed writing TODO metadata.\n");
+        fclose(temp);
+        remove(temp_path);
+        return R_ERROR;
+    }
+
+    /*
+     * Write all todos.
+     */
+    for(size_t i = 0; i < list->count; ++i) {
+        const struct todo *item = &list->items[i];
+
+        struct tm local_time;
+
+        if(localtime_s(&local_time, &item->created) != 0) {
+            log_error(
+                "Failed converting creation time for todo %llu.\n",
+                item->id
+            );
+
+            fclose(temp);
+            remove(temp_path);
+            return R_ERROR;
+        }
+
+        char date[11];
+
+        if(strftime(
+            date,
+            sizeof(date),
+            "%Y-%m-%d",
+            &local_time
+        ) == 0) {
+            log_error(
+                "Failed formatting creation date for todo %llu.\n",
+                item->id
+            );
+
+            fclose(temp);
+            remove(temp_path);
+            return R_ERROR;
+        }
+
+        if(fprintf(
+            temp,
+            "* [%s] %s #%s/id/%llu #%s/created/%s\n",
+            todo_status_mark(item->status),
+            item->text,
+            APP_NAME,
+            item->id,
+            APP_NAME,
+            date
+        ) < 0) {
+            log_error(
+                "Failed writing todo %llu.\n",
+                item->id
+            );
+
+            fclose(temp);
+            remove(temp_path);
+            return R_ERROR;
+        }
+    }
+
+    /*
+     * Ensure everything reached the file successfully.
+     */
+    if(fclose(temp) != 0) {
+        log_error("Failed closing temporary TODO file.\n");
+        remove(temp_path);
+        return R_ERROR;
+    }
+
+    /*
+     * Remove stale backup if one exists.
+     */
+    if(access(backup_path, F_OK) == 0) {
+        if(remove(backup_path) != 0) {
+            log_error(
+                "Could not remove old TODO backup: %s\n",
+                backup_path
+            );
+
+            remove(temp_path);
+            return R_ERROR;
+        }
+    }
+
+    /*
+     * Back up current file.
+     */
+    if(rename(filename, backup_path) != 0) {
+        log_error("Failed backing up %s.\n", filename);
+        remove(temp_path);
+        return R_ERROR;
+    }
+
+    /*
+     * Replace it with the new file.
+     */
+    if(rename(temp_path, filename) != 0) {
+        log_error("Failed replacing %s.\n", filename);
+
+        if(rename(backup_path, filename) != 0) {
+            log_critical(
+                "Failed restoring %s. Backup remains at %s.\n",
+                filename,
+                backup_path
+            );
+        }
+
+        return R_ERROR;
+    }
+
+    /*
+     * Cleanup backup.
+     */
+    if(remove(backup_path) != 0) {
+        log_warning(
+            "Could not remove TODO backup: %s\n",
+            backup_path
+        );
+    }
+
+    return R_OK;
+}
+
+int command_todo_start(int argc, char* argv[]) {
+    log_debug("Moving item into progress\n");
+    
+    if(argc < 1) {
+        log_error("You must specify a task id to start.\n");
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(TODO_FILE, file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(create_file_if_not_exists(file_path) != R_OK) {
+        return R_ERROR;
+    }
+
+    struct todo_list todos;
+    todo_list_init(&todos);
+
+    if(read_todos(file_path, &todos) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    struct todo *item = todo_list_find_by_id(&todos, id);
+    if(item == NULL) {
+        log_error("ID not found\n");
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    item->status = IN_PROGRESS;
+    log_debug("moved item status to in progess\n");
+
+    // write todo list back to file
+    struct todo_metadata md;
+
+    if(read_todo_metadata(file_path, &md) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    if(write_todo_list(file_path, &todos, &md) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    log_success("Moved %d (%s) to IN PROGRESS.\n", id, item->text);
+    todo_list_free(&todos);
+    return R_OK;
+}
+
 int command_todo(int argc, char* argv[]) {
     if(argc < 1) {
         log_error("Please specify a todo command. Refer to --help if required.");
@@ -863,6 +1116,8 @@ int command_todo(int argc, char* argv[]) {
         return command_todo_add(argc, argv);
     } else if(strcmp(command, "list") == 0) {
         return command_todo_list(argc, argv);
+    } else if(strcmp(command, "start") == 0) {
+        return command_todo_start(argc, argv);
     } else {
         log_error("Invalid `todo` command. See --help for reference.");
         return R_ERROR;

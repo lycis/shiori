@@ -29,3 +29,19 @@ int format_todo_date(time_t timestamp, char *buffer, size_t size) {
 
     return R_OK;
 }
+
+const char *todo_status_mark(todo_status status) {
+    switch(status) {
+        case OPEN:
+            return " ";
+
+        case IN_PROGRESS:
+            return "/";
+
+        case DONE:
+            return "x";
+
+        default:
+            return "?";
+    }
+}
