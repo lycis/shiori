@@ -50,3 +50,21 @@ struct todo *todo_list_find_by_id(struct todo_list *list, unsigned long long id)
 
     return NULL;
 }
+
+int todo_list_remove_by_id(struct todo_list *list, unsigned long long id) {
+    for(size_t i = 0; i < list->count; ++i) {
+        if(list->items[i].id != id) {
+            continue;
+        }
+
+        for(size_t j = i; j + 1 < list->count; ++j) {
+            list->items[j] = list->items[j + 1];
+        }
+
+        list->count--;
+
+        return R_OK;
+    }
+
+    return R_ERROR;
+}

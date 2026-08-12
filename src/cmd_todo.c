@@ -1237,6 +1237,204 @@ static int command_todo_rewrite(int argc, char *argv[]) {
     return R_OK;
 }
 
+static int command_todo_remove(int argc, char *argv[])
+{
+    if(argc < 1) {
+        log_error("You must specify a todo ID to remove.\n");
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    char file_path[DEFAULT_BUFFER_SIZE];
+
+    if(get_base_dir_file_path(
+        TODO_FILE,
+        file_path,
+        sizeof(file_path)
+    ) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(create_file_if_not_exists(file_path) != R_OK) {
+        return R_ERROR;
+    }
+
+    struct todo_list todos;
+    todo_list_init(&todos);
+
+    if(read_todos(file_path, &todos) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    struct todo *item = todo_list_find_by_id(&todos, id);
+
+    if(item == NULL) {
+        log_error("Todo %llu not found.\n", id);
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    /*
+     * Preserve the text before removing the item from the array.
+     */
+    char removed_text[sizeof(item->text)];
+
+    if(strcpy_s(
+        removed_text,
+        sizeof(removed_text),
+        item->text
+    ) != 0) {
+        log_critical("Failed preserving todo text before removal.\n");
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    if(todo_list_remove_by_id(&todos, id) != R_OK) {
+        log_error("Failed removing todo %llu.\n", id);
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    struct todo_metadata md;
+
+    if(read_todo_metadata(file_path, &md) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    if(write_todo_list(file_path, &todos, &md) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    log_success(
+        "Removed todo %llu: \"%s\"\n",
+        id,
+        removed_text
+    );
+
+    todo_list_free(&todos);
+
+    return R_OK;
+}
+
+static int command_todo_prune(int argc, char *argv[]) {
+    char file_path[DEFAULT_BUFFER_SIZE];
+
+    if(get_base_dir_file_path(
+        TODO_FILE,
+        file_path,
+        sizeof(file_path)
+    ) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(create_file_if_not_exists(file_path) != R_OK) {
+        return R_ERROR;
+    }
+
+    struct todo_list todos;
+    todo_list_init(&todos);
+
+    if(read_todos(file_path, &todos) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    /*
+     * First count how many completed todos would be removed.
+     */
+    size_t prune_count = 0;
+
+    for(size_t i = 0; i < todos.count; ++i) {
+        if(todos.items[i].status == DONE) {
+            prune_count++;
+        }
+    }
+
+    if(prune_count == 0) {
+        log_info("No completed todos to prune.\n");
+        todo_list_free(&todos);
+        return R_OK;
+    }
+
+    /*
+     * Do not modify anything unless explicitly confirmed.
+     */
+    if(!has_switch(argc, argv, "--force", false)) {
+        log_warning(
+            "Prune would permanently remove %zu completed todo%s.\n",
+            prune_count,
+            prune_count == 1 ? "" : "s"
+        );
+
+        log_info(
+            "Run `%s todo prune --force` to continue.\n",
+            APP_NAME
+        );
+
+        todo_list_free(&todos);
+        return R_OK;
+    }
+
+    /*
+     * Compact the array in place.
+     *
+     * read_index walks over all existing items.
+     * write_index points to the next item we want to keep.
+     */
+    size_t write_index = 0;
+
+    for(size_t read_index = 0;
+        read_index < todos.count;
+        ++read_index) {
+
+        if(todos.items[read_index].status == DONE) {
+            continue;
+        }
+
+        if(write_index != read_index) {
+            todos.items[write_index] =
+                todos.items[read_index];
+        }
+
+        write_index++;
+    }
+
+    todos.count = write_index;
+
+    /*
+     * Keep metadata, including last_id, unchanged.
+     */
+    struct todo_metadata md;
+
+    if(read_todo_metadata(file_path, &md) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    if(write_todo_list(file_path, &todos, &md) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    log_success(
+        "Pruned %zu completed todo%s.\n",
+        prune_count,
+        prune_count == 1 ? "" : "s"
+    );
+
+    todo_list_free(&todos);
+
+    return R_OK;
+}
+
 int command_todo(int argc, char* argv[]) {
     if(argc < 1) {
         log_error("Please specify a todo command. Refer to --help if required.");
@@ -1253,6 +1451,8 @@ int command_todo(int argc, char* argv[]) {
         printf("  %-16s %s\n", "done <id>",  "mark the item with the id as done");
         printf("  %-16s %s\n", "reopen <id>",  "move the item with the id back to open status");
         printf("  %-16s %s\n", "rewrite <id> <new_text>", "change the text of the todo with the given id");
+        printf("  %-16s %s\n", "remove <id>", "permanently remove a todo item");
+    printf("  %-16s %s\n", "prune", "remove all completed todo items");
         return R_OK;
     }
 
@@ -1273,6 +1473,10 @@ int command_todo(int argc, char* argv[]) {
         return command_todo_reopen(argc, argv);
     } else if(strcmp(command, "rewrite") == 0) {
         return command_todo_rewrite(argc, argv);
+    } else if(strcmp(command, "remove") == 0) {
+        return command_todo_remove(argc, argv);
+    } else if(strcmp(command, "prune") == 0) {
+        return command_todo_prune(argc, argv);
     } else {
         log_error("Invalid `todo` command. See --help for reference.");
         return R_ERROR;
