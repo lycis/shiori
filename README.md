@@ -1,3 +1,8 @@
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Language: C23](https://img.shields.io/badge/language-C23-00599C?logo=c&logoColor=white)
+![Platform: Windows-first](https://img.shields.io/badge/platform-Windows--first-0078D4?logo=windows11&logoColor=white)
+![Status: Alpha](https://img.shields.io/badge/status-alpha-orange)
+
 <div align="center">
 
 <img src="shiori_header.png" alt="Shiori" width="420">
@@ -414,7 +419,7 @@ Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for development setup, contribut
 
 ## License
 
-Shiori is intended to be released under the [`MIT License`](LICENSE.MD).
+Shiori is intended to be released under the [`MIT License`](LICENSE).
 
 MIT is a good fit for a small utility like Shiori: it is permissive, widely understood, and allows people to use, modify, redistribute, or embed the project with minimal ceremony.
 
