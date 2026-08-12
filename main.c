@@ -176,8 +176,8 @@ int terminal_enable_utf8(void) {
 
     const char *encoding = nl_langinfo(CODESET);
 
-    return strcmp(encoding, "UTF-8") == 0 ||
-           strcmp(encoding, "UTF8") == 0;
+    bool is_utf8 = strcmp(encoding, "UTF-8") == 0 || strcmp(encoding, "UTF8") == 0;
+    return is_utf8 ? R_OK : R_ERROR;
     #endif
 }
 
@@ -230,7 +230,7 @@ int read_config_file() {
     FILE *config_file = NULL;
     errno_t err = fopen_s(&config_file, config_path, "r");
     if(err != 0 || config_file == NULL) {
-        log_error("Error opening %S file\n", CONFIG_FILE_NAME);
+        log_error("Error opening %s file\n", CONFIG_FILE_NAME);
         return R_ERROR;
     }
 
