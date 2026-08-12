@@ -1,4 +1,5 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Build](https://github.com/lycis/shiori/actions/workflows/build.yml/badge.svg)](https://github.com/lycis/shiori/actions/workflows/build.yml)
 ![Language: C23](https://img.shields.io/badge/language-C23-00599C?logo=c&logoColor=white)
 ![Platform: Windows-first](https://img.shields.io/badge/platform-Windows--first-0078D4?logo=windows11&logoColor=white)
 ![Status: Alpha](https://img.shields.io/badge/status-alpha-orange)

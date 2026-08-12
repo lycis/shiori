@@ -1,0 +1,29 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-clang:
+    name: Windows / Clang / C23
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Show compiler version
+        run: clang --version
+
+      - name: Build release executable
+        run: clang -std=c23 -Wall -Wextra -Wpedantic -O2 main.c -o shiori.exe
+
+      - name: Smoke-check executable
+        run: .\shiori.exe version
