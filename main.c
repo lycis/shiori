@@ -265,9 +265,14 @@ int read_config_file() {
                 return R_ERROR;
             }
         } else if(strcmp(key, "base_dir") == 0) {
-            char lc = value[strlen(value)-1];
-            if(lc == '\\' || lc == '/') value[strlen(value)-1] = '\0';
-            strcpy_s(g_config.base_dir, sizeof(g_config.base_dir), value);
+            size_t len = strlen(value);
+            if(len > 0) {
+                char lc = value[strlen(value)-1];
+                if(lc == '\\' || lc == '/') value[strlen(value)-1] = '\0';
+                strcpy_s(g_config.base_dir, sizeof(g_config.base_dir), value);
+            } else {
+                log_error("invalid configuration (line %d): Empty base directory is not permitted.\n", lnr);
+            }
         }
     }
 
