@@ -4,6 +4,6 @@
 #include <stdbool.h>
 
 void strip_leading_flags(int *argc, char ***argv);
-bool has_switch(int argc, char *argv[], const char *sw);
+bool has_switch(int argc, char *argv[], const char *sw, bool allow_subcommands);
 
 #endif

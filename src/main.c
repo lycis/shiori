@@ -34,7 +34,7 @@ bool g_debug_enabled = false;
 
 int command_console(int argc, char* argv[]) {
 
-    if(has_switch(argc, argv, "--help") || has_switch(argc, argv, "-h")) {
+    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
         printf("Starts an interactive console mode.\n");
         printf("\n");
         printf("You can enter %s commands directly in the console. This helps as you do not have to run `%s <command>` all the time. Useful if you want to work continuously.", APP_NAME, APP_NAME);
@@ -198,7 +198,7 @@ int main(int argc, char* argv[]) {
         argv++;
 
         // enable debug log
-        if(has_switch(argc, argv, "--debug")) {
+        if(has_switch(argc, argv, "--debug", true)) {
             g_debug_enabled = true;
             log_debug("Debug logging enabled\n");
         }

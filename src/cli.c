@@ -15,18 +15,21 @@ void strip_leading_flags(int *argc, char ***argv)
     }
 }
 
-bool has_switch(int argc, char *argv[], const char *sw)
-{
-    for (int i = 0; i < argc; ++i) {
-        if (strcmp(argv[i], "--") == 0) {
+bool has_switch(int argc, char *argv[], const char *sw, bool allow_subcommands){
+    for(int i = 0; i < argc; ++i) {
+        if(strcmp(argv[i], "--") == 0) {
             break;
         }
 
-        if (argv[i][0] != '-' || argv[i][1] == '\0') {
-            break;
+        if(argv[i][0] != '-' || argv[i][1] == '\0') {
+            if(allow_subcommands) {
+                break;
+            }
+
+            continue;
         }
 
-        if (strcmp(argv[i], sw) == 0) {
+        if(strcmp(argv[i], sw) == 0) {
             return true;
         }
     }

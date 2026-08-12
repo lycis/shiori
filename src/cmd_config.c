@@ -11,7 +11,7 @@ int command_config(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    if(has_switch(argc, argv, "--help") || has_switch(argc, argv, "-h")) {
+    if(has_switch(argc, argv, "--help", true) || has_switch(argc, argv, "-h", true)) {
         printf("Allows you to view and manage the config file.\n");
         printf("\n");
         printf("Available config commands:\n");

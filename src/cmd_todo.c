@@ -644,15 +644,55 @@ struct todo_filter {
     bool show_open;
     bool show_in_progress;
     bool show_done;
+
+    const char **tags;
+    size_t tag_count;
 };
 
+static bool todo_has_tag(const struct todo *item, const char *tag) {
+    char needle[DEFAULT_BUFFER_SIZE];
+
+    snprintf(needle, sizeof(needle), "#%s", tag);
+
+    log_debug(
+        "Checking tag: text='%s' needle='%s'\n",
+        item->text,
+        needle
+    );
+
+    return strstr(item->text, needle) != NULL;
+}
+
 static bool todo_matches_filter(const struct todo *item, const struct todo_filter *filter) {
+    bool status_matches = false;
+
     switch(item->status) {
-        case OPEN: return filter->show_open;
-        case IN_PROGRESS: return filter->show_in_progress;
-        case DONE: return filter->show_done;
-        default: return false;
+        case OPEN:
+            status_matches = filter->show_open;
+            break;
+
+        case IN_PROGRESS:
+            status_matches = filter->show_in_progress;
+            break;
+
+        case DONE:
+            status_matches = filter->show_done;
+            break;
     }
+
+    log_debug("Status filter: item %d (%d) -> %d\n", item->id, item->status, status_matches);
+
+    if(!status_matches) {
+        return false;
+    }
+
+    for(size_t i = 0; i < filter->tag_count; ++i) {
+        if(!todo_has_tag(item, filter->tags[i])) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 static int command_todo_list(int argc, char* argv[]) {
@@ -681,19 +721,55 @@ static int command_todo_list(int argc, char* argv[]) {
         .show_done = false
     };
 
-    // if something else is passed, we set all to false by default
-    if(argc > 0) {
+    bool has_status_filter =
+        has_switch(argc, argv, "--open", false) ||
+        has_switch(argc, argv, "--in-progress", false) ||
+        has_switch(argc, argv, "--done", false) ||
+        has_switch(argc, argv, "--all", false);
+
+    if(has_status_filter) {
         filter.show_open = false;
         filter.show_in_progress = false;
+        filter.show_done = false;
     }
 
-    if(has_switch(argc, argv, "--open")) filter.show_open = true;
-    if(has_switch(argc, argv, "--in-progress")) filter.show_in_progress = true;
-    if(has_switch(argc, argv, "--done")) filter.show_done = true;
-    if(has_switch(argc, argv, "--all")) {
+    if(has_switch(argc, argv, "--open", false)) filter.show_open = true;
+    if(has_switch(argc, argv, "--in-progress", false)) filter.show_in_progress = true;
+    if(has_switch(argc, argv, "--done", false)) filter.show_done = true;
+    if(has_switch(argc, argv, "--all", false)) {
         filter.show_open = true;
         filter.show_in_progress = true;
         filter.show_done = true;
+    }
+
+    // tag filters
+    const char *tags[32];
+    size_t tag_count = 0;
+
+    for(int i = 0; i < argc; ++i) {
+        if(strcmp(argv[i], "--tag") == 0) {
+            if(i + 1 >= argc) {
+                log_error("--tag requires a tag name.\n");
+                todo_list_free(&todos);
+                return R_ERROR;
+            }
+
+            if(tag_count >= 32) {
+                log_error("Too many tag filters.\n");
+                todo_list_free(&todos);
+                return R_ERROR;
+            }
+
+            tags[tag_count++] = argv[i + 1];
+            i++; // skip the value we just consumed
+        }
+    }
+
+    filter.tags = tags;
+    filter.tag_count = tag_count;
+
+    for(size_t i = 0; i < filter.tag_count; ++i) {
+        log_debug("Tag filter %zu: '%s'\n", i, filter.tags[i]);
     }
 
     for(size_t i = 0; i < todos.count; ++i) {
@@ -725,7 +801,7 @@ int command_todo(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    if(has_switch(argc, argv, "--help") || has_switch(argc, argv, "-h")) {
+    if(has_switch(argc, argv, "--help", true) || has_switch(argc, argv, "-h", true)) {
         printf("`%s todo` allows you to manage your personal todo list.\n", APP_NAME);
         printf("\n");
         printf("Subcommands:\n");

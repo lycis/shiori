@@ -10,7 +10,7 @@ int command_init(int argc, char* argv[]) {
     bool config_exists = access(CONFIG_FILE_NAME, F_OK) == 0;
 
     // check if there is already a config
-    if(!has_switch(argc, argv, "--reinit")) {
+    if(!has_switch(argc, argv, "--reinit", false)) {
         if(config_exists) {
             log_error("%s already exists in current directory\n", CONFIG_FILE_NAME);
             printf("If you want to reinitialize, please delete the existing %s file first or specify --reinit.\n", CONFIG_FILE_NAME);
