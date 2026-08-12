@@ -25,10 +25,10 @@
 
 #define DEFAULT_BUFFER_SIZE 2048
 
-#define EXIT_SUCCESS 0
-#define EXIT_CONFIG_ERROR 1
-#define EXIT_NO_COMMAND 2
-#define EXIT_COMMAND_FAILED 3
+#define SHIORI_EXIT_SUCCESS 0
+#define SHIORI_EXIT_CONFIG_ERROR 1
+#define SHIORI_EXIT_NO_COMMAND 2
+#define SHIORI_EXIT_COMMAND_FAILED 3
 
 #define CONFIG_FILE_NAME ".shiori"
 #define CONFIG_VERSION 1
@@ -655,7 +655,7 @@ void print_c_standard(void)
 
 int run_command(char* command, int argc, char* argv[]) {
     if(read_config_file() != R_OK) {
-        exit(EXIT_CONFIG_ERROR);
+        exit(SHIORI_EXIT_CONFIG_ERROR);
     }
 
     if(strcmp(command, "config") == 0) {
@@ -704,9 +704,9 @@ int main(int argc, char* argv[]) {
         if(strcmp(argv[0], "init") == 0) {
             strip_leading_flags(&argc, &argv);
             if(command_init(--argc, &argv[1]) != R_OK) {
-                return EXIT_COMMAND_FAILED;
+                return SHIORI_EXIT_COMMAND_FAILED;
             }
-            return EXIT_SUCCESS;
+            return SHIORI_EXIT_SUCCESS;
         }
 
         // enable debug log
@@ -724,13 +724,13 @@ int main(int argc, char* argv[]) {
         argv++;
 
         if(run_command(command, argc, argv) != R_OK) {
-            return EXIT_COMMAND_FAILED;
+            return SHIORI_EXIT_COMMAND_FAILED;
         }
-        return EXIT_SUCCESS;
+        return SHIORI_EXIT_SUCCESS;
     } else {
         log_error("No command provided. Please provide a command.\n");
-        return EXIT_NO_COMMAND;
+        return SHIORI_EXIT_NO_COMMAND;
     }
 
-    return EXIT_SUCCESS;
+    return SHIORI_EXIT_SUCCESS;
 }
