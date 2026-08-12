@@ -69,6 +69,26 @@ void log_success(const char* fmt, ...) {
     vfprintf(stdout, buffer, args);
 }
 
+char *trim(char *str)
+{
+    while (isspace((unsigned char)*str)) {
+        str++;
+    }
+
+    if (*str == '\0') {
+        return str;
+    }
+
+    char *end = str + strlen(str) - 1;
+
+    while (end > str && isspace((unsigned char)*end)) {
+        end--;
+    }
+
+    end[1] = '\0';
+    return str;
+}
+
 int terminal_enable_utf8(void) {
     #ifdef _WIN32
     if(GetConsoleOutputCP() == CP_UTF8) {
@@ -86,8 +106,6 @@ int terminal_enable_utf8(void) {
     #endif
 }
 
-
-
 void get_user_home(char* buffer, size_t size) {
     #ifdef _WIN32
     if(_dupenv_s(&buffer, &size, "USERPROFILE") != 0) {
@@ -99,25 +117,79 @@ void get_user_home(char* buffer, size_t size) {
     #endif
 }
 
+struct configuration {
+    int version;
+};
+
+struct configuration g_config;
+
 int read_config_file() {
+    char* cf_file_path = ".scratch";
+    
     // first check current directory
-    if(access(".stratch", F_OK) == 0) {
-        log_error("Found .stratch in current directory\n");
-        return R_OK;
+    if(access(cf_file_path, F_OK) != 0) {
+        char user_home[DEFAULT_BUFFER_SIZE];
+        get_user_home(user_home, sizeof(user_home));
+
+        char buffer[DEFAULT_BUFFER_SIZE];
+        sprintf(buffer, "%s/.scratch", user_home);
+        if(access(buffer, F_OK) != 0) {
+            log_error(".scratch config file not found. please run `scratch init` first.\n");
+            return R_ERROR;
+        }
+
+        cf_file_path = buffer;
     }
 
-    char user_home[DEFAULT_BUFFER_SIZE];
-    get_user_home(user_home, sizeof(user_home));
-
-    char buffer[DEFAULT_BUFFER_SIZE];
-    sprintf(buffer, "%s/.scratch", user_home);
-    if(access(buffer, F_OK) == 0) {
-        log_error("Found .scratch in user home directory\n");
-        return R_OK;
+    FILE *config_file = NULL;
+    errno_t err = fopen_s(&config_file, cf_file_path, "r");
+    if(err != 0 || config_file == NULL) {
+        log_error("Error opening .scratch file\n");
+        return R_ERROR;
     }
 
-    log_error(".scratch config file not found. please run `scratch init` first.\n");
-    return R_ERROR;
+    char line[DEFAULT_BUFFER_SIZE];
+    int lnr = 0;
+    while(fgets(line, sizeof(line), config_file) != NULL) {
+        lnr++;
+        if(line[0] == '#') continue; // comment
+        if(strlen(line) == 0 || line[0] == '\n') continue; // empty line
+
+        if(strstr(line, ":") == NULL) {
+            log_error("Invalid config entry at line %d\n", lnr);
+            fclose(config_file);
+            return R_ERROR;
+        }
+
+        char *line_ptr = line;
+
+        char *key = strtok_s(line, ":", &line_ptr);
+        if(key == NULL) {
+            log_error("Invalid config entry at line %d\n", lnr);
+            fclose(config_file);
+            return R_ERROR;
+        }
+        key = trim(key);
+
+        char *value = strtok_s(NULL, "=", &line_ptr);
+        if(value == NULL) {
+            value = "";
+        }
+        value = trim(value);
+
+        if(strcmp(key, "version") == 0) {
+            g_config.version = atoi(value);
+            if(g_config.version == 0) {
+                log_error("Invalid config version at line %d\n", lnr);
+                fclose(config_file);
+                return R_ERROR;
+            }
+        }
+    }
+
+    fclose(config_file);
+    
+    return R_OK;
 }
 
 bool has_switch(int argc, char* argv[], const char *sw) {
@@ -157,7 +229,7 @@ int command_init(int argc, char* argv[]) {
     fprintf(config_file, "# Initialized: %s", date_str);
 
     // write up to date config file version
-    fprintf(config_file, "version=%d\n", CONFIG_VERSION);
+    fprintf(config_file, "version: %d\n", CONFIG_VERSION);
 
     fclose(config_file);
 
@@ -165,9 +237,32 @@ int command_init(int argc, char* argv[]) {
     return 0;
 }
 
-int run_command(int argc, char* argv[]) {
-       if(read_config_file() != R_OK) {
+int command_config(int argc, char* argv[]) {
+    if(argc < 1) {
+        log_error("No config command provided. Please provide a config command.\n");
+        return R_ERROR;
+    }
+
+    if(strcmp(argv[0], "show") == 0) {
+        printf("version: %d\n", g_config.version);
+    } else {
+        log_error("Unknown config command: %s\n", argv[0]);
+        return R_ERROR;
+    }
+
+    return R_OK;
+}
+
+int run_command(char* command, int argc, char* argv[]) {
+    if(read_config_file() != R_OK) {
         exit(EXIT_CONFIG_ERROR);
+    }
+
+    if(strcmp(command, "config") == 0) {
+        return command_config(--argc, &argv[1]);
+    } else {
+        log_error("Unknown command: %s\n", command);
+        return R_ERROR;
     }
     
     return 0;
@@ -184,7 +279,7 @@ int main(int argc, char* argv[]) {
             return EXIT_SUCCESS;
         }
 
-        if(run_command(argc, argv) != R_OK) {
+        if(run_command(argv[1], --argc, &argv[1]) != R_OK) {
             return EXIT_COMMAND_FAILED;
         }
         return EXIT_SUCCESS;
