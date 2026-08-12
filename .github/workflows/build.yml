@@ -23,7 +23,10 @@ jobs:
         run: clang --version
 
       - name: Build release executable
-        run: clang -std=c23 -Wall -Wextra -Wpedantic -O2 main.c -o shiori.exe
+        shell: pwsh
+        run: |
+          $sources = Get-ChildItem src -Filter *.c | ForEach-Object FullName
+          clang -std=c23 -Wall -Wextra -Wpedantic -O2 $sources -o shiori.exe
 
       - name: Smoke-check executable
         run: .\shiori.exe version
