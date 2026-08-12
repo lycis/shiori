@@ -380,44 +380,129 @@ int command_console(int argc, char* argv[]) {
     return R_OK;
 }
 
-int command_add(int argc, char* argv[]) {
-    log_debug("Adding a new note.\n");
+bool is_heading(const char *line) {
+    return line[0] == '#' && line[1] == ' ';
+}
 
-    FILE *daily_note = NULL;
-    char note_path[DEFAULT_BUFFER_SIZE];
-    sprintf(note_path, "%s%s%s", g_config.base_dir, get_path_separator(), "NOTES.md");
-    log_debug("Opening daily note at: %s\n", note_path);
-    errno_t err = fopen_s(&daily_note, note_path, "w");
-    if(err != F_OK  || daily_note == NULL) {
-        log_error("Failed opening note file.");
-        return R_ERROR;
-    }
-
+int build_daily_heading(char* buffer, size_t size) {
     time_t now = time(NULL);
     struct tm local_time;
     if(localtime_s(&local_time, &now) != 0) {
         log_error("Failed to get local time.");
-        fclose(daily_note);
         return R_ERROR;
     }
 
     char date_str[11];
     if(strftime(date_str, sizeof(date_str), "%Y-%m-%d", &local_time) == 0) {
-        log_error("Feild to format local date.");
-        fclose(daily_note);
+        log_error("Feild to format local date.");        
         return R_ERROR;
     }
 
-    fprintf(daily_note, "# %s\n", date_str);
-    fprintf(daily_note, "* ");
-    for(int i=0; i<argc; ++i) {
-        fprintf(daily_note, "%s", argv[i]);
-        if(i != argc-1) fprintf(daily_note, " ");
+    if(snprintf(buffer, size, "# %s", date_str) >= (int)size) {
+        log_error("Daily heading buffer too small.");
+        return R_ERROR;
     }
-    fprintf(daily_note, "\n");
 
-    log_debug("New note added.\n");
-    fclose(daily_note);
+    return R_OK;
+}
+
+void write_note_to_file(int argc, char* argv[], FILE* note) {
+    fprintf(note, "* ");
+    for(int i=0; i<argc; ++i) {
+        fprintf(note, "%s", argv[i]);
+        if(i != argc-1) fprintf(note, " ");
+    }
+    fprintf(note, "\n");
+    return;
+}
+
+bool heading_matches(const char *line, const char *heading){
+    size_t len = strlen(heading);
+
+    return strncmp(line, heading, len) == 0 &&
+           (line[len] == '\n' ||
+            line[len] == '\r' ||
+            line[len] == '\0');
+}
+
+int command_add(int argc, char* argv[]) {
+    log_debug("Adding a new note.\n");
+
+    // construct our daily heading
+    char heading[32];
+    if(build_daily_heading(heading, sizeof(heading)) != R_OK) {
+        return R_ERROR;
+    }
+    log_debug("Daily heading = %s\n", heading);
+
+    // we are going to read from NOTES.md to a temporary file
+    FILE *source = NULL;
+    char notes_md[DEFAULT_BUFFER_SIZE];
+    sprintf(notes_md, "%s%s%s", g_config.base_dir, get_path_separator(), "NOTES.md");
+    log_debug("Opening daily note at: %s\n", notes_md);
+    errno_t err = fopen_s(&source, notes_md, "r");
+    if(err != 0  || source == NULL) {
+        log_error("Failed opening NOTES.md file.");
+        return R_ERROR;
+    }
+
+    FILE *temp = NULL;
+    char temp_path[DEFAULT_BUFFER_SIZE];
+    sprintf(temp_path, "%s%s%s", g_config.base_dir, get_path_separator(), "NOTES.md.tmp");
+    log_debug("Opening temporary note file for writing at: %s\n", temp_path);
+    err = fopen_s(&temp, temp_path, "w");
+    if(err != 0  || temp == NULL) {
+        log_error("Failed opening NOTES.md.tmp file.\n");
+        fclose(source);
+        return R_ERROR;
+    }
+
+    bool found_heading = false;
+    bool note_written = false;
+
+    char line[DEFAULT_BUFFER_SIZE];
+    while(fgets(line, sizeof(line), source) != NULL) {
+        if(!found_heading) {
+            if(heading_matches(line, heading)) {
+                log_debug("Found today's heading.\n");
+                found_heading = true;
+            }
+        } else if(!note_written && is_heading(line)) {
+            log_debug("Writing note into today's block\n");
+            write_note_to_file(argc, argv, temp);
+            note_written = true;
+        }
+
+        fputs(line, temp);
+    }
+
+    if(found_heading && !note_written) {
+        log_debug("Note added at end of file to existing heading.\n");
+        write_note_to_file(argc, argv, temp);
+    }
+    if(!found_heading) {
+        log_debug("Day not found yet. Adding with note.\n");
+        fprintf(temp, "\n%s\n", heading);
+        write_note_to_file(argc, argv, temp);
+    }
+
+    log_debug("Closing file handles.\n");
+    fclose(source);
+    fclose(temp);
+
+    log_debug("Deleting old NOTES.md\n");
+    if(remove(notes_md) != 0) {
+        log_error("Failed to delete old NOTES.md\n");
+        return R_ERROR;
+    }
+
+    log_debug("Renaming temporary file to NOTES.md\n");
+    if(rename(temp_path, notes_md) != 0) {
+        log_error("Failed to rename temporary notes file.\n");
+        return R_ERROR;
+    }
+
+    log_success("Note added.\n");
     return R_OK;
 }
 
