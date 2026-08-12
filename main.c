@@ -69,6 +69,14 @@ void log_success(const char* fmt, ...) {
     vfprintf(stdout, buffer, args);
 }
 
+void log_debug(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buffer[DEFAULT_BUFFER_SIZE];
+    sprintf(buffer, "[debug] %s", fmt);
+    vfprintf(stdout, buffer, args);
+}
+
 char *trim(char *str)
 {
     while (isspace((unsigned char)*str)) {
@@ -87,6 +95,20 @@ char *trim(char *str)
 
     end[1] = '\0';
     return str;
+}
+
+void strip_leading_flags(int *argc, char ***argv)
+{
+    while (*argc > 0) {
+        char *arg = (*argv)[0];
+
+        if (arg[0] != '-' || arg[1] == '\0') {
+            break;
+        }
+
+        (*argv)++;
+        (*argc)--;
+    }
 }
 
 int terminal_enable_utf8(void) {
@@ -280,14 +302,31 @@ int main(int argc, char* argv[]) {
     terminal_enable_utf8();
 
     if(argc > 1) {
+
+        // throw away the executable name
+        argc--;
+        argv++;
+
+        // check for init command
         if(strcmp(argv[1], "init") == 0) {
-            if(command_init(--argc, &argv[1]) != R_OK) {
+            if(command_init(argc, argv) != R_OK) {
                 return EXIT_COMMAND_FAILED;
             }
             return EXIT_SUCCESS;
         }
 
-        if(run_command(argv[1], --argc, &argv[1]) != R_OK) {
+        // enable debug log
+        if(has_switch(argc, argv, "--debug")) {
+            log_debug("Debug logging enabled\n");
+        }
+
+        // run any other commands
+        strip_leading_flags(&argc, &argv);
+
+        char command[DEFAULT_BUFFER_SIZE];
+        strcpy_s(command, sizeof(command), argv[0]);
+
+        if(run_command(command, argc, argv) != R_OK) {
             return EXIT_COMMAND_FAILED;
         }
         return EXIT_SUCCESS;
