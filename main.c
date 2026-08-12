@@ -83,7 +83,7 @@ void log_debug(const char* fmt, ...) {
     if(!g_debug_enabled) {
         return;
     }
-    
+
     va_list args;
     va_start(args, fmt);
     char buffer[DEFAULT_BUFFER_SIZE];
@@ -222,10 +222,22 @@ int read_config_file() {
     return R_OK;
 }
 
-bool has_switch(int argc, char* argv[], const char *sw) {
-    for(int i = 0; i < argc; ++i) {
-        if(strcmp(argv[i], sw) == 0) return true;
+bool has_switch(int argc, char *argv[], const char *sw)
+{
+    for (int i = 0; i < argc; ++i) {
+        if (strcmp(argv[i], "--") == 0) {
+            break;
+        }
+
+        if (argv[i][0] != '-' || argv[i][1] == '\0') {
+            break;
+        }
+
+        if (strcmp(argv[i], sw) == 0) {
+            return true;
+        }
     }
+
     return false;
 }
 
