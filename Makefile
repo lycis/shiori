@@ -3,7 +3,7 @@ CFLAGS := -std=c23 -Wall -Wextra -Wpedantic
 DEBUGFLAGS := -O0 -gdwarf-4
 RELEASEFLAGS := -O2
 
-SOURCES := main.c
+SOURCES := src/main.c src/logging.c src/platform.c src/common.c src/config.c src/cli.c src/cmd_init.c src/cmd_config.c src/cmd_todo.c src/cmd_shared.c src/cmd_add.c
 
 ifeq ($(OS),Windows_NT)
     EXE := .exe

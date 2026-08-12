@@ -8,9 +8,6 @@ Contributions are welcome. There is no special process:
 
 When contributing, please keep the following principles in mind:
 
-- Preserve Shiori's intentional **one-file monolith** design. Keep the
-  implementation in `main.c` rather than splitting it into additional source
-  or header files.
 - Write code that conforms to the **C23 standard**.
 - Try to follow the existing coding style and conventions so that new code
   feels consistent with the rest of the project.
