@@ -28,7 +28,10 @@
 #define EXIT_NO_COMMAND 2
 #define EXIT_COMMAND_FAILED 3
 
+#define CONFIG_FILE_NAME ".shiori"
 #define CONFIG_VERSION 1
+#define APP_NAME "shiori"
+#define APP_VERSION "0.1.0"
 
 #ifdef _WIN32
 #include <io.h>
@@ -197,7 +200,7 @@ char* get_current_path(char *buffer, size_t size) {
 }
 
 int read_config_file() {
-    char* cf_file_path = ".shiori";
+    char* cf_file_path = CONFIG_FILE_NAME;
     
     // first check current directory
     if(access(cf_file_path, F_OK) != 0) {
@@ -205,9 +208,9 @@ int read_config_file() {
         get_user_home(user_home, sizeof(user_home));
 
         char buffer[DEFAULT_BUFFER_SIZE];
-        sprintf(buffer, "%s/.shiori", user_home);
+        sprintf(buffer, "%s/%s", user_home, CONFIG_FILE_NAME);
         if(access(buffer, F_OK) != 0) {
-            log_error(".shiori config file not found. please run `shiori init` first.\n");
+            log_error("%s config file not found. please run `shiori init` first.\n", CONFIG_FILE_NAME);
             return R_ERROR;
         }
 
@@ -217,7 +220,7 @@ int read_config_file() {
     FILE *config_file = NULL;
     errno_t err = fopen_s(&config_file, cf_file_path, "r");
     if(err != 0 || config_file == NULL) {
-        log_error("Error opening .shiori file\n");
+        log_error("Error opening %S file\n", CONFIG_FILE_NAME);
         return R_ERROR;
     }
 
@@ -289,25 +292,25 @@ bool has_switch(int argc, char *argv[], const char *sw)
 }
 
 int command_init(int argc, char* argv[]) {
-    bool config_exists = access(".shiori", F_OK) == 0;
+    bool config_exists = access(CONFIG_FILE_NAME, F_OK) == 0;
 
     // check if there is already a config
     if(!has_switch(argc, argv, "--reinit")) {
         if(config_exists) {
-            log_error(".shiori already exists in current directory\n");
-            printf("If you want to reinitialize, please delete the existing .shiori file first or specify --reinit.\n");
+            log_error("%s already exists in current directory\n", CONFIG_FILE_NAME);
+            printf("If you want to reinitialize, please delete the existing %s file first or specify --reinit.\n", CONFIG_FILE_NAME);
             return R_ERROR;
         }
     }
 
     if(config_exists) {
-        log_info("Reinitializing .shiori config in current directory.\n");
+        log_info("Reinitializing config in current directory.\n");
     }
 
     FILE *config_file = NULL;
-    errno_t err = fopen_s(&config_file, ".shiori", "w");
+    errno_t err = fopen_s(&config_file, CONFIG_FILE_NAME, "w");
     if(err != 0 || config_file == NULL) {
-        log_error("Error creating .shiori file in current directory\n");
+        log_error("Error creating config file in current directory\n");
         return R_ERROR;
     }
 
@@ -327,7 +330,7 @@ int command_init(int argc, char* argv[]) {
 
     fclose(config_file);
 
-    log_success(".shiori config file created in current directory\n");
+    log_success("%S config file created in current directory\n", CONFIG_FILE_NAME);
     return 0;
 }
 
