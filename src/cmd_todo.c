@@ -1130,6 +1130,113 @@ static int command_todo_reopen(int argc, char* argv[]) {
     return R_OK;
 }
 
+static int command_todo_rewrite(int argc, char *argv[]) {
+    if(argc < 2) {
+        log_error(
+            "You must specify a task id and new text for a rewrite.\n"
+        );
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    log_debug("Rewriting todo %llu.\n", id);
+
+    char file_path[DEFAULT_BUFFER_SIZE];
+
+    if(get_base_dir_file_path(
+        TODO_FILE,
+        file_path,
+        sizeof(file_path)
+    ) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(create_file_if_not_exists(file_path) != R_OK) {
+        return R_ERROR;
+    }
+
+    // Load todos
+    struct todo_list todos;
+    todo_list_init(&todos);
+
+    if(read_todos(file_path, &todos) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    // find our target
+    struct todo *item = todo_list_find_by_id(&todos, id);
+
+    if(item == NULL) {
+        log_error("Todo %llu not found.\n", id);
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    // let's preserve the old text for logging
+    char old_text[sizeof(item->text)];
+
+    errno_t err = strcpy_s(
+        old_text,
+        sizeof(old_text),
+        item->text
+    );
+
+    if(err != 0) {
+        log_critical("Failed to preserve old todo text.\n");
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    // first argument is the ID, everything else is text
+    if(build_text_from_args(
+        argc - 1,
+        &argv[1],
+        item->text,
+        sizeof(item->text)
+    ) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    log_debug(
+        "Rewriting todo %llu: '%s' -> '%s'\n",
+        id,
+        old_text,
+        item->text
+    );
+
+    // read and preserve metadata
+    struct todo_metadata md;
+
+    if(read_todo_metadata(file_path, &md) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    // and save the new list
+    if(write_todo_list(file_path, &todos, &md) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    log_success(
+        "Rewrote todo %llu: \"%s\" -> \"%s\"\n",
+        id,
+        old_text,
+        item->text
+    );
+
+    todo_list_free(&todos);
+
+    return R_OK;
+}
+
 int command_todo(int argc, char* argv[]) {
     if(argc < 1) {
         log_error("Please specify a todo command. Refer to --help if required.");
@@ -1145,6 +1252,7 @@ int command_todo(int argc, char* argv[]) {
         printf("  %-16s %s\n", "start <id>",  "move the item with the id in progress");
         printf("  %-16s %s\n", "done <id>",  "mark the item with the id as done");
         printf("  %-16s %s\n", "reopen <id>",  "move the item with the id back to open status");
+        printf("  %-16s %s\n", "rewrite <id> <new_text>", "change the text of the todo with the given id");
         return R_OK;
     }
 
@@ -1163,6 +1271,8 @@ int command_todo(int argc, char* argv[]) {
         return command_todo_done(argc, argv);
     } else if(strcmp(command, "reopen") == 0) {
         return command_todo_reopen(argc, argv);
+    } else if(strcmp(command, "rewrite") == 0) {
+        return command_todo_rewrite(argc, argv);
     } else {
         log_error("Invalid `todo` command. See --help for reference.");
         return R_ERROR;

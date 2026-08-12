@@ -53,3 +53,29 @@ int get_base_dir_file_path(char *filename, char *buffer, size_t buffer_size) {
     }
     return R_OK;
 }
+
+int build_text_from_args(int argc, char *argv[], char *buffer, size_t buffer_size) {
+    buffer[0] = '\0';
+
+    size_t used = 0;
+
+    for(int i = 0; i < argc; ++i) {
+        int written = snprintf(
+            buffer + used,
+            buffer_size - used,
+            "%s%s",
+            i > 0 ? " " : "",
+            argv[i]
+        );
+
+        if(written < 0 ||
+           (size_t)written >= buffer_size - used) {
+            log_error("Text is too long.\n");
+            return R_ERROR;
+        }
+
+        used += (size_t)written;
+    }
+
+    return R_OK;
+}

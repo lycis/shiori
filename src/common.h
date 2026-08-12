@@ -21,5 +21,6 @@
 char *trim(char *str);
 int create_file_if_not_exists(char* fname);
 int get_base_dir_file_path(char *filename, char *buffer, size_t buffer_size);
+int build_text_from_args(int argc, char *argv[], char *buffer, size_t buffer_size);
 
 #endif
