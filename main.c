@@ -197,7 +197,7 @@ char* get_current_path(char *buffer, size_t size) {
 }
 
 int read_config_file() {
-    char* cf_file_path = ".scratch";
+    char* cf_file_path = ".shiori";
     
     // first check current directory
     if(access(cf_file_path, F_OK) != 0) {
@@ -205,9 +205,9 @@ int read_config_file() {
         get_user_home(user_home, sizeof(user_home));
 
         char buffer[DEFAULT_BUFFER_SIZE];
-        sprintf(buffer, "%s/.scratch", user_home);
+        sprintf(buffer, "%s/.shiori", user_home);
         if(access(buffer, F_OK) != 0) {
-            log_error(".scratch config file not found. please run `scratch init` first.\n");
+            log_error(".shiori config file not found. please run `shiori init` first.\n");
             return R_ERROR;
         }
 
@@ -217,7 +217,7 @@ int read_config_file() {
     FILE *config_file = NULL;
     errno_t err = fopen_s(&config_file, cf_file_path, "r");
     if(err != 0 || config_file == NULL) {
-        log_error("Error opening .scratch file\n");
+        log_error("Error opening .shiori file\n");
         return R_ERROR;
     }
 
@@ -289,25 +289,25 @@ bool has_switch(int argc, char *argv[], const char *sw)
 }
 
 int command_init(int argc, char* argv[]) {
-    bool config_exists = access(".scratch", F_OK) == 0;
+    bool config_exists = access(".shiori", F_OK) == 0;
 
     // check if there is already a config
     if(!has_switch(argc, argv, "--reinit")) {
         if(config_exists) {
-            log_error(".scratch already exists in current directory\n");
-            printf("If you want to reinitialize, please delete the existing .scratch file first or specify --reinit.\n");
+            log_error(".shiori already exists in current directory\n");
+            printf("If you want to reinitialize, please delete the existing .shiori file first or specify --reinit.\n");
             return R_ERROR;
         }
     }
 
     if(config_exists) {
-        log_info("Reinitializing .scratch config in current directory.\n");
+        log_info("Reinitializing .shiori config in current directory.\n");
     }
 
     FILE *config_file = NULL;
-    errno_t err = fopen_s(&config_file, ".scratch", "w");
+    errno_t err = fopen_s(&config_file, ".shiori", "w");
     if(err != 0 || config_file == NULL) {
-        log_error("Error creating .scratch file in current directory\n");
+        log_error("Error creating .shiori file in current directory\n");
         return R_ERROR;
     }
 
@@ -327,7 +327,7 @@ int command_init(int argc, char* argv[]) {
 
     fclose(config_file);
 
-    log_success(".scratch config file created in current directory\n");
+    log_success(".shiori config file created in current directory\n");
     return 0;
 }
 
@@ -361,7 +361,7 @@ int command_console(int argc, char* argv[]) {
     if(has_switch(argc, argv, "--help") || has_switch(argc, argv, "-h")) {
         printf("Starts an interactive console mode.\n");
         printf("\n");
-        printf("You can enter scratch commands directly in the console. This helps as you do not have to run `scratch <command>` all the time. Useful if you want to work continuously.");
+        printf("You can enter shiori commands directly in the console. This helps as you do not have to run `shiori <command>` all the time. Useful if you want to work continuously.");
         return R_OK;
     }
 
@@ -369,7 +369,7 @@ int command_console(int argc, char* argv[]) {
     printf("Type 'exit' or 'quit' to exit the console.\n");
 
     char input[DEFAULT_BUFFER_SIZE];
-    printf("scratch> ");
+    printf("shiori 🦊> ");
     while(fgets(input, sizeof(input), stdin) != NULL) {
         char *command = trim(input);
         if(strlen(command) == 0) {
@@ -392,7 +392,7 @@ int command_console(int argc, char* argv[]) {
         }
 
         run_command(argv[0], argc - 1, &argv[1]);
-        printf("scratch> ");
+        printf("shiori> ");
     }
 
     return R_OK;
@@ -582,14 +582,14 @@ int run_command(char* command, int argc, char* argv[]) {
     } if(strcmp(command, "add") == 0) {
         return command_add(argc, argv);
     } else if(strcmp(command, "help") == 0) {
-        printf("scratch is a console scratchpad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.");
-        printf("usage: scratch [options] <command> [options] [subcommand] ...\n");
+        printf("shiori is a console shioripad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.");
+        printf("usage: shiori [options] <command> [options] [subcommand] ...\n");
         printf("\n");
         printf("Options:\n");
         printf("  %-16s %s\n", "--debug", "Show debug and plumbing output.");
         printf("\n");
         printf("Available commands:\n");
-        printf("  %-16s %s\n", "init",   "Initialize a new scratch configuration");
+        printf("  %-16s %s\n", "init",   "Initialize a new shiori configuration");
         printf("  %-16s %s\n", "config", "Show or modify configuration");
         printf("  %-16s %s\n", "add",    "Add a new note or thought to the day");
         printf("  %-16s %s\n", "help",   "Show this help");

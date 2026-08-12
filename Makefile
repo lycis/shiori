@@ -11,7 +11,7 @@ else
     EXE :=
 endif
 
-TARGET := scratch$(EXE)
+TARGET := shiori$(EXE)
 
 ifeq ($(OS),Windows_NT)
     RM_CMD := cmd /C if exist "$(TARGET)" del /Q "$(TARGET)"
