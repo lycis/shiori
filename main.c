@@ -582,8 +582,10 @@ int run_command(char* command, int argc, char* argv[]) {
         return command_config(argc, argv);
     } else if(strcmp(command, "console") == 0) {
         return command_console(argc, argv);
-    } if(strcmp(command, "add") == 0) {
+    } else if(strcmp(command, "add") == 0) {
         return command_add(argc, argv);
+    } else if(strcmp(command, "version") == 0) {
+         printf("%s %s\n", APP_NAME, APP_VERSION);
     } else if(strcmp(command, "help") == 0) {
         printf("%s is a console scratchpad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.", APP_NAME);
         printf("usage: %s [options] <command> [options] [subcommand] ...\n", APP_NAME);
@@ -596,6 +598,7 @@ int run_command(char* command, int argc, char* argv[]) {
         printf("  %-16s %s\n", "config", "Show or modify configuration");
         printf("  %-16s %s\n", "add",    "Add a new note or thought to the day");
         printf("  %-16s %s\n", "help",   "Show this help");
+        printf("  %-16s %s\n", "version","Display current version information");
     } else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
