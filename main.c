@@ -341,7 +341,7 @@ int command_init(int argc, char* argv[]) {
 
     fclose(config_file);
 
-    log_success("%S config file created in current directory\n", CONFIG_FILE_NAME);
+    log_success("%s config file created in current directory\n", CONFIG_FILE_NAME);
     return 0;
 }
 
@@ -674,6 +674,8 @@ int run_command(char* command, int argc, char* argv[]) {
         printf("  %-16s %s\n", "help",   "Show this help");
         printf("  %-16s %s\n", "version","Display current version information");
         return R_OK;
+    } else if(strcmp(command, "init") == 0) {
+        return command_init(argc, argv);
     }
 
     if(read_config_file() != R_OK) {
@@ -702,15 +704,6 @@ int main(int argc, char* argv[]) {
         // throw away the executable name
         argc--;
         argv++;
-
-        // check for init command
-        if(strcmp(argv[0], "init") == 0) {
-            strip_leading_flags(&argc, &argv);
-            if(command_init(--argc, &argv[1]) != R_OK) {
-                return SHIORI_EXIT_COMMAND_FAILED;
-            }
-            return SHIORI_EXIT_SUCCESS;
-        }
 
         // enable debug log
         if(has_switch(argc, argv, "--debug")) {
