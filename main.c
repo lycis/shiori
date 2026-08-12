@@ -714,6 +714,11 @@ int main(int argc, char* argv[]) {
         // run any other commands
         strip_leading_flags(&argc, &argv);
 
+        if(argc == 0) {
+            log_error("No command provided.\n");
+            return SHIORI_EXIT_NO_COMMAND;
+        }
+
         char command[DEFAULT_BUFFER_SIZE];
         strcpy_s(command, sizeof(command), argv[0]);
         argc--;
