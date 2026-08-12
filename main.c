@@ -439,14 +439,18 @@ int build_daily_heading(char* buffer, size_t size) {
     return R_OK;
 }
 
-void write_note_to_file(int argc, char* argv[], FILE* note) {
-    fprintf(note, "* ");
-    for(int i=0; i<argc; ++i) {
-        fprintf(note, "%s", argv[i]);
-        if(i != argc-1) fprintf(note, " ");
+void write_item_to_file(int argc, char *argv[], FILE *file, const char *prefix) {
+    fprintf(file, "%s", prefix);
+
+    for(int i = 0; i < argc; ++i) {
+        fprintf(file, "%s", argv[i]);
+
+        if(i != argc - 1) {
+            fprintf(file, " ");
+        }
     }
-    fprintf(note, "\n");
-    return;
+
+    fprintf(file, "\n");
 }
 
 bool heading_matches(const char *line, const char *heading){
@@ -477,110 +481,168 @@ int create_file_if_not_exists(char* fname) {
     return R_OK;
 }
 
-int command_add(int argc, char* argv[]) {
-    log_debug("Adding a new note.\n");
+int add_markdown_item(int argc, char *argv[], const char *filename, const char *prefix, const char *heading) {
+    char file_path[DEFAULT_BUFFER_SIZE];
 
-    // construct our daily heading
-    char heading[32];
-    if(build_daily_heading(heading, sizeof(heading)) != R_OK) {
+    int written = snprintf(file_path, sizeof(file_path), "%s%s%s", g_config.base_dir, get_path_separator(), filename);
+    if(written < 0 || written >= (int)sizeof(file_path)) {
+        log_error("File path too long.\n");
         return R_ERROR;
     }
-    log_debug("Daily heading = %s\n", heading);
 
-    // if NOTES.MD does not exist we need to create it
-    char notes_md[DEFAULT_BUFFER_SIZE];
-    sprintf(notes_md, "%s%s%s", g_config.base_dir, get_path_separator(), "NOTES.md");
-    if(create_file_if_not_exists(notes_md) != R_OK)
+    if(create_file_if_not_exists(file_path) != R_OK) {
         return R_ERROR;
+    }
 
-    // we are going to read from NOTES.md to a temporary file
+    /*
+     * No heading means that we don't need to insert anything
+     * into the middle of the file. We can simply append.
+     */
+    if(heading == NULL) {
+        FILE *file = NULL;
+
+        errno_t err = fopen_s(&file, file_path, "a");
+        if(err != 0 || file == NULL) {
+            log_error("Failed opening %s.\n", filename);
+            return R_ERROR;
+        }
+
+        write_item_to_file(argc, argv, file, prefix);
+
+        fclose(file);
+        return R_OK;
+    }
+
+    /*
+     * With a heading we need to potentially insert into an
+     * existing block, so use the temp-file strategy.
+     */
+
     FILE *source = NULL;
-    log_debug("Opening daily note at: %s\n", notes_md);
-    errno_t err = fopen_s(&source, notes_md, "r");
-    if(err != 0  || source == NULL) {
-        log_error("Failed opening NOTES.md file.");
+
+    errno_t err = fopen_s(&source, file_path, "r");
+    if(err != 0 || source == NULL) {
+        log_error("Failed opening %s.\n", filename);
+        return R_ERROR;
+    }
+
+    char temp_path[DEFAULT_BUFFER_SIZE];
+
+    written = snprintf(temp_path, sizeof(temp_path), "%s.tmp", file_path);
+    if(written < 0 || written >= (int)sizeof(temp_path)) {
+        log_error("Temporary file path too long.\n");
+        fclose(source);
         return R_ERROR;
     }
 
     FILE *temp = NULL;
-    char temp_path[DEFAULT_BUFFER_SIZE];
-    sprintf(temp_path, "%s%s%s", g_config.base_dir, get_path_separator(), "NOTES.md.tmp");
-    log_debug("Opening temporary note file for writing at: %s\n", temp_path);
+
     err = fopen_s(&temp, temp_path, "w");
-    if(err != 0  || temp == NULL) {
-        log_error("Failed opening NOTES.md.tmp file.\n");
+    if(err != 0 || temp == NULL) {
+        log_error("Failed opening temporary file.\n");
         fclose(source);
         return R_ERROR;
     }
 
     bool found_heading = false;
-    bool note_written = false;
+    bool item_written = false;
 
     char line[DEFAULT_BUFFER_SIZE];
+
     while(fgets(line, sizeof(line), source) != NULL) {
         if(!found_heading) {
             if(heading_matches(line, heading)) {
-                log_debug("Found today's heading.\n");
+                log_debug("Found heading: %s\n", heading);
                 found_heading = true;
             }
-        } else if(!note_written && is_heading(line)) {
-            log_debug("Writing note into today's block\n");
-            write_note_to_file(argc, argv, temp);
-            note_written = true;
+        }
+        else if(!item_written && is_heading(line)) {
+            write_item_to_file(argc, argv, temp, prefix);
+            item_written = true;
         }
 
         fputs(line, temp);
     }
 
-    if(found_heading && !note_written) {
-        log_debug("Note added at end of file to existing heading.\n");
-        write_note_to_file(argc, argv, temp);
-    }
-    if(!found_heading) {
-        log_debug("Day not found yet. Adding with note.\n");
-        fprintf(temp, "\n%s\n", heading);
-        write_note_to_file(argc, argv, temp);
+    if(found_heading && !item_written) {
+        write_item_to_file(argc, argv, temp, prefix);
     }
 
-    log_debug("Closing file handles.\n");
+    if(!found_heading) {
+        fprintf(temp, "\n%s\n", heading);
+        write_item_to_file(argc, argv, temp, prefix);
+    }
+
     fclose(source);
     fclose(temp);
 
-    log_debug("backing up NOTES.md\n");
-    char nb_fname[2 * DEFAULT_BUFFER_SIZE];
-    sprintf(nb_fname, "%s.bak", notes_md);
+    /*
+     * Replace the original safely.
+     */
 
-    if(access(nb_fname, F_OK) == 0) {
-        log_debug("Removing existing notes backup.\n");
-        if(remove(nb_fname) != 0) {
-            log_error("Could not remove previous backup: %s\n", nb_fname);
+    char backup_path[DEFAULT_BUFFER_SIZE];
+
+    written = snprintf(
+        backup_path,
+        sizeof(backup_path),
+        "%s.bak",
+        file_path
+    );
+
+    if(written < 0 || written >= (int)sizeof(backup_path)) {
+        log_error("Backup file path too long.\n");
+        return R_ERROR;
+    }
+
+    if(access(backup_path, F_OK) == 0) {
+        if(remove(backup_path) != 0) {
+            log_error(
+                "Could not remove previous backup: %s\n",
+                backup_path
+            );
             return R_ERROR;
         }
     }
 
-    if(rename(notes_md, nb_fname) != 0) {
-        log_error("Failed to backup NOTES.md\n");
+    if(rename(file_path, backup_path) != 0) {
+        log_error("Failed to create backup of %s.\n", filename);
         return R_ERROR;
     }
 
-    log_debug("Renaming temporary file to NOTES.md\n");
-    if(rename(temp_path, notes_md) != 0) {
-        log_error("Failed to rename temporary notes file.\n");
+    if(rename(temp_path, file_path) != 0) {
+        log_error("Failed replacing %s.\n", filename);
 
-        log_debug("Restoring NOTES.md from backup.\n");
-        if (rename(nb_fname, notes_md) != 0) {
-            log_critical("Failed to restore NOTES.md from backup.\n");
+        if(rename(backup_path, file_path) != 0) {
+            log_critical(
+                "Failed restoring %s from backup.\n",
+                filename
+            );
         }
 
         return R_ERROR;
     }
 
-    log_debug("Deleting old NOTES.md.bak\n");
-    if(remove(nb_fname) != 0) {
-        log_warning("Failed to delete old %s\n", nb_fname);
+    if(remove(backup_path) != 0) {
+        log_warning("Failed to remove backup: %s\n", backup_path
+        );
     }
 
-    log_success("Note added.\n");
+    return R_OK;
+}
+
+int command_add(int argc, char* argv[]) {
+    log_debug("Adding new note.\n");
+    
+    char heading[32];
+    if(build_daily_heading(heading, sizeof(heading)) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(add_markdown_item(argc, argv, "NOTES.md", "* ", heading) != R_OK) {
+        return R_ERROR;
+    }
+
+    log_success("Added your note.\n");
     return R_OK;
 }
 
@@ -652,6 +714,42 @@ void print_c_standard(void)
 #endif
 }
 
+int command_todo_add(int argc, char* argv[]) {
+    log_debug("Adding a new todo.\n");
+    if(add_markdown_item(argc, argv, "TODOS.md", "* [ ] ", NULL) != R_OK) {
+        return R_ERROR;
+    }
+
+    log_success("Task noted.\n");
+    return R_OK;
+}
+
+int command_todo(int argc, char* argv[]) {
+    if(argc < 1) {
+        log_error("Please specify a todo command. Refer to --help if required.");
+        return R_ERROR;
+    }
+
+    if(has_switch(argc, argv, "--help") || has_switch(argc, argv, "-h")) {
+        printf("`%s todo` allows you to manage your personal todo list.\n", APP_NAME);
+        printf("\n");
+        printf("Subcommands:\n");
+        printf("  %-16s %s\n", "add",   "add a new todo item to the list");
+        return R_OK;
+    }
+
+    char* command = argv[0];
+    argc--;
+    argv++;
+
+    if(strcmp(command, "add") == 0) {
+        log_debug("Running `todo add` command.");
+        return command_todo_add(argc, argv);
+    }
+
+    return R_OK;
+}
+
 int run_command(char* command, int argc, char* argv[]) {
     if(strcmp(command, "version") == 0) {
          printf("%s %s\n", APP_NAME, APP_VERSION);
@@ -688,7 +786,9 @@ int run_command(char* command, int argc, char* argv[]) {
         return command_console(argc, argv);
     } else if(strcmp(command, "add") == 0) {
         return command_add(argc, argv);
-    } else {
+    } else if(strcmp(command, "todo") == 0) {
+        return command_todo(argc, argv);
+    }else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
     }
