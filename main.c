@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #define R_OK 0
 #define R_ERROR 1
@@ -41,6 +42,14 @@ void log_info(const char* fmt, ...) {
     sprintf(buffer, "ℹ️ %s", fmt);
     vfprintf(stdout, buffer, args);
     va_end(args);
+}
+
+void log_success(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buffer[DEFAULT_BUFFER_SIZE];
+    sprintf(buffer, "✔️ %s", fmt);
+    vfprintf(stdout, buffer, args);
 }
 
 int terminal_enable_utf8(void) {
@@ -95,7 +104,26 @@ int read_config_file() {
 }
 
 int command_init() {
-    // TODO implement
+    // first check current directory
+    if(access(".scratch", F_OK) == 0) {
+        log_error(".scratch already exists in current directory\n");
+        return R_ERROR;
+    }
+
+    FILE *config_file = fopen(".scratch", "w");
+    if(config_file == NULL) {
+        log_error("Error creating .scratch file in current directory\n");
+        return R_ERROR;
+    }
+
+    // write comment with generation date to file
+    time_t now = time(NULL);
+    char *date_str = ctime(&now);
+    fprintf(config_file, "# Initialized: %s", date_str);
+
+    fclose(config_file);
+
+    log_success(".scratch config file created in current directory\n");
     return 0;
 }
 
