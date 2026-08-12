@@ -9,7 +9,7 @@
     #define HAVE_FOPEN_S 0
 #endif
 
-#ifndef HAVE_FOPEN_S
+#if !HAVE_FOPEN_S
     #error "fopen_s is not available on this platform"
 #endif 
 
