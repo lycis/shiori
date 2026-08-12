@@ -5,24 +5,12 @@
 #include <stdlib.h>
 #include <time.h>
 #include "common.h"
-#include "config.h"
 #include "logging.h"
 #include "platform.h"
 #include "cli.h"
 #include "cmd_shared.h"
-
-// Datatypes
-struct todo {
-    char text[DEFAULT_BUFFER_SIZE * 2];
-    time_t created;
-    unsigned long long id;
-    enum {OPEN, IN_PROGRESS, DONE} status;
-};
-
-struct todo_metadata {
-    int version;
-    unsigned long long last_id;
-};
+#include "todo.h"
+#include "todo_list.h"
 
 // Prototypes
 int write_todo_metadata(const char *filename, const struct todo_metadata *md);
@@ -590,22 +578,12 @@ static int create_todo_from_markdown(const char* markdown, struct todo *item) {
     return R_OK;
 }
 
-static int command_todo_list(int argc, char* argv[]) {
-    log_debug("Listing todos (c=%d)\n", argc);
-    char file_path[DEFAULT_BUFFER_SIZE];
-    if(get_base_dir_file_path(TODO_FILE, file_path, sizeof(file_path)) != R_OK) {
-        return R_ERROR;
-    }
-
-    if(create_file_if_not_exists(file_path) != R_OK) {
-        return R_ERROR;
-    }
-
+static int read_todos(const char *filename, struct todo_list *list) {
     FILE *file = NULL;
 
-    errno_t err = fopen_s(&file, file_path, "r");
+    errno_t err = fopen_s(&file, filename, "r");
     if(err != 0 || file == NULL) {
-        log_error("Failed opening %s.\n", file_path);
+        log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }
 
@@ -652,10 +630,46 @@ static int command_todo_list(int argc, char* argv[]) {
             return R_ERROR;
         }
 
-        printf("item (%llu): status=%d text=%s\n", current_item.id, current_item.status, current_item.text);
+        if(todo_list_add(list, &current_item) != R_OK) {
+            fclose(file);
+            return R_ERROR;
+        }
     }
 
     fclose(file);
+    return R_OK;
+}
+
+static int command_todo_list(int argc, char* argv[]) {
+    log_debug("Listing todos (c=%d)\n", argc);
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(TODO_FILE, file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(create_file_if_not_exists(file_path) != R_OK) {
+        return R_ERROR;
+    }
+
+    struct todo_list todos;
+    todo_list_init(&todos);
+
+    if(read_todos(file_path, &todos) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    for(size_t i = 0; i < todos.count; ++i) {
+        struct todo *item = &todos.items[i];
+        printf(
+            "%llu: status=%d text=%s\n",
+            item->id,
+            item->status,
+            item->text
+        );
+    }
+
+    todo_list_free(&todos);
     return R_OK;
 }
 
