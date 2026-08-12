@@ -243,10 +243,18 @@ int command_config(int argc, char* argv[]) {
         return R_ERROR;
     }
 
+    if(has_switch(argc, argv, "--help") || has_switch(argc, argv, "-h")) {
+        printf("Allows you to view and manage the config file.\n");
+        printf("\n");
+        printf("Available config commands:\n");
+        printf("  show: Show the current config version\n");
+        return R_OK;
+    }
+
     if(strcmp(argv[0], "show") == 0) {
         printf("version: %d\n", g_config.version);
     } else {
-        log_error("Unknown config command: %s\n", argv[0]);
+        log_error("Unknown config command. See --help\n", argv[0]);
         return R_ERROR;
     }
 
