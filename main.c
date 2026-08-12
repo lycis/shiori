@@ -68,6 +68,25 @@ void log_error(const char* fmt, ...) {
     va_end(args);
 }
 
+void log_critical(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buffer[DEFAULT_BUFFER_SIZE];
+    sprintf(buffer, "🤯 %s", fmt);
+    vfprintf(stderr, buffer, args);
+    va_end(args);
+}
+
+void log_warning(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buffer[DEFAULT_BUFFER_SIZE];
+    sprintf(buffer, "⚠️ %s", fmt);
+    vfprintf(stderr, buffer, args);
+    va_end(args);
+}
+
+
 void log_info(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
@@ -397,8 +416,9 @@ int build_daily_heading(char* buffer, size_t size) {
         return R_ERROR;
     }
 
-    if(snprintf(buffer, size, "# %s", date_str) >= (int)size) {
-        log_error("Daily heading buffer too small.");
+    int written = snprintf(buffer, size, "# %s", date_str);
+    if(written < 0 || written >= (int)size) {
+        log_critical("Daily heading buffer too small.");
         return R_ERROR;
     }
 
@@ -515,6 +535,15 @@ int command_add(int argc, char* argv[]) {
     log_debug("backing up NOTES.md\n");
     char nb_fname[2 * DEFAULT_BUFFER_SIZE];
     sprintf(nb_fname, "%s.bak", notes_md);
+
+    if(access(nb_fname, F_OK) == 0) {
+        log_debug("Removing existing notes backup.\n");
+        if(remove(nb_fname) != 0) {
+            log_error("Could not remove previous backup: %s\n", nb_fname);
+            return R_ERROR;
+        }
+    }
+
     if(rename(notes_md, nb_fname) != 0) {
         log_error("Failed to backup NOTES.md\n");
         return R_ERROR;
@@ -523,13 +552,18 @@ int command_add(int argc, char* argv[]) {
     log_debug("Renaming temporary file to NOTES.md\n");
     if(rename(temp_path, notes_md) != 0) {
         log_error("Failed to rename temporary notes file.\n");
+
+        log_debug("Restoring NOTES.md from backup.\n");
+        if (rename(nb_fname, notes_md) != 0) {
+            log_critical("Failed to restore NOTES.md from backup.\n");
+        }
+
         return R_ERROR;
     }
 
     log_debug("Deleting old NOTES.md.bak\n");
     if(remove(nb_fname) != 0) {
-        log_error("Failed to delete old %s\n", nb_fname);
-        return R_ERROR;
+        log_warning("Failed to delete old %s\n", nb_fname);
     }
 
     log_success("Note added.\n");
