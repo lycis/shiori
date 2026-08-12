@@ -378,8 +378,20 @@ int run_command(char* command, int argc, char* argv[]) {
 
     if(strcmp(command, "config") == 0) {
         return command_config(argc, argv);
-    } else if (strcmp(command, "console") == 0) {
+    } else if(strcmp(command, "console") == 0) {
         return command_console(argc, argv);
+    } else if(strcmp(command, "help") == 0) {
+        printf("scratch is a console scratchpad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.");
+        printf("usage: scratch [options] <command> [options] [subcommand] ...\n");
+        printf("\n");
+        printf("Options:\n");
+        printf("  %-16s %s\n", "--debug", "Show debug and plumbing output.");
+        printf("\n");
+        printf("Available commands:\n");
+        printf("  %-16s %s\n", "init",   "Initialize a new scratch configuration");
+        printf("  %-16s %s\n", "config", "Show or modify configuration");
+        printf("  %-16s %s\n", "add",    "Add a new note or thought to the day");
+        printf("  %-16s %s\n", "help",   "Show this help");
     } else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
