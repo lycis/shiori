@@ -611,7 +611,7 @@ int main(int argc, char* argv[]) {
         argv++;
 
         // check for init command
-        if(strcmp(argv[1], "init") == 0) {
+        if(strcmp(argv[0], "init") == 0) {
             strip_leading_flags(&argc, &argv);
             if(command_init(--argc, &argv[1]) != R_OK) {
                 return EXIT_COMMAND_FAILED;
