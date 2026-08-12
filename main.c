@@ -17,6 +17,8 @@
 #include <string.h>
 #include <time.h>
 #include <stdbool.h>
+#include <stdarg.h>
+#include <ctype.h>
 
 #define R_OK 0
 #define R_ERROR 1
@@ -62,61 +64,62 @@ bool g_debug_enabled = false;
 
 // --------------------- GLobals
 
-void log_error(const char* fmt, ...) {
+static void log_v(FILE *stream, const char *prefix, const char *fmt, va_list args)
+{
+    fputs(prefix, stream);
+    vfprintf(stream, fmt, args);
+}
+
+void log_error(const char *fmt, ...)
+{
     va_list args;
     va_start(args, fmt);
-    char buffer[DEFAULT_BUFFER_SIZE];
-    sprintf(buffer, "❌ %s", fmt);
-    vfprintf(stderr, buffer, args);
+    log_v(stderr, "❌ ", fmt, args);
     va_end(args);
 }
 
-void log_critical(const char* fmt, ...) {
+void log_critical(const char *fmt, ...)
+{
     va_list args;
     va_start(args, fmt);
-    char buffer[DEFAULT_BUFFER_SIZE];
-    sprintf(buffer, "🤯 %s", fmt);
-    vfprintf(stderr, buffer, args);
+    log_v(stderr, "🤯 ", fmt, args);
     va_end(args);
 }
 
-void log_warning(const char* fmt, ...) {
+void log_warning(const char *fmt, ...)
+{
     va_list args;
     va_start(args, fmt);
-    char buffer[DEFAULT_BUFFER_SIZE];
-    sprintf(buffer, "⚠️ %s", fmt);
-    vfprintf(stderr, buffer, args);
+    log_v(stderr, "⚠️ ", fmt, args);
     va_end(args);
 }
 
-
-void log_info(const char* fmt, ...) {
+void log_info(const char *fmt, ...)
+{
     va_list args;
     va_start(args, fmt);
-    char buffer[DEFAULT_BUFFER_SIZE];
-    sprintf(buffer, "ℹ️ %s", fmt);
-    vfprintf(stdout, buffer, args);
+    log_v(stdout, "ℹ️ ", fmt, args);
     va_end(args);
 }
 
-void log_success(const char* fmt, ...) {
+void log_success(const char *fmt, ...)
+{
     va_list args;
     va_start(args, fmt);
-    char buffer[DEFAULT_BUFFER_SIZE];
-    sprintf(buffer, "✔️ %s", fmt);
-    vfprintf(stdout, buffer, args);
+    log_v(stdout, "✔️ ", fmt, args);
+    va_end(args);
 }
 
-void log_debug(const char* fmt, ...) {
-    if(!g_debug_enabled) {
+void log_debug(const char *fmt, ...)
+{
+    if (!g_debug_enabled) {
         return;
     }
 
     va_list args;
     va_start(args, fmt);
-    char buffer[DEFAULT_BUFFER_SIZE];
-    sprintf(buffer, "[debug] %s", fmt);
-    vfprintf(stdout, buffer, args);
+    log_v(stdout, "[debug] ", fmt, args);
+    va_end(args);
 }
 
 char *trim(char *str)
