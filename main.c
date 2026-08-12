@@ -118,7 +118,8 @@ int command_init() {
 
     // write comment with generation date to file
     time_t now = time(NULL);
-    char *date_str = ctime(&now);
+    char date_str[26]; // ctime_s requires a buffer of at least 26 bytes
+    ctime_s(date_str, 26, &now);
     fprintf(config_file, "# Initialized: %s", date_str);
 
     fclose(config_file);
