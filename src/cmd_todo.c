@@ -848,8 +848,9 @@ int command_todo(int argc, char* argv[]) {
         printf("`%s todo` allows you to manage your personal todo list.\n", APP_NAME);
         printf("\n");
         printf("Subcommands:\n");
-        printf("  %-16s %s\n", "add",   "add a new todo item to the list");
+        printf("  %-16s %s\n", "add <text>",   "add a new todo item to the list");
         printf("  %-16s %s\n", "list",  "get a list of your todos that can be filtered");
+        printf("  %-16s %s\n", "start <id>",  "move the item with the id in progress");
         return R_OK;
     }
 
@@ -862,6 +863,9 @@ int command_todo(int argc, char* argv[]) {
         return command_todo_add(argc, argv);
     } else if(strcmp(command, "list") == 0) {
         return command_todo_list(argc, argv);
+    } else {
+        log_error("Invalid `todo` command. See --help for reference.");
+        return R_ERROR;
     }
 
     return R_OK;
