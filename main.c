@@ -1,6 +1,122 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
-int main() {
-    printf("Hello, World!\n");
+#define R_OK 0
+#define R_ERROR 1
+
+#define DEFAULT_BUFFER_SIZE 2048
+
+#ifdef _WIN32
+#include <io.h>
+#include <windows.h>
+#define access _access
+#define F_OK 0
+#endif
+
+#ifdef __linux__
+#include <unistd.h>
+#include <locale.h>
+#include <langinfo.h>
+#endif
+
+void log_error(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buffer[DEFAULT_BUFFER_SIZE];
+    sprintf(buffer, "❌ %s", fmt);
+    vfprintf(stderr, buffer, args);
+    va_end(args);
+}
+
+void log_info(const char* fmt, ...) {
+    va_list args;
+    va_start(args, fmt);
+    char buffer[DEFAULT_BUFFER_SIZE];
+    sprintf(buffer, "ℹ️ %s", fmt);
+    vfprintf(stdout, buffer, args);
+    va_end(args);
+}
+
+int terminal_enable_utf8(void) {
+    #ifdef _WIN32
+    if(GetConsoleOutputCP() == CP_UTF8) {
+        return R_OK;
+    }
+
+    return SetConsoleOutputCP(CP_UTF8) ? R_OK : R_ERROR;
+    #else
+     setlocale(LC_CTYPE, "");
+
+    const char *encoding = nl_langinfo(CODESET);
+
+    return strcmp(encoding, "UTF-8") == 0 ||
+           strcmp(encoding, "UTF8") == 0;
+    #endif
+}
+
+
+
+void get_user_home(char* buffer, size_t size) {
+    #ifdef _WIN32
+    if(_dupenv_s(&buffer, &size, "USERPROFILE") != 0) {
+        log_error("Error getting USERPROFILE environment variable\n");
+        exit(EXIT_FAILURE);
+    }
+    #else
+    #error "get_user_home is only implemented for Windows"
+    #endif
+}
+
+int read_config_file() {
+    // first check current directory
+    if(access(".stratch", F_OK) == 0) {
+        log_error("Found .stratch in current directory\n");
+        return R_OK;
+    }
+
+    char user_home[DEFAULT_BUFFER_SIZE];
+    get_user_home(user_home, sizeof(user_home));
+
+    char buffer[DEFAULT_BUFFER_SIZE];
+    sprintf(buffer, "%s/.scratch", user_home);
+    if(access(buffer, F_OK) == 0) {
+        log_error("Found .scratch in user home directory\n");
+        return R_OK;
+    }
+
+    log_error(".scratch config file not found. please run `scratch init` first.\n");
+    return R_ERROR;
+}
+
+int command_init() {
+    // TODO implement
     return 0;
+}
+
+#define EXIT_SUCCESS 0
+#define EXIT_CONFIG_ERROR 1
+#define EXIT_NO_COMMAND 2
+#define EXIT_COMMAND_FAILED 3
+int main(int argc, char* argv[]) {
+    terminal_enable_utf8();
+
+    if(argc > 1) {
+        if(strcmp(argv[1], "init") == 0) {
+            if(command_init() != R_OK) {
+                return EXIT_COMMAND_FAILED;
+            }
+
+            return EXIT_SUCCESS;
+        }
+    } else {
+        log_error("No command provided. Please provide a command.\n");
+        return EXIT_NO_COMMAND;
+    }
+
+    if(read_config_file() != R_OK) {
+        return EXIT_CONFIG_ERROR;
+    }
+    
+    return EXIT_SUCCESS;
 }
