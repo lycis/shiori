@@ -207,7 +207,6 @@ char* get_current_path(char *buffer, size_t size) {
 }
 
 int read_config_file() {
-    char* cf_file_path = CONFIG_FILE_NAME;
     char config_path[DEFAULT_BUFFER_SIZE];
 
     if(access(CONFIG_FILE_NAME, F_OK) == 0) {
@@ -229,7 +228,7 @@ int read_config_file() {
     }
 
     FILE *config_file = NULL;
-    errno_t err = fopen_s(&config_file, cf_file_path, "r");
+    errno_t err = fopen_s(&config_file, config_path, "r");
     if(err != 0 || config_file == NULL) {
         log_error("Error opening %S file\n", CONFIG_FILE_NAME);
         return R_ERROR;
