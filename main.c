@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <stdbool.h>
 
 #define R_OK 0
 #define R_ERROR 1
@@ -26,6 +27,8 @@
 #define EXIT_CONFIG_ERROR 1
 #define EXIT_NO_COMMAND 2
 #define EXIT_COMMAND_FAILED 3
+
+#define CONFIG_VERSION 1
 
 #ifdef _WIN32
 #include <io.h>
@@ -117,11 +120,27 @@ int read_config_file() {
     return R_ERROR;
 }
 
+bool has_switch(int argc, char* argv[], const char *sw) {
+    for(int i = 0; i < argc; ++i) {
+        if(strcmp(argv[i], sw) == 0) return true;
+    }
+    return false;
+}
+
 int command_init(int argc, char* argv[]) {
-    // first check current directory
-    if(access(".scratch", F_OK) == 0) {
-        log_error(".scratch already exists in current directory\n");
-        return R_ERROR;
+    bool config_exists = access(".scratch", F_OK) == 0;
+
+    // check if there is already a config
+    if(!has_switch(argc, argv, "--reinit")) {
+        if(config_exists) {
+            log_error(".scratch already exists in current directory\n");
+            printf("If you want to reinitialize, please delete the existing .scratch file first or specify --reinit.\n");
+            return R_ERROR;
+        }
+    }
+
+    if(config_exists) {
+        log_info("Reinitializing .scratch config in current directory.\n");
     }
 
     FILE *config_file = NULL;
@@ -156,7 +175,7 @@ int main(int argc, char* argv[]) {
 
     if(argc > 1) {
         if(strcmp(argv[1], "init") == 0) {
-            if(command_init(argc, argv) != R_OK) {
+            if(command_init(--argc, &argv[1]) != R_OK) {
                 return EXIT_COMMAND_FAILED;
             }
             return EXIT_SUCCESS;
