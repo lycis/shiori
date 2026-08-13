@@ -15,7 +15,7 @@ int command_add(int argc, char* argv[]) {
 
     // let's build our note string
     for(int i = 0; i < argc; ++i) {
-        if(strcmp(argv[i], "--topic") == 0) {
+        if(strcmp(argv[i], "--topic") == 0 || strcmp(argv[i], "-t") == 0) {
             if(i + 1 >= argc) {
                 log_error("--topic requires a topic name.\n");
                 return R_ERROR;
