@@ -5,6 +5,7 @@
 
 void strip_leading_flags(int *argc, char ***argv);
 bool has_switch(int argc, char *argv[], const char *sw, bool allow_subcommands);
+void print_divider(size_t width);
 
 #define ANSI_BOLD  "\x1b[1m"
 #define ANSI_RESET "\x1b[0m"

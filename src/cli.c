@@ -1,5 +1,7 @@
 #include <stdbool.h>
 #include <string.h>
+#include <stdio.h>
+#include "cli.h"
 
 void strip_leading_flags(int *argc, char ***argv)
 {
@@ -35,4 +37,14 @@ bool has_switch(int argc, char *argv[], const char *sw, bool allow_subcommands){
     }
 
     return false;
+}
+
+void print_divider(size_t width) {
+    printf(ANSI_FG_RGB(90, 105, 120));
+
+    for(size_t i = 0; i < width; ++i) {
+        printf("─");
+    }
+
+    printf(ANSI_RESET "\n");
 }
