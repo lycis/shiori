@@ -19,6 +19,7 @@
 #define TODO_FILE "TODOS.md"
 
 #include <time.h>
+#include <stdbool.h>
 
 char *trim(char *str);
 int create_file_if_not_exists(char* fname);

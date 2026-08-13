@@ -53,6 +53,57 @@ int note_list_add(
     return R_OK;
 }
 
+static int create_note_from_markdown(const char *markdown, time_t created,struct note *item) {
+    const char *topic_tag = strstr(markdown, "#shiori/topic/");
+
+    item->created = created;
+    item->topic[0] = '\0';
+
+    size_t text_len = topic_tag != NULL
+        ? (size_t)(topic_tag - markdown)
+        : strlen(markdown);
+
+    while(text_len > 0 &&
+          (markdown[text_len - 1] == ' ' ||
+           markdown[text_len - 1] == '\t')) {
+        text_len--;
+    }
+
+    if(text_len >= sizeof(item->text)) {
+        log_error("Note text is too long.");
+        return R_ERROR;
+    }
+
+    memcpy(item->text, markdown, text_len);
+    item->text[text_len] = '\0';
+
+    if(topic_tag != NULL) {
+        const char *topic = topic_tag + strlen("#shiori/topic/");
+
+        size_t topic_len = 0;
+
+        while(topic[topic_len] != '\0' &&
+              topic[topic_len] != ' ' &&
+              topic[topic_len] != '\t' &&
+              topic[topic_len] != '\r' &&
+              topic[topic_len] != '\n') {
+            topic_len++;
+        }
+
+        if(topic_len >= sizeof(item->topic)) {
+            log_error("Topic name is too long.");
+            return R_ERROR;
+        }
+
+        memcpy(item->topic, topic, topic_len);
+        item->topic[topic_len] = '\0';
+    } else {
+        memset(item->topic, 0, 1); // set topic to nothing
+    }
+
+    return R_OK;
+}
+
 
 int read_notes_for_date(const char *filename, const time_t date, struct note_list *list) {
     FILE *file = open_base_dir_file(filename, "r");
@@ -120,11 +171,8 @@ int read_notes_for_date(const char *filename, const time_t date, struct note_lis
 
         struct note item = {0};
 
-        // notes in the block share the same creation date
-        item.created = date;
-
-        if(strcpy_s(item.text, sizeof(item.text), current) != 0) {
-            log_error("Note on line %u is too long.\n", line_number);
+        if(create_note_from_markdown(current, date, &item) != R_OK) {
+            log_error("Failed parsing note on line %u.\n", line_number);
             fclose(file);
             return R_ERROR;
         }

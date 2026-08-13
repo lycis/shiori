@@ -7,6 +7,7 @@
 
 struct note {
     char text[DEFAULT_BUFFER_SIZE * 2];
+    char topic[DEFAULT_BUFFER_SIZE];
     time_t created;
 };
 

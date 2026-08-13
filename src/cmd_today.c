@@ -168,7 +168,14 @@ int command_today(int argc, char* argv[]) {
     }
 
     for(size_t i = 0; i < note_list.count; ++i) {
-        printf("    • %s\n", note_list.items[i].text);
+        char topic[DEFAULT_BUFFER_SIZE];
+        if(strlen(note_list.items[i].topic) > 0) {
+            sprintf(topic, ANSI_FG_RGB(180, 140, 255) " [%s]" ANSI_RESET, note_list.items[i].topic);
+        } else {
+            sprintf(topic, "");
+        }
+
+        printf("    • %-60s%s\n", note_list.items[i].text, topic);
     }
 
     note_list_free(&note_list);
