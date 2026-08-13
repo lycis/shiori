@@ -2,6 +2,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <time.h>
+#include <stdbool.h>
 #include "logging.h"
 #include "platform.h"
 #include "common.h"
@@ -41,7 +42,7 @@ int create_file_if_not_exists(char* fname) {
         return R_ERROR;
     }
 
-    log_success("Created %s\n", fname);
+    if(!str_ends_with(fname, ".tmp")) log_success("Created %s\n", fname);
     fclose(f);
     return R_OK;
 }
@@ -107,4 +108,22 @@ int build_daily_heading(char* buffer, size_t size, time_t date) {
     }
 
     return R_OK;
+}
+
+bool str_ends_with(const char *str, const char *suffix) {
+    if(str == NULL || suffix == NULL) {
+        return false;
+    }
+
+    size_t str_len = strlen(str);
+    size_t suffix_len = strlen(suffix);
+
+    if(suffix_len > str_len) {
+        return false;
+    }
+
+    return strcmp(
+        str + str_len - suffix_len,
+        suffix
+    ) == 0;
 }
