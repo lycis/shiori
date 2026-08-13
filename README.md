@@ -93,6 +93,19 @@ Expect sharp edges, changing configuration options, and the occasional fox footp
 
 ## Quick start
 
+### Download the standalone executable
+
+Every successful GitHub Actions build publishes a `shiori-windows-x64`
+artifact containing `shiori.exe`. Download the artifact, extract it, and run:
+
+```console
+.\shiori.exe help
+```
+
+The release executable statically links the C runtime. It does not require a
+separate Visual C++ Redistributable or any third-party DLLs; it only uses DLLs
+provided by Windows itself.
+
 ### 1. Build Shiori
 
 Clone the repository and build it manually.

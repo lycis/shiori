@@ -26,7 +26,29 @@ jobs:
         shell: pwsh
         run: |
           $sources = Get-ChildItem src -Filter *.c | ForEach-Object FullName
-          clang -std=c23 -Wall -Wextra -Wpedantic -O2 $sources -o shiori.exe
+          clang -std=c23 -Wall -Wextra -Wpedantic -O2 -fms-runtime-lib=static $sources -o shiori.exe
+
+      - name: Verify self-contained runtime
+        shell: pwsh
+        run: |
+          $imports = llvm-objdump -p shiori.exe |
+            Select-String 'DLL Name:' |
+            ForEach-Object { ($_ -split 'DLL Name:')[1].Trim() }
+          $imports | ForEach-Object { Write-Host "Imports: $_" }
+
+          $runtimeDlls = $imports | Where-Object {
+            $_ -match '^(ucrtbase|vcruntime\d*|msvcp\d*|api-ms-win-crt-.+)\.dll$'
+          }
+          if ($runtimeDlls) {
+            throw "Release depends on dynamically linked C/C++ runtime DLLs: $($runtimeDlls -join ', ')"
+          }
 
       - name: Smoke-check executable
         run: .\shiori.exe version
+
+      - name: Upload standalone executable
+        uses: actions/upload-artifact@v6
+        with:
+          name: shiori-windows-x64
+          path: shiori.exe
+          if-no-files-found: error

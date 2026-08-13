@@ -3,6 +3,7 @@ CPPFLAGS := -Isrc
 CFLAGS := -std=c23 -Wall -Wextra -Wpedantic
 DEBUGFLAGS := -O0 -gdwarf-4
 RELEASEFLAGS := -O2
+LDFLAGS :=
 
 SOURCE_DIR := src
 BUILD_DIR := build
@@ -16,6 +17,10 @@ DEPENDENCIES := $(DEBUG_OBJECTS:.o=.d) $(RELEASE_OBJECTS:.o=.d)
 
 ifeq ($(OS),Windows_NT)
     EXE := .exe
+    # Link the MSVC C runtime into shiori.exe. Windows system DLLs such as
+    # KERNEL32.dll remain normal operating-system dependencies.
+    CFLAGS += -fms-runtime-lib=static
+    LDFLAGS += -fms-runtime-lib=static
     MKDIR = if not exist "$(subst /,\,$1)" mkdir "$(subst /,\,$1)"
     COPY_TARGET = copy /Y "$(subst /,\,$1)" "$(TARGET)" >NUL
     RM_BUILD = if exist "$(subst /,\,$(BUILD_DIR))" rmdir /S /Q "$(subst /,\,$(BUILD_DIR))"
@@ -43,10 +48,10 @@ release: $(RELEASE_BINARY)
 	@$(call COPY_TARGET,$<)
 
 $(DEBUG_BINARY): $(DEBUG_OBJECTS)
-	$(CC) $(DEBUG_OBJECTS) -o $@
+	$(CC) $(DEBUG_OBJECTS) $(LDFLAGS) -o $@
 
 $(RELEASE_BINARY): $(RELEASE_OBJECTS)
-	$(CC) $(RELEASE_OBJECTS) -o $@
+	$(CC) $(RELEASE_OBJECTS) $(LDFLAGS) -o $@
 
 $(DEBUG_DIR)/%.o: $(SOURCE_DIR)/%.c
 	@$(call MKDIR,$(@D))
