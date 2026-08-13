@@ -14,3 +14,4 @@ Here are some ideas for later:
 * priorities
 * due dates
 * tracking of start and completion date
+* comments for ideas (as sub bullets?)

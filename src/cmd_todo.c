@@ -432,61 +432,99 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     return R_OK;
 }
 
-int write_todo(char *filename, struct todo *item) {
-    log_debug("Starting to write todo.\n");
-
-    char tag_id[DEFAULT_BUFFER_SIZE];
-    char tag_created[DEFAULT_BUFFER_SIZE];
-    char tag_due[DEFAULT_BUFFER_SIZE];
-
-    char *argv[8];
-    int argc = 0;
-
-    // first always comes the todo text
-    argv[argc++] = item->text;
-
-    // id is next
-    int written = snprintf(tag_id, sizeof(tag_id), "#%s/id/%llu", APP_NAME, item->id);
-    if(written < 0 || (size_t)written >= sizeof(tag_id)) {
-        log_critical("Failed to build todo ID tag.\n");
-        return R_ERROR;
-    }
-
-    argv[argc++] = tag_id;
-
-    // Creation date
+static int write_todo_markdown(FILE *file, const struct todo *item) {
     char created_date[11];
 
-    if(format_date(item->created, created_date, sizeof(created_date) ) != R_OK) {
+    if(format_date(
+        item->created,
+        created_date,
+        sizeof(created_date)
+    ) != R_OK) {
         return R_ERROR;
     }
 
-    written = snprintf(tag_created, sizeof(tag_created), "#%s/created/%s",  APP_NAME,created_date);
-    if(written < 0 || (size_t)written >= sizeof(tag_created)) {
-        log_critical("Failed to build todo created tag.\n");
+    if(fprintf(
+        file,
+        "* [%s] %s #%s/id/%llu #%s/created/%s",
+        todo_status_mark(item->status),
+        item->text,
+        APP_NAME,
+        item->id,
+        APP_NAME,
+        created_date
+    ) < 0) {
+        log_error(
+            "Failed writing todo %llu.\n",
+            item->id
+        );
         return R_ERROR;
     }
 
-    argv[argc++] = tag_created;
-
-   // optional: due date
     if(item->due != 0) {
         char due_date[11];
 
-        if(format_date(item->due, due_date, sizeof(due_date)) != R_OK) {
+        if(format_date(
+            item->due,
+            due_date,
+            sizeof(due_date)
+        ) != R_OK) {
             return R_ERROR;
         }
 
-        written = snprintf(tag_due,sizeof(tag_due), "#%s/due/%s", APP_NAME, due_date);
-        if(written < 0 || (size_t)written >= sizeof(tag_due)) {
-            log_critical("Failed to build todo due tag.\n");
+        if(fprintf(
+            file,
+            " #%s/due/%s",
+            APP_NAME,
+            due_date
+        ) < 0) {
+            log_error(
+                "Failed writing due date for todo %llu.\n",
+                item->id
+            );
             return R_ERROR;
         }
-
-        argv[argc++] = tag_due;
     }
 
-    return add_markdown_item(argc, argv, filename,"* [ ] ",NULL);
+    if(fputc('\n', file) == EOF) {
+        log_error(
+            "Failed finishing todo %llu.\n",
+            item->id
+        );
+        return R_ERROR;
+    }
+
+    return R_OK;
+}
+
+int write_todo(char *filename, struct todo *item)
+{
+    FILE *file = NULL;
+
+    errno_t err = fopen_s(
+        &file,
+        filename,
+        "a"
+    );
+
+    if(err != 0 || file == NULL) {
+        log_error(
+            "Failed opening %s.\n",
+            filename
+        );
+        return R_ERROR;
+    }
+
+    int result = write_todo_markdown(file, item);
+
+    if(fclose(file) != 0) {
+        log_error(
+            "Failed closing %s.\n",
+            filename
+        );
+        return R_ERROR;
+    }
+
+    return result;
 }
 
 int command_todo_add(int argc, char* argv[]) {
@@ -734,6 +772,7 @@ static int parse_todo_id(const char *value, unsigned long long *id)
     return R_OK;
 }
 
+
 int write_todo_list(
     const char *filename,
     const struct todo_list *list,
@@ -768,7 +807,11 @@ int write_todo_list(
 
     FILE *temp = NULL;
 
-    errno_t err = fopen_s(&temp, temp_path, "w");
+    errno_t err = fopen_s(
+        &temp,
+        temp_path,
+        "w"
+    );
 
     if(err != 0 || temp == NULL) {
         log_error("Failed opening temporary TODO file.\n");
@@ -794,55 +837,16 @@ int write_todo_list(
     }
 
     /*
-     * Write all todos.
+     * Write all todos using the shared serializer.
      */
     for(size_t i = 0; i < list->count; ++i) {
-        const struct todo *item = &list->items[i];
-
-        struct tm local_time;
-
-        if(localtime_s(&local_time, &item->created) != 0) {
-            log_error(
-                "Failed converting creation time for todo %llu.\n",
-                item->id
-            );
-
-            fclose(temp);
-            remove(temp_path);
-            return R_ERROR;
-        }
-
-        char date[11];
-
-        if(strftime(
-            date,
-            sizeof(date),
-            "%Y-%m-%d",
-            &local_time
-        ) == 0) {
-            log_error(
-                "Failed formatting creation date for todo %llu.\n",
-                item->id
-            );
-
-            fclose(temp);
-            remove(temp_path);
-            return R_ERROR;
-        }
-
-        if(fprintf(
+        if(write_todo_markdown(
             temp,
-            "* [%s] %s #%s/id/%llu #%s/created/%s\n",
-            todo_status_mark(item->status),
-            item->text,
-            APP_NAME,
-            item->id,
-            APP_NAME,
-            date
-        ) < 0) {
+            &list->items[i]
+        ) != R_OK) {
             log_error(
                 "Failed writing todo %llu.\n",
-                item->id
+                list->items[i].id
             );
 
             fclose(temp);
@@ -879,16 +883,23 @@ int write_todo_list(
      * Back up current file.
      */
     if(rename(filename, backup_path) != 0) {
-        log_error("Failed backing up %s.\n", filename);
+        log_error(
+            "Failed backing up %s.\n",
+            filename
+        );
+
         remove(temp_path);
         return R_ERROR;
     }
 
     /*
-     * Replace it with the new file.
+     * Replace original with new file.
      */
     if(rename(temp_path, filename) != 0) {
-        log_error("Failed replacing %s.\n", filename);
+        log_error(
+            "Failed replacing %s.\n",
+            filename
+        );
 
         if(rename(backup_path, filename) != 0) {
             log_critical(
@@ -1011,10 +1022,11 @@ static int command_todo_reopen(int argc, char* argv[]) {
     return R_OK;
 }
 
-static int command_todo_rewrite(int argc, char *argv[]) {
+static int command_todo_rewrite(int argc, char *argv[])
+{
     if(argc < 2) {
         log_error(
-            "You must specify a task id and new text for a rewrite.\n"
+            "You must specify a task id and something to change.\n"
         );
         return R_ERROR;
     }
@@ -1022,6 +1034,64 @@ static int command_todo_rewrite(int argc, char *argv[]) {
     unsigned long long id;
 
     if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    /*
+     * Parse arguments.
+     *
+     * Text is optional.
+     * Due date is optional.
+     */
+    time_t new_due = 0;
+    bool due_changed = false;
+
+    char *text_argv[argc - 1];
+    int text_argc = 0;
+
+    for(int i = 1; i < argc; ++i) {
+        if(strcmp(argv[i], "--due") == 0 ||
+           strcmp(argv[i], "-d") == 0) {
+
+            if(i + 1 >= argc) {
+                log_error(
+                    "%s requires a due date.\n",
+                    argv[i]
+                );
+                return R_ERROR;
+            }
+
+            const char *due_arg = argv[i + 1];
+
+            if(strcmp(due_arg, "none") == 0) {
+                new_due = 0;
+            }
+            else if(parse_date_arg(
+                due_arg,
+                &new_due
+            ) != R_OK) {
+                return R_ERROR;
+            }
+
+            due_changed = true;
+
+            log_debug(
+                "New due date detected: %s\n",
+                due_arg
+            );
+
+            i++; // skip value
+            continue;
+        }
+
+        text_argv[text_argc++] = argv[i];
+    }
+
+    /*
+     * ID alone does not constitute a rewrite.
+     */
+    if(text_argc == 0 && !due_changed) {
+        log_error("Nothing to rewrite.\n");
         return R_ERROR;
     }
 
@@ -1041,7 +1111,9 @@ static int command_todo_rewrite(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    // Load todos
+    /*
+     * Load todos.
+     */
     struct todo_list todos;
     todo_list_init(&todos);
 
@@ -1050,68 +1122,164 @@ static int command_todo_rewrite(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    // find our target
-    struct todo *item = todo_list_find_by_id(&todos, id);
+    /*
+     * Find target.
+     */
+    struct todo *item =
+        todo_list_find_by_id(&todos, id);
 
     if(item == NULL) {
-        log_error("Todo %llu not found.\n", id);
+        log_error(
+            "Todo %llu not found.\n",
+            id
+        );
+
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    // let's preserve the old text for logging
+    /*
+     * Preserve old values for logging.
+     */
     char old_text[sizeof(item->text)];
 
-    errno_t err = strcpy_s(
+    if(strcpy_s(
         old_text,
         sizeof(old_text),
         item->text
-    );
+    ) != 0) {
+        log_critical(
+            "Failed to preserve old todo text.\n"
+        );
 
-    if(err != 0) {
-        log_critical("Failed to preserve old todo text.\n");
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    // first argument is the ID, everything else is text
-    if(build_text_from_args(
-        argc - 1,
-        &argv[1],
-        item->text,
-        sizeof(item->text)
+    time_t old_due = item->due;
+
+    /*
+     * Update text, if provided.
+     */
+    if(text_argc > 0) {
+        if(build_text_from_args(
+            text_argc,
+            text_argv,
+            item->text,
+            sizeof(item->text)
+        ) != R_OK) {
+            todo_list_free(&todos);
+            return R_ERROR;
+        }
+
+        log_debug(
+            "Rewriting todo %llu text: '%s' -> '%s'\n",
+            id,
+            old_text,
+            item->text
+        );
+    }
+
+    /*
+     * Update due date, if requested.
+     */
+    if(due_changed) {
+        item->due = new_due;
+
+        if(new_due == 0) {
+            log_debug(
+                "Removing due date from todo %llu.\n",
+                id
+            );
+        }
+        else {
+            char due_date[11];
+
+            if(format_date(
+                new_due,
+                due_date,
+                sizeof(due_date)
+            ) != R_OK) {
+                todo_list_free(&todos);
+                return R_ERROR;
+            }
+
+            log_debug(
+                "Setting due date of todo %llu to %s.\n",
+                id,
+                due_date
+            );
+        }
+    }
+
+    /*
+     * Preserve file metadata.
+     */
+    struct todo_metadata md;
+
+    if(read_todo_metadata(
+        file_path,
+        &md
     ) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    log_debug(
-        "Rewriting todo %llu: '%s' -> '%s'\n",
-        id,
-        old_text,
-        item->text
-    );
-
-    // read and preserve metadata
-    struct todo_metadata md;
-
-    if(read_todo_metadata(file_path, &md) != R_OK) {
+    /*
+     * Save modified list.
+     */
+    if(write_todo_list(
+        file_path,
+        &todos,
+        &md
+    ) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    // and save the new list
-    if(write_todo_list(file_path, &todos, &md) != R_OK) {
-        todo_list_free(&todos);
-        return R_ERROR;
+    /*
+     * Success output depending on what changed.
+     */
+    if(text_argc > 0 && due_changed) {
+        log_success(
+            "Updated todo %llu text and due date.\n",
+            id
+        );
+    }
+    else if(text_argc > 0) {
+        log_success(
+            "Rewrote todo %llu: \"%s\" -> \"%s\"\n",
+            id,
+            old_text,
+            item->text
+        );
+    }
+    else if(new_due == 0) {
+        log_success(
+            "Removed due date from todo %llu.\n",
+            id
+        );
+    }
+    else {
+        char due_date[11];
+
+        if(format_date(
+            new_due,
+            due_date,
+            sizeof(due_date)
+        ) != R_OK) {
+            todo_list_free(&todos);
+            return R_ERROR;
+        }
+
+        log_success(
+            "Set due date of todo %llu to %s.\n",
+            id,
+            due_date
+        );
     }
 
-    log_success(
-        "Rewrote todo %llu: \"%s\" -> \"%s\"\n",
-        id,
-        old_text,
-        item->text
-    );
+    (void)old_due; // useful later if you want old -> new due logging
 
     todo_list_free(&todos);
 
