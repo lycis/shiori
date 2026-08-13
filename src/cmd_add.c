@@ -26,7 +26,7 @@ int command_add(int argc, char* argv[]) {
             continue;
         }
 
-        note_argv[note_argc++] = argv[1];
+        note_argv[note_argc++] = argv[i];
     }
 
     char topic_tag[DEFAULT_BUFFER_SIZE];
