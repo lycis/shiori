@@ -12,8 +12,8 @@
 
 ### A tiny personal scribe for thoughts that should not get away.
 
-**Shiori** is a fast, local-first command-line scratchpad written in C23.  
-Capture notes, thoughts, and todos from the terminal and keep them in a simple Markdown file that remains yours.
+**Shiori** is a fast, local-first command-line scratchpad and task tracker written in C23.
+Capture notes, manage todos, and review a colorful daily dashboard while keeping everything in Markdown files that remain yours.
 
 No database. No account. No cloud. Just plain text.
 
@@ -72,11 +72,16 @@ The result is a lightweight chronological stream of notes that can be opened wit
 - 🦊 **Quick capture** — add a thought directly from the command line.
 - 📝 **Plain Markdown** — your notes stay readable without Shiori.
 - 📅 **Automatic daily sections** — notes are grouped under `# YYYY-MM-DD` headings.
-- 📂 **Configurable storage location** — keep `NOTES.md` wherever you want.
-- 🛡️ **Safe file replacement** — updates are written through a temporary file with backup/restore handling.
+- 📂 **Configurable storage location** — keep `NOTES.md` and `TODOS.md` wherever you want.
+- 🛡️ **Safe file replacement** — note and todo updates use temporary files with backup/restore handling.
 - 💻 **Interactive console** — keep Shiori open while capturing several thoughts.
+- ✅ **Markdown todo tracking** — add tasks with stable IDs and move them through open, in-progress, and done states.
+- 🏷️ **Flexible todo views** — filter tasks by status or by one or more Markdown tags.
+- ✏️ **Task maintenance** — rewrite, remove, reopen, or prune completed todos from the command line.
+- 🌅 **Daily dashboard** — see a styled overview of a day's notes and active work.
+- ⏪ **Date selection** — inspect today, yesterday, tomorrow, or any `YYYY-MM-DD` date.
 - 🔍 **Debug mode** — inspect Shiori's internal plumbing when something looks suspicious.
-- 🌱 **Tiny by design** — currently implemented as a deliberately small, single-file C23 utility.
+- 🌱 **Small by design** — a deliberately compact, dependency-free C23 utility.
 - 🔌 **Obsidian-friendly** — point `base_dir` at an Obsidian vault and the generated Markdown remains ordinary vault content.
 
 ---
@@ -214,6 +219,8 @@ shiori [options] <command> [options] [subcommand] ...
 |---|---|
 | `init` | Initialize a new `.shiori` configuration. |
 | `add` | Add a note or thought to today's section. |
+| `todo` | Add, list, update, and remove todos. |
+| `today` | Show notes and active todos in a daily dashboard. |
 | `config` | View and manage configuration. |
 | `console` | Start interactive console mode. |
 | `help` | Show command help. |
@@ -245,6 +252,81 @@ Example:
 ```
 
 Shiori currently stores notes as Markdown bullet points using `*`.
+
+---
+
+## Managing todos
+
+Todos live alongside notes as ordinary Markdown, but in their own `TODOS.md` file. Add a task with:
+
+```console
+shiori todo add prepare release notes #work
+```
+
+Each task receives a stable numeric ID and creation date. Use the ID to move it through its lifecycle:
+
+```console
+shiori todo start 1
+shiori todo done 1
+shiori todo reopen 1
+```
+
+List open and in-progress work (the default view):
+
+```console
+shiori todo list
+```
+
+Status and tag filters make larger lists easier to scan:
+
+```console
+shiori todo list --open
+shiori todo list --in-progress
+shiori todo list --done
+shiori todo list --all
+shiori todo list --tag work
+shiori todo list --tag work --tag urgent
+shiori todo list --done --tag work
+```
+
+Multiple status switches combine; multiple `--tag` values require a todo to contain every selected tag.
+
+You can also edit or permanently remove individual tasks:
+
+```console
+shiori todo rewrite 1 prepare final release notes
+shiori todo remove 1
+```
+
+To remove every completed task, first preview the count, then confirm explicitly:
+
+```console
+shiori todo prune
+shiori todo prune --force
+```
+
+Run `shiori todo --help` or `shiori todo list --help` for the built-in reference.
+
+---
+
+## Daily dashboard
+
+`today` combines notes for a selected date with your current open and in-progress todos in a colorful terminal dashboard:
+
+```console
+shiori today
+```
+
+Review another day with an ISO date or a convenient relative selector:
+
+```console
+shiori today --date 2026-08-12
+shiori today --date yesterday
+shiori today --date tomorrow
+shiori today --date today
+```
+
+The note section follows the selected date. The todo sections show the current active task list, grouped into **In Progress** and **Open**.
 
 ---
 
@@ -366,7 +448,7 @@ c standard: C23
 
 Shiori deliberately avoids a proprietary storage format.
 
-The core data model is simply:
+Notes use a chronological daily stream:
 
 ```markdown
 # YYYY-MM-DD
@@ -388,6 +470,21 @@ If replacement fails, Shiori attempts to restore the original file from its back
 
 The Markdown file remains the source of truth.
 
+Todos are stored separately in `TODOS.md` using Markdown task-list syntax plus Shiori metadata tags:
+
+```markdown
+---
+version: 1
+last_id: 4
+---
+
+* [ ] prepare release notes #work #shiori/id/1 #shiori/created/2026-08-12
+* [/] verify the Windows build #shiori/id/2 #shiori/created/2026-08-12
+* [x] update screenshots #shiori/id/3 #shiori/created/2026-08-11
+```
+
+Checkbox markers represent open (`[ ]`), in progress (`[/]`), and done (`[x]`). The front matter maintains the next stable ID. Status changes and other todo rewrites use the same temporary-file, backup, replacement, and restore strategy as notes.
+
 ---
 
 ## Philosophy
@@ -400,7 +497,7 @@ Shiori intentionally favors a few boring ideas:
 
 **Fast capture over organization.** Shiori is for getting the thought out of your head first. Structure can come later.
 
-**Small software.** Shiori is currently a single-file C program on purpose. The goal is not to build a framework around writing one line into a Markdown file.
+**Small software.** Shiori is intentionally compact and dependency-free. The goal is not to build a framework around writing one line into a Markdown file.
 
 **Interoperability over lock-in.** If you stop using Shiori tomorrow, your notes are still Markdown.
 
@@ -411,9 +508,9 @@ Shiori intentionally favors a few boring ideas:
 Shiori is intentionally being developed incrementally. Some ideas being explored include:
 
 - complete Linux support
-- prebuilt binaries and easier installation
+- versioned releases and easier installation
 - configurable note ordering, including `append_on_top`
-- richer note and todo handling
+- richer note and todo handling beyond the current status, filtering, and editing workflow
 - additional configuration commands
 - improved interactive console parsing
 - safer and more portable filesystem abstractions
