@@ -2,6 +2,7 @@ CC := clang
 CPPFLAGS := -Isrc
 CFLAGS := -std=c23 -Wall -Wextra -Wpedantic
 DEBUGFLAGS := -O0 -gdwarf-4
+DEBUG_LDFLAGS := -Wl,/debug:dwarf
 RELEASEFLAGS := -O2
 LDFLAGS :=
 
@@ -48,7 +49,7 @@ release: $(RELEASE_BINARY)
 	@$(call COPY_TARGET,$<)
 
 $(DEBUG_BINARY): $(DEBUG_OBJECTS)
-	$(CC) $(DEBUG_OBJECTS) $(LDFLAGS) -o $@
+	$(CC) $(DEBUG_OBJECTS) $(LDFLAGS) $(DEBUG_LDFLAGS) -o $@
 
 $(RELEASE_BINARY): $(RELEASE_OBJECTS)
 	$(CC) $(RELEASE_OBJECTS) $(LDFLAGS) -o $@
