@@ -10,6 +10,7 @@ This guide covers installation, configuration, every current workflow, and the o
 - [Initialization and configuration](#initialization-and-configuration)
 - [Command overview](#command-overview)
 - [Adding notes](#adding-notes)
+- [Organizing notes with topics](#organizing-notes-with-topics)
 - [Managing todos](#managing-todos)
 - [Daily dashboard](#daily-dashboard)
 - [Interactive console](#interactive-console)
@@ -125,6 +126,7 @@ shiori [options] <command> [options] [subcommand] ...
 |---|---|
 | `init` | Initialize a new `.shiori` configuration. |
 | `add` | Add a note or thought to today's section. |
+| `topic` | Show notes for a topic or list topic statistics. |
 | `todo` | Add, list, update, and remove todos. |
 | `today` | Show notes and active todos in a daily dashboard. |
 | `config` | Show the loaded configuration. |
@@ -153,6 +155,42 @@ If today's section already exists in `NOTES.md`, Shiori adds the note to that bl
 
 Notes are stored as Markdown bullet points using `*`.
 
+Use `shiori add --help` for the built-in reference.
+
+## Organizing notes with topics
+
+Assign one topic to a note with `--topic` or its `-t` shorthand:
+
+```console
+shiori add --topic Rail4Climate discuss pilot scope
+shiori add -t Rail4Climate review the proposal
+```
+
+Shiori keeps the topic in the note as a metadata tag while showing the readable topic name in terminal views:
+
+```markdown
+# 2026-08-13
+* discuss pilot scope #shiori/topic/Rail4Climate
+* review the proposal #shiori/topic/Rail4Climate
+```
+
+Show all notes assigned to a topic, grouped under their daily headings:
+
+```console
+shiori topic Rail4Climate
+```
+
+List every topic with its number of notes:
+
+```console
+shiori topic --list
+shiori topic -l
+```
+
+The daily dashboard displays a note's topic beside its text. Topic names are currently single values without spaces.
+
+Use `shiori topic --help` for the built-in reference.
+
 ## Managing todos
 
 Todos live in `TODOS.md`. Add one with:
@@ -164,6 +202,17 @@ shiori todo add prepare release notes "#work"
 Each todo receives a stable numeric ID, a creation date, and an initial status of open.
 
 Quote tags when using PowerShell because an unquoted `#` starts a comment.
+
+### Due dates
+
+Add an optional due date with `--due` or `-d`. The date may be an ISO date or one of `today`, `tomorrow`, and `yesterday`:
+
+```console
+shiori todo add --due 2026-08-20 prepare release notes
+shiori todo add -d tomorrow verify the Windows artifact
+```
+
+`shiori todo list` shows the creation date for every task and an additional due date for tasks that have one.
 
 ### Change status
 
@@ -210,10 +259,18 @@ shiori todo list --done --tag work
 
 ### Rewrite and remove
 
-Change a todo's text while preserving its ID, status, and creation date:
+Change a todo's text while preserving its ID, status, creation date, and due date:
 
 ```console
 shiori todo rewrite 1 prepare final release notes
+```
+
+Set or change only the due date, change text and due date together, or remove the due date with `none`:
+
+```console
+shiori todo rewrite 1 --due tomorrow
+shiori todo rewrite 1 prepare final release notes --due 2026-08-20
+shiori todo rewrite 1 --due none
 ```
 
 Permanently remove one todo:
@@ -248,7 +305,13 @@ shiori today --date tomorrow
 shiori today --date today
 ```
 
-The **Notes** section follows the selected date. Current active todos are grouped into **In Progress** and **Open** sections. Completed todos are not shown in the dashboard.
+The **Notes** section follows the selected date and displays assigned topics. Active todos are grouped relative to the selected dashboard date:
+
+- **Overdue** contains unfinished todos due before the selected date.
+- **Due Today** contains unfinished todos due on the selected date, or an “all clear” message when empty.
+- **In Progress** and **Open** contain the remaining active todos.
+
+Completed todos are not shown in the dashboard.
 
 Use `shiori today --help` for the built-in reference.
 
@@ -306,7 +369,7 @@ Shiori avoids proprietary storage. Markdown remains the source of truth.
 ```markdown
 # YYYY-MM-DD
 * note
-* another note
+* another note #shiori/topic/example
 ```
 
 When adding to an existing day, Shiori:
@@ -331,12 +394,12 @@ version: 1
 last_id: 4
 ---
 
-* [ ] prepare release notes #work #shiori/id/1 #shiori/created/2026-08-12
-* [/] verify the Windows build #shiori/id/2 #shiori/created/2026-08-12
+* [ ] prepare release notes #work #shiori/id/1 #shiori/created/2026-08-12 #shiori/due/2026-08-20
+* [/] verify the Windows build #shiori/id/2 #shiori/created/2026-08-12 #shiori/due/2026-08-13
 * [x] update screenshots #shiori/id/3 #shiori/created/2026-08-11
 ```
 
-Checkbox markers represent open (`[ ]`), in progress (`[/]`), and done (`[x]`). The front matter maintains the next stable ID. Status changes and other todo rewrites use the same temporary-file, backup, replacement, and restore strategy as notes.
+Checkbox markers represent open (`[ ]`), in progress (`[/]`), and done (`[x]`). The optional `#shiori/due/YYYY-MM-DD` tag stores a due date. The front matter maintains the next stable ID. Status changes and other todo rewrites use the same temporary-file, backup, replacement, and restore strategy as notes.
 
 ## Using Shiori with Obsidian
 

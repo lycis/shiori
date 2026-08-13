@@ -26,20 +26,20 @@ No database. No account. No cloud. Just plain text.
 Most notes do not begin as documents. They begin as a thought that needs to get out of your head before it disappears:
 
 ```console
-shiori add investigate UTF-8 path handling
+shiori add --topic development investigate UTF-8 path handling
 ```
 
 Shiori writes it under today's heading in `NOTES.md`:
 
 ```markdown
 # 2026-08-13
-* investigate UTF-8 path handling
+* investigate UTF-8 path handling #shiori/topic/development
 ```
 
 Tasks are just as quick:
 
 ```console
-shiori todo add prepare release notes "#work"
+shiori todo add --due tomorrow prepare release notes "#work"
 shiori todo start 1
 ```
 
@@ -54,7 +54,9 @@ Your data remains ordinary Markdown that works with any text editor or Markdown 
 - 🦊 **Quick capture** — add a thought directly from the command line.
 - 📝 **Plain Markdown** — your notes and tasks stay readable without Shiori.
 - 📅 **Automatic daily sections** — notes are grouped under `# YYYY-MM-DD` headings.
+- 🪧 **Note topics** — organize related notes and review them across daily sections.
 - ✅ **Todo tracking** — move stable task IDs through open, in-progress, and done states.
+- ⏰ **Due dates** — schedule tasks and surface due or overdue work in the dashboard.
 - 🏷️ **Flexible filtering** — find todos by status or one or more Markdown tags.
 - ✏️ **Task maintenance** — rewrite, remove, reopen, or prune completed tasks.
 - 🌅 **Daily dashboard** — review notes and active work for today or another selected date.
@@ -110,6 +112,7 @@ shiori [options] <command> [options] [subcommand] ...
 |---|---|
 | `init` | Initialize a `.shiori` configuration. |
 | `add` | Add a note to today's section. |
+| `topic` | Browse notes by topic or list topic statistics. |
 | `todo` | Add, list, update, and remove todos. |
 | `today` | Show notes and active todos in a daily dashboard. |
 | `config` | View the loaded configuration. |
@@ -119,7 +122,7 @@ shiori [options] <command> [options] [subcommand] ...
 
 Use the global `--debug` option to show diagnostic output.
 
-See the **[User Guide](docs/USER_GUIDE.md)** for the todo command reference, filters, date selection, configuration, data formats, and troubleshooting.
+See the **[User Guide](docs/USER_GUIDE.md)** for topics, due dates, the todo command reference, filters, date selection, configuration, data formats, and troubleshooting.
 
 ---
 
@@ -132,7 +135,7 @@ Current areas being explored include:
 - complete Linux support
 - versioned releases and easier installation
 - configurable note ordering
-- richer note and todo workflows
+- richer note and todo workflows beyond the current topics, due dates, filtering, and editing features
 - additional configuration commands
 - improved interactive console parsing
 - safer and more portable filesystem abstractions
