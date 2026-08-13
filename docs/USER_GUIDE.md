@@ -10,6 +10,7 @@ This guide covers installation, configuration, every current workflow, and the o
 - [Initialization and configuration](#initialization-and-configuration)
 - [Command overview](#command-overview)
 - [Adding notes](#adding-notes)
+- [Capture sessions](#capture-sessions)
 - [Organizing notes with topics](#organizing-notes-with-topics)
 - [Managing todos](#managing-todos)
 - [Daily dashboard](#daily-dashboard)
@@ -126,6 +127,7 @@ shiori [options] <command> [options] [subcommand] ...
 |---|---|
 | `init` | Initialize a new `.shiori` configuration. |
 | `add` | Add a note or thought to today's section. |
+| `capture` | Start an interactive session for capturing notes and todos. |
 | `topic` | Show notes for a topic or list topic statistics. |
 | `todo` | Add, list, update, and remove todos. |
 | `today` | Show notes and active todos in a daily dashboard. |
@@ -156,6 +158,62 @@ If today's section already exists in `NOTES.md`, Shiori adds the note to that bl
 Notes are stored as Markdown bullet points using `*`.
 
 Use `shiori add --help` for the built-in reference.
+
+## Capture sessions
+
+Use `capture` when you want to collect several thoughts without invoking Shiori separately for every item:
+
+```console
+shiori capture
+```
+
+Shiori opens a focused prompt. Enter an ordinary line to add it as a note, or begin the line with `!` to add it as a todo:
+
+```text
+~> summarize the customer interview
+~> ! send the follow-up email
+~> ! --due tomorrow prepare the proposal
+~> /done
+```
+
+The session writes each item immediately. Todos accept the same `--due` or `-d` date option as `todo add`:
+
+```text
+~> ! -d 2026-08-20 publish the release notes
+~> ! --due today verify the build
+```
+
+Due-date values may be `YYYY-MM-DD`, `today`, `yesterday`, or `tomorrow`.
+
+### Capture notes under a topic
+
+Assign every note in the session to one topic with `--topic` or `-t`:
+
+```console
+shiori capture --topic Rail4Climate
+shiori capture -t Rail4Climate
+```
+
+The prompt shows the active topic:
+
+```text
+~Rail4Climate> discuss pilot scope
+~Rail4Climate> collect stakeholder feedback
+~Rail4Climate> ! --due tomorrow schedule the workshop
+~Rail4Climate> /done
+```
+
+The session topic applies to captured notes. Todos retain their entered text and optional due date; they are not assigned the note topic metadata.
+
+End the session with any of:
+
+```text
+/done
+/exit
+/quit
+```
+
+Blank lines are ignored, and an empty `!` todo is rejected without ending the session. Use `shiori capture --help` for the built-in reference.
 
 ## Organizing notes with topics
 

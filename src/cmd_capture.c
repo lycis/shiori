@@ -46,13 +46,14 @@ int command_capture(int argc, char *argv[]) {
             "Capture syntax:\n"
             "  %-22s Add a note\n"
             "  %-22s Add a todo\n"
+            "  %-22s Add a todo with a due date\n"
             "  %-22s End the capture session\n"
             "\n"
             "Examples:\n"
             "  %s capture\n"
             "  %s capture -t someCoolTopic\n",
             APP_NAME, "-t, --topic <topic>", "-h, --help", "<text>", "! <text>",
-            "/done", APP_NAME, APP_NAME);
+            "! --due <date> <text>", "/done, /exit, /quit", APP_NAME, APP_NAME);
 
         return R_OK;
     }

@@ -45,6 +45,12 @@ shiori todo start 1
 
 Then `shiori today` brings the day's notes and active todos together in a styled terminal dashboard.
 
+For a longer brainstorming session, enter capture mode and write notes or prefix a line with `!` to turn it into a todo:
+
+```console
+shiori capture --topic planning
+```
+
 Your data remains ordinary Markdown that works with any text editor or Markdown tool, including Obsidian.
 
 ---
@@ -52,6 +58,7 @@ Your data remains ordinary Markdown that works with any text editor or Markdown 
 ## Features
 
 - 🦊 **Quick capture** — add a thought directly from the command line.
+- ✍️ **Capture sessions** — rapidly collect multiple notes and todos from one focused prompt.
 - 📝 **Plain Markdown** — your notes and tasks stay readable without Shiori.
 - 📅 **Automatic daily sections** — notes are grouped under `# YYYY-MM-DD` headings.
 - 🪧 **Note topics** — organize related notes and review them across daily sections.
@@ -112,6 +119,7 @@ shiori [options] <command> [options] [subcommand] ...
 |---|---|
 | `init` | Initialize a `.shiori` configuration. |
 | `add` | Add a note to today's section. |
+| `capture` | Start an interactive session for rapidly capturing notes and todos. |
 | `topic` | Browse notes by topic or list topic statistics. |
 | `todo` | Add, list, update, and remove todos. |
 | `today` | Show notes and active todos in a daily dashboard. |
@@ -122,7 +130,7 @@ shiori [options] <command> [options] [subcommand] ...
 
 Use the global `--debug` option to show diagnostic output.
 
-See the **[User Guide](docs/USER_GUIDE.md)** for topics, due dates, the todo command reference, filters, date selection, configuration, data formats, and troubleshooting.
+See the **[User Guide](docs/USER_GUIDE.md)** for capture sessions, topics, due dates, the todo command reference, filters, date selection, configuration, data formats, and troubleshooting.
 
 ---
 
