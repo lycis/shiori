@@ -337,10 +337,8 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
 
 
 int read_todos(const char *filename, struct todo_list *list) {
-    FILE *file = NULL;
-
-    errno_t err = fopen_s(&file, filename, "r");
-    if(err != 0 || file == NULL) {
+    FILE *file = open_base_dir_file(filename, "r");
+    if(file == NULL) {
         log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }

@@ -25,16 +25,14 @@ int initialize_todo_front_matter(const char *filename) {
         return R_ERROR;
     }
 
-    log_success("Initialized TODO front matter.");
+    log_success("Initialized TODO front matter.\n");
     return R_OK;
 }
 
 int read_todo_metadata(char *filename, struct todo_metadata *md)
 {
-    FILE *file = NULL;
-
-    errno_t err = fopen_s(&file, filename, "r");
-    if(err != 0 || file == NULL) {
+    FILE *file = open_base_dir_file(filename, "r");
+    if(file == NULL) {
         log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }
@@ -378,6 +376,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
 
 int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     item->text[0] = '\0';
+    item->due = 0;
 
     size_t used = 0;
 
@@ -644,19 +643,11 @@ static int command_todo_list(int argc, char* argv[]) {
     }
 
     log_debug("Listing todos (c=%d)\n", argc);
-    char file_path[DEFAULT_BUFFER_SIZE];
-    if(get_base_dir_file_path(TODO_FILE, file_path, sizeof(file_path)) != R_OK) {
-        return R_ERROR;
-    }
-
-    if(create_file_if_not_exists(file_path) != R_OK) {
-        return R_ERROR;
-    }
 
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(file_path, &todos) != R_OK) {
+    if(read_todos(TODO_FILE, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -926,19 +917,10 @@ int write_todo_list(
 }
 
 static int set_todo_status(unsigned long long id, todo_status status) {
-    char file_path[DEFAULT_BUFFER_SIZE];
-    if(get_base_dir_file_path(TODO_FILE, file_path, sizeof(file_path)) != R_OK) {
-        return R_ERROR;
-    }
-
-    if(create_file_if_not_exists(file_path) != R_OK) {
-        return R_ERROR;
-    }
-
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(file_path, &todos) != R_OK) {
+    if(read_todos(TODO_FILE, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -956,12 +938,12 @@ static int set_todo_status(unsigned long long id, todo_status status) {
     // write todo list back to file
     struct todo_metadata md;
 
-    if(read_todo_metadata(file_path, &md) != R_OK) {
+    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    if(write_todo_list(file_path, &todos, &md) != R_OK) {
+    if(write_todo_list(TODO_FILE, &todos, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1097,27 +1079,13 @@ static int command_todo_rewrite(int argc, char *argv[])
 
     log_debug("Rewriting todo %llu.\n", id);
 
-    char file_path[DEFAULT_BUFFER_SIZE];
-
-    if(get_base_dir_file_path(
-        TODO_FILE,
-        file_path,
-        sizeof(file_path)
-    ) != R_OK) {
-        return R_ERROR;
-    }
-
-    if(create_file_if_not_exists(file_path) != R_OK) {
-        return R_ERROR;
-    }
-
     /*
      * Load todos.
      */
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(file_path, &todos) != R_OK) {
+    if(read_todos(TODO_FILE, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1217,10 +1185,7 @@ static int command_todo_rewrite(int argc, char *argv[])
      */
     struct todo_metadata md;
 
-    if(read_todo_metadata(
-        file_path,
-        &md
-    ) != R_OK) {
+    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1228,11 +1193,7 @@ static int command_todo_rewrite(int argc, char *argv[])
     /*
      * Save modified list.
      */
-    if(write_todo_list(
-        file_path,
-        &todos,
-        &md
-    ) != R_OK) {
+    if(write_todo_list(TODO_FILE, &todos, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }

@@ -131,14 +131,68 @@ int command_today(int argc, char* argv[]) {
     // sort todos into in_progress and open buckets
     struct todo_list in_progress_todos;
     todo_list_init(&in_progress_todos);
+    
     struct todo_list open_todos;
     todo_list_init(&open_todos);
-    for(size_t i = 0; i < todo_list.count; ++i) {
+
+    struct todo_list overdue_todos;
+    todo_list_init(&overdue_todos);
+
+    struct todo_list today_todos;
+    todo_list_init(&today_todos);
+
+    for(size_t i = 0; i < todo_list.count; ++i) {        
         log_debug("Found todo (%llu) with status %s.\n", todo_list.items[i].id, todo_status_string(todo_list.items[i].status));
-        if(todo_list.items[i].status == IN_PROGRESS) todo_list_add(&in_progress_todos, &todo_list.items[i]);
-        if(todo_list.items[i].status == OPEN) todo_list_add(&open_todos, &todo_list.items[i]);
+
+        struct todo *item = &todo_list.items[i];
+
+        if(item->status == DONE) {
+            continue; // don't care for done
+        }
+
+        if(item->due != 0) {
+            // we have a due date, so it could land in one of our due-buckets
+            int due_cmp = compare_dates(item->due, selected_date);
+            if(due_cmp < 0) {
+                todo_list_add(&overdue_todos, item);
+                continue;
+            }
+
+            if(due_cmp == 0) {
+                todo_list_add(&today_todos, item);
+                continue;
+            }
+        }
+
+        if(item->status == IN_PROGRESS) todo_list_add(&in_progress_todos, item);
+        else if(item->status == OPEN) todo_list_add(&open_todos, item);
+    }
+
+    printf("\n");
+
+    // overdue tasks
+    if(overdue_todos.count > 0) {
+        printf("  %s%s%s\n", ANSI_FG_RGB(255, 105, 120), "⚠️ Overdue", ANSI_RESET);
+        for(size_t i = 0; i < overdue_todos.count; ++i) {
+            struct todo *item = &overdue_todos.items[i];
+            printf("    %s%s %4llu%s  %s\n", ANSI_FG_RGB(255, 190, 80), todo_status_simple_icon(item->status), item->id, ANSI_RESET, item->text);
+        }
+        printf("\n");
+    }
+    todo_list_free(&overdue_todos);
+
+    // today due tasks
+    printf("  %s%s%s\n", ANSI_FG_RGB(255, 190, 80), "📅 Due Today", ANSI_RESET);
+    if(today_todos.count > 0) {
+        for(size_t i = 0; i < today_todos.count; ++i) {
+            struct todo *item = &today_todos.items[i];
+            printf("    %s%s %4llu%s  %s\n", ANSI_FG_RGB(255, 190, 80), todo_status_simple_icon(item->status), item->id, ANSI_RESET, item->text);
+        }
+    } else {
+        printf(ANSI_FG_RGB(0, 255, 0)"    All clear 👍\n" ANSI_RESET);
     }
     printf("\n");
+    todo_list_free(&overdue_todos);
 
     // print active todos
     printf("  %s%s%s\n", ANSI_BOLD ANSI_FG_RGB(255, 190, 80), "🚧 In Progress", ANSI_RESET);

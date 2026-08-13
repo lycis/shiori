@@ -29,5 +29,6 @@ int build_daily_heading(char* buffer, size_t size, time_t date);
 bool str_ends_with(const char *str, const char *suffix);
 bool dates_equal(time_t a, time_t b);
 int format_date(time_t date, char *buffer, size_t buffer_size);
+int compare_dates(time_t a, time_t b);
 
 #endif

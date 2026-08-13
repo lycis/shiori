@@ -61,3 +61,19 @@ const char *todo_status_string(todo_status status) {
             return "????";
     }
 }
+
+const char *todo_status_simple_icon(todo_status status) {
+     switch(status) {
+        case OPEN:
+            return "·";
+
+        case IN_PROGRESS:
+            return "›";
+
+        case DONE:
+            return "✓";
+
+        default:
+            return "????";
+    }
+}

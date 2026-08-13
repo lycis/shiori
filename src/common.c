@@ -39,6 +39,7 @@ int create_file_if_not_exists(char* fname) {
     errno_t err = fopen_s(&f, fname, "w");
     if(err != 0  || f == NULL) {
         log_error("Failed creating file: %s\n", fname);
+        fclose(f);
         return R_ERROR;
     }
 
@@ -166,4 +167,25 @@ int format_date(time_t date, char *buffer, size_t buffer_size) {
     }
 
     return R_OK;
+}
+
+int compare_dates(time_t a, time_t b) {
+    struct tm date_a;
+    struct tm date_b;
+
+    if(localtime_s(&date_a, &a) != 0 ||
+       localtime_s(&date_b, &b) != 0) {
+        return 0;
+    }
+
+    if(date_a.tm_year != date_b.tm_year)
+        return date_a.tm_year < date_b.tm_year ? -1 : 1;
+
+    if(date_a.tm_mon != date_b.tm_mon)
+        return date_a.tm_mon < date_b.tm_mon ? -1 : 1;
+
+    if(date_a.tm_mday != date_b.tm_mday)
+        return date_a.tm_mday < date_b.tm_mday ? -1 : 1;
+
+    return 0;
 }

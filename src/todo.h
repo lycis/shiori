@@ -25,5 +25,6 @@ const char *todo_status_icon(todo_status status);
 int format_todo_date(time_t timestamp, char *buffer, size_t size);
 const char *todo_status_mark(todo_status status);
 const char *todo_status_string(todo_status status);
+const char *todo_status_simple_icon(todo_status status);
 
 #endif

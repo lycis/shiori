@@ -6,7 +6,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/shiori.exe",
-            "args": ["--debug", "console"],
+            "args": ["console"],
             "cwd": "${workspaceFolder}",
 
             "MIMode": "gdb",
