@@ -26,5 +26,6 @@ int note_list_add(
 );
 
 int read_notes_for_date(const char *filename, const time_t date, struct note_list *notes);
+int read_notes(const char *filename, struct note_list *list);
 
 #endif

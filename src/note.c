@@ -104,30 +104,49 @@ static int create_note_from_markdown(const char *markdown, time_t created,struct
     return R_OK;
 }
 
+static int parse_daily_heading(const char *heading, time_t *date) {
+    if(heading == NULL || date == NULL) {
+        return R_ERROR;
+    }
 
-int read_notes_for_date(const char *filename, const time_t date, struct note_list *list) {
+    int year;
+    int month;
+    int day;
+
+    if(sscanf_s(heading, "# %d-%d-%d", &year, &month, &day) != 3) {
+        return R_ERROR;
+    }
+
+    struct tm parsed = {0};
+
+    parsed.tm_year = year - 1900;
+    parsed.tm_mon = month - 1;
+    parsed.tm_mday = day;
+    parsed.tm_hour = 12;
+    parsed.tm_isdst = -1;
+
+    time_t result = mktime(&parsed);
+
+    if(result == (time_t)-1) {
+        return R_ERROR;
+    }
+
+    *date = result;
+    return R_OK;
+}
+ 
+int read_notes(const char *filename, struct note_list *list) {
     FILE *file = open_base_dir_file(filename, "r");
     if(file == NULL) {
         log_critical("Failed opening %s.\n", filename);
         return R_ERROR;
     }
 
-    // build the heading a
-    char target_heading[32];
-    if(build_daily_heading(target_heading, sizeof(target_heading), date) != R_OK) {
-        fclose(file);
-        return R_ERROR;
-    }
-
-    log_debug(
-        "Looking for notes under heading '%s'.\n",
-        target_heading
-    );
-
     char line[DEFAULT_BUFFER_SIZE * 2];
-
-    bool in_target_section = false;
     unsigned int line_number = 0;
+
+    time_t current_date = 0;
+    bool have_date = false;
 
     while(fgets(line, sizeof(line), file) != NULL) {
         line_number++;
@@ -135,44 +154,53 @@ int read_notes_for_date(const char *filename, const time_t date, struct note_lis
         char *current = trim(line);
 
         if(*current == '\0') {
-            continue; // empty line
+            continue;
         }
 
-        // heading starts a new section
+         // A heading starts a new daily section.
         if(strncmp(current, "# ", 2) == 0) {
-            if(strcmp(current, target_heading) == 0) {
-                log_debug("Found note section for on line %u.\n", line_number);
-                in_target_section = true;
+            if(parse_daily_heading(current, &current_date) != R_OK) {
+                log_warning(
+                    "Ignoring invalid note heading on line %u.\n",
+                    line_number
+                );
+
+                have_date = false;
                 continue;
             }
 
-           // If we were already reading the requested section, 
-           // another heading means we're finished.
-            if(in_target_section) {
-                break;
-            }
-
+            have_date = true;
             continue;
         }
 
-        // we did not find the requested date
-        if(!in_target_section) {
+        // Ignore content outside a valid daily section.
+        if(!have_date) {
             continue;
         }
 
-        // Our notes are always markdown bullet lists with a asterisk leading
+        // Notes are Markdown bullet list items.
         if(strncmp(current, "* ", 2) != 0) {
-            log_warning("Ignoring unexpected line %u in note section.\n", line_number);
+            log_warning(
+                "Ignoring unexpected line %u in note section.\n",
+                line_number
+            );
             continue;
         }
 
-        // skip over the leading bullet point preamble '* '
         current += 2;
 
         struct note item = {0};
 
-        if(create_note_from_markdown(current, date, &item) != R_OK) {
-            log_error("Failed parsing note on line %u.\n", line_number);
+        if(create_note_from_markdown(
+            current,
+            current_date,
+            &item
+        ) != R_OK) {
+            log_error(
+                "Failed parsing note on line %u.\n",
+                line_number
+            );
+
             fclose(file);
             return R_ERROR;
         }
@@ -190,6 +218,39 @@ int read_notes_for_date(const char *filename, const time_t date, struct note_lis
     }
 
     fclose(file);
+
+    log_debug(
+        "Loaded %zu note%s.\n",
+        list->count,
+        list->count == 1 ? "" : "s"
+    );
+
+    return R_OK;
+}
+
+int read_notes_for_date(const char *filename, const time_t date, struct note_list *list) {
+    struct note_list all_notes;
+    note_list_init(&all_notes);
+
+    if(read_notes(filename, &all_notes) != R_OK) {
+        note_list_free(&all_notes);
+        return R_ERROR;
+    }
+
+    for(size_t i = 0; i < all_notes.count; ++i) {
+        if(!dates_equal(all_notes.items[i].created, date)) {
+            continue;
+        }
+
+        if(note_list_add(list, &all_notes.items[i]) != R_OK) {
+            note_list_free(&all_notes);
+            return R_ERROR;
+        }
+    }
+
+    note_list_free(&all_notes);
+
     log_debug("Loaded %zu note%s for requested date.\n", list->count, list->count == 1 ? "" : "s");
+
     return R_OK;
 }

@@ -127,3 +127,18 @@ bool str_ends_with(const char *str, const char *suffix) {
         suffix
     ) == 0;
 }
+
+bool dates_equal(time_t a, time_t b) {
+    struct tm date_a;
+    struct tm date_b;
+
+    if(localtime_s(&date_a, &a) != 0 ||
+       localtime_s(&date_b, &b) != 0) {
+        return false;
+    }
+
+    return
+        date_a.tm_year == date_b.tm_year &&
+        date_a.tm_mon  == date_b.tm_mon &&
+        date_a.tm_mday == date_b.tm_mday;
+}
