@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
@@ -5,6 +6,99 @@
 #include "note.h"
 #include "logging.h"
 #include "cli.h"
+
+struct topic_count {
+    char name[DEFAULT_BUFFER_SIZE];
+    size_t count;
+};
+
+static int command_topic_list() {
+    struct note_list notes;
+    note_list_init(&notes);
+    if(read_notes("NOTES.md", &notes) != R_OK) {
+        note_list_free(&notes);
+        return R_ERROR;
+    }
+
+    struct topic_count *topics = NULL;
+    size_t topic_count = 0;
+    size_t topic_capacity = 0;
+
+    for(size_t i = 0; i < notes.count; ++i) {
+        const char *topic = notes.items[i].topic;
+        if(topic[0] == '\0') continue; // ignore notes witout topic for now
+
+        bool found = false;
+        for(size_t j = 0; j < topic_count; ++j) {
+            if(strcmp(topics[j].name, topic) == 0) {
+                topics[j].count++;
+                found = true;
+                break;
+            }
+        }
+
+        if(found) {
+            continue;
+        }
+
+        // new topic to register
+        if(topic_count == topic_capacity) {
+            size_t new_capacity =
+                topic_capacity == 0
+                    ? 8
+                    : topic_capacity * 2;
+
+            struct topic_count *new_topics = realloc(
+                topics,
+                new_capacity * sizeof(struct topic_count)
+            );
+
+            if(new_topics == NULL) {
+                log_error("Failed allocating topic list.\n");
+                free(topics);
+                note_list_free(&notes);
+                return R_ERROR;
+            }
+
+            topics = new_topics;
+            topic_capacity = new_capacity;
+        }
+
+        struct topic_count *entry = &topics[topic_count];
+
+        if(strcpy_s(
+            entry->name,
+            sizeof(entry->name),
+            topic
+        ) != 0) {
+            log_error("Topic name is too long.\n");
+            free(topics);
+            note_list_free(&notes);
+            return R_ERROR;
+        }
+
+        entry->count = 1;
+        topic_count++;
+    }
+
+    if(topic_capacity == 0) {
+        log_info("No topics found.\n");
+        free(topics);
+        note_list_free(&notes);
+        return R_OK;
+    }
+
+     printf("%s%s🏷️ Topics%s\n", ANSI_FG_RGB(180, 140, 255), ANSI_BOLD,ANSI_RESET);
+    print_divider(60);
+
+    for(size_t i = 0; i < topic_count; ++i) {
+        printf("  %-45s %zu note%s\n", topics[i].name, topics[i].count,topics[i].count == 1 ? "" : "s");
+    }
+
+    free(topics);
+    note_list_free(&notes);
+    return R_OK;
+}
 
 int command_topic(int argc, char *argv[]) {
     if(has_switch(argc, argv, "--help", false) ||
@@ -14,11 +108,26 @@ int command_topic(int argc, char *argv[]) {
             "Usage:\n"
             "  %s topic <name>\n"
             "\n"
-            "Shows all notes assigned to a topic.\n",
-            APP_NAME
+            "Shows all notes assigned to a topic.\n"
+            "\n"
+            "Options:\n"
+            "  %-20s List all topics and their stats\n"
+            "  %-20s Show this help\n"
+            "\n",
+            APP_NAME,
+            "-l, --list",
+            "-h, --help"
         );
 
         return R_OK;
+    }
+
+    bool list_topics =
+    has_switch(argc, argv, "--list", false) ||
+    has_switch(argc, argv, "-l", false);
+
+    if(list_topics) {
+        return command_topic_list();
     }
 
     if(argc != 1) {
