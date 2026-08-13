@@ -1,6 +1,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <time.h>
 #include "logging.h"
 #include "platform.h"
 #include "common.h"
@@ -75,6 +76,34 @@ int build_text_from_args(int argc, char *argv[], char *buffer, size_t buffer_siz
         }
 
         used += (size_t)written;
+    }
+
+    return R_OK;
+}
+
+int build_daily_heading(char* buffer, size_t size, time_t date) {
+    // convert the date to the block date in NOTES.md which is YYYY-mm-dd
+    struct tm local_time;
+
+    if(localtime_s(&local_time, &date) != 0) {
+        log_critical("Failed converting requested note date.\n");
+        return R_ERROR;
+    }
+
+    // format the date
+    char date_str[11];
+
+    if(strftime(date_str, sizeof(date_str), "%Y-%m-%d", &local_time) == 0) {
+        log_critical("Failed formatting requested note date.\n");
+        return R_ERROR;
+    }
+
+
+    // write it in heading format
+    int written = snprintf(buffer, size, "# %s", date_str);
+    if(written < 0 || written >= (int)size) {
+        log_critical("Daily heading buffer too small.");
+        return R_ERROR;
     }
 
     return R_OK;

@@ -33,17 +33,45 @@ bool heading_matches(const char *line, const char *heading){
             line[len] == '\0');
 }
 
-int add_markdown_item(int argc, char *argv[], const char *filename, const char *prefix, const char *heading) {
-    log_debug("Writing markdown item (c=%d)\n", argc);
-    char file_path[DEFAULT_BUFFER_SIZE];
-
-    int written = snprintf(file_path, sizeof(file_path), "%s%s%s", g_config.base_dir, get_path_separator(), filename);
-    if(written < 0 || written >= (int)sizeof(file_path)) {
+int get_base_dir_filepath(const char *filename, char* buffer, size_t bufferSize) {
+    int written = snprintf(buffer, bufferSize, "%s%s%s", g_config.base_dir, get_path_separator(), filename);
+    if(written < 0 || written >= (int)bufferSize) {
         log_error("File path too long.\n");
         return R_ERROR;
     }
+    return R_OK;
+}
+
+FILE* open_base_dir_file(const char *filename, const char* mode) {
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_filepath(filename, file_path, sizeof(file_path)) != R_OK) {
+        return NULL;
+    }
 
     if(create_file_if_not_exists(file_path) != R_OK) {
+        return NULL;
+    }
+
+    FILE *source = NULL;
+
+    errno_t err = fopen_s(&source, file_path, mode);
+    if(err != 0 || source == NULL) {
+        log_error("Failed opening %s.\n", filename);
+        return NULL;
+    }
+
+    return source;
+}
+
+FILE* open_notes_file(const char* mode) {
+    return open_base_dir_file("NOTES.md", mode);
+}
+
+int add_markdown_item(int argc, char *argv[], const char *filename, const char *prefix, const char *heading) {
+    log_debug("Writing markdown item (c=%d)\n", argc);
+    FILE* source = open_base_dir_file(filename, "r");
+    if(source == NULL) {
+        log_critical("failed to open base dir file %s\n", filename);
         return R_ERROR;
     }
 
@@ -52,16 +80,9 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
      * into the middle of the file. We can simply append.
      */
     if(heading == NULL) {
-        FILE *file = NULL;
-
-        errno_t err = fopen_s(&file, file_path, "a");
-        if(err != 0 || file == NULL) {
-            log_error("Failed opening %s.\n", filename);
-            return R_ERROR;
-        }
-
+        fclose(source);
+        FILE *file = open_base_dir_file(filename, "a");
         write_item_to_file(argc, argv, file, prefix);
-
         fclose(file);
         return R_OK;
     }
@@ -69,29 +90,23 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
     /*
      * With a heading we need to potentially insert into an
      * existing block, so use the temp-file strategy.
-     */
-
-    FILE *source = NULL;
-
-    errno_t err = fopen_s(&source, file_path, "r");
-    if(err != 0 || source == NULL) {
-        log_error("Failed opening %s.\n", filename);
+     */  
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_filepath(filename, file_path, sizeof(file_path)) != R_OK) {
+        fclose(source);
         return R_ERROR;
     }
 
     char temp_path[DEFAULT_BUFFER_SIZE];
-
-    written = snprintf(temp_path, sizeof(temp_path), "%s.tmp", file_path);
+    int written = snprintf(temp_path, sizeof(temp_path), "%s.tmp", filename);
     if(written < 0 || written >= (int)sizeof(temp_path)) {
         log_error("Temporary file path too long.\n");
         fclose(source);
         return R_ERROR;
     }
 
-    FILE *temp = NULL;
-
-    err = fopen_s(&temp, temp_path, "w");
-    if(err != 0 || temp == NULL) {
+    FILE *temp = open_base_dir_file(temp_path, "w");
+    if(temp == NULL) {
         log_error("Failed opening temporary file.\n");
         fclose(source);
         return R_ERROR;
