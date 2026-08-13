@@ -371,3 +371,63 @@ int read_todos(const char *filename, struct todo_list *list) {
     fclose(file);
     return R_OK;
 }
+
+int parse_date_arg(const char *value, time_t *result) {
+    time_t now = time(NULL);
+
+    struct tm date;
+
+    if(localtime_s(&date, &now) != 0) {
+        log_error("Failed getting local date.\n");
+        return R_ERROR;
+    }
+
+    // Normalize to noon so date arithmetic is less likely to stumble over DST boundaries.
+    date.tm_hour = 12;
+    date.tm_min = 0;
+    date.tm_sec = 0;
+    date.tm_isdst = -1;
+
+    if(strcmp(value, "today") == 0) {
+        *result = mktime(&date);
+    }
+    else if(strcmp(value, "yesterday") == 0) {
+        date.tm_mday -= 1;
+        *result = mktime(&date);
+    }
+    else if(strcmp(value, "tomorrow") == 0) {
+        date.tm_mday += 1;
+        *result = mktime(&date);
+    }
+    else {
+        struct tm parsed = {0};
+
+        if(sscanf_s(
+            value,
+            "%d-%d-%d",
+            &parsed.tm_year,
+            &parsed.tm_mon,
+            &parsed.tm_mday
+        ) != 3) {
+            log_error(
+                "Invalid date '%s'. Use YYYY-MM-DD, today, yesterday or tomorrow.\n",
+                value
+            );
+            return R_ERROR;
+        }
+
+        parsed.tm_year -= 1900;
+        parsed.tm_mon -= 1;
+        parsed.tm_hour = 12;
+        parsed.tm_isdst = -1;
+
+        *result = mktime(&parsed);
+    }
+
+    if(*result == (time_t)-1) {
+        log_error("Failed converting date '%s'.\n", value);
+        return R_ERROR;
+    }
+
+    return R_OK;
+}

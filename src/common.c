@@ -142,3 +142,28 @@ bool dates_equal(time_t a, time_t b) {
         date_a.tm_mon  == date_b.tm_mon &&
         date_a.tm_mday == date_b.tm_mday;
 }
+
+int format_date(time_t date, char *buffer, size_t buffer_size) {
+    if(buffer == NULL || buffer_size == 0) {
+        return R_ERROR;
+    }
+
+    struct tm local_time;
+
+    if(localtime_s(&local_time, &date) != 0) {
+        log_error("Failed to convert date to local time.\n");
+        return R_ERROR;
+    }
+
+    if(strftime(
+        buffer,
+        buffer_size,
+        "%Y-%m-%d",
+        &local_time
+    ) == 0) {
+        log_error("Failed to format date.\n");
+        return R_ERROR;
+    }
+
+    return R_OK;
+}

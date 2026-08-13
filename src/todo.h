@@ -11,6 +11,7 @@ typedef enum {OPEN, IN_PROGRESS, DONE} todo_status;
 struct todo {
     char text[DEFAULT_BUFFER_SIZE * 2];
     time_t created;
+    time_t due;
     unsigned long long id;
     todo_status status;
 };

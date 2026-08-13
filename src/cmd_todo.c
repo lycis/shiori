@@ -383,11 +383,30 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     size_t used = 0;
 
     for(int i = 0; i < argc; ++i) {
+        if(strcmp(argv[i], "--due") == 0 || strcmp(argv[i], "-d") == 0) {
+            if(i == argc-1) {
+                log_error("--due requires a due date.\n");
+                return R_ERROR;
+            }
+
+            char* due_date = argv[i + 1];
+            if(parse_date_arg(argv[i + 1], &item->due) != R_OK) {
+                return R_ERROR;
+            }
+
+            log_debug("Due date detected: %s\n", due_date);
+
+            i++;
+            continue;
+        }
+
         int written = snprintf(
-            item->text + used, 
-            sizeof(item->text) - used, 
-            "%s%s", i > 0 ? " " : "",
-            argv[i]);
+            item->text + used,
+            sizeof(item->text) - used,
+            "%s%s",
+            used > 0 ? " " : "",
+            argv[i]
+        );
         if(written < 0 || (size_t)written >= sizeof(item->text) - used) {
             log_error("Todo text is too long.\n");
             return R_ERROR;
@@ -414,42 +433,61 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     return R_OK;
 }
 
-int write_todo(char* filename, struct todo *item) {
+int write_todo(char *filename, struct todo *item) {
     log_debug("Starting to write todo.\n");
-    char tag_id[DEFAULT_BUFFER_SIZE], tag_created[DEFAULT_BUFFER_SIZE];
 
-    // convert id to a tag
-    log_debug("Converting id to tag.\n");
+    char tag_id[DEFAULT_BUFFER_SIZE];
+    char tag_created[DEFAULT_BUFFER_SIZE];
+    char tag_due[DEFAULT_BUFFER_SIZE];
+
+    char *argv[8];
+    int argc = 0;
+
+    // first always comes the todo text
+    argv[argc++] = item->text;
+
+    // id is next
     int written = snprintf(tag_id, sizeof(tag_id), "#%s/id/%llu", APP_NAME, item->id);
     if(written < 0 || (size_t)written >= sizeof(tag_id)) {
-        log_critical("Failed to build todo ID tag.");
+        log_critical("Failed to build todo ID tag.\n");
         return R_ERROR;
     }
 
-    // convert created date to a tag
-    log_debug("Converting cration date to tag.\n");
-    struct tm local_time;
-    if(localtime_s(&local_time, &(item->created)) != 0) {
-        log_error("Failed to get local time.");
-        return R_ERROR;
-    }
-    
-    char date_str[11];
-    if(strftime(date_str, sizeof(date_str), "%Y-%m-%d", &local_time) == 0) {
-        log_error("Feild to format local date.");        
+    argv[argc++] = tag_id;
+
+    // Creation date
+    char created_date[11];
+
+    if(format_date(item->created, created_date, sizeof(created_date) ) != R_OK) {
         return R_ERROR;
     }
 
-    written = snprintf(tag_created, sizeof(tag_created), "#%s/created/%s", APP_NAME, date_str);
+    written = snprintf(tag_created, sizeof(tag_created), "#%s/created/%s",  APP_NAME,created_date);
     if(written < 0 || (size_t)written >= sizeof(tag_created)) {
-        log_critical("Failed to build todo created tag.");
+        log_critical("Failed to build todo created tag.\n");
         return R_ERROR;
     }
 
+    argv[argc++] = tag_created;
 
-    char* argv[] = {item->text, tag_id, tag_created};
+   // optional: due date
+    if(item->due != 0) {
+        char due_date[11];
 
-    return add_markdown_item(3, argv, filename, "* [ ] ", NULL);
+        if(format_date(item->due, due_date, sizeof(due_date)) != R_OK) {
+            return R_ERROR;
+        }
+
+        written = snprintf(tag_due,sizeof(tag_due), "#%s/due/%s", APP_NAME, due_date);
+        if(written < 0 || (size_t)written >= sizeof(tag_due)) {
+            log_critical("Failed to build todo due tag.\n");
+            return R_ERROR;
+        }
+
+        argv[argc++] = tag_due;
+    }
+
+    return add_markdown_item(argc, argv, filename,"* [ ] ",NULL);
 }
 
 int command_todo_add(int argc, char* argv[]) {
