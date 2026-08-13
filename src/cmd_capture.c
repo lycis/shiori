@@ -6,6 +6,29 @@
 #include <string.h>
 
 
+static int split_args(char *input, char *argv[], int max_args) {
+    int argc = 0;
+    char *context = NULL;
+
+    char *token = strtok_s(
+        input,
+        " \t",
+        &context
+    );
+
+    while(token != NULL && argc < max_args) {
+        argv[argc++] = token;
+
+        token = strtok_s(
+            NULL,
+            " \t",
+            &context
+        );
+    }
+
+    return argc;
+}
+
 int command_capture(int argc, char *argv[]) {
     if (has_switch(argc, argv, "--help", false) ||
         has_switch(argc, argv, "-h", false)) {
@@ -62,10 +85,9 @@ int command_capture(int argc, char *argv[]) {
     
     printf("~%s> ", topic);
     while (fgets(input, sizeof(input), stdin) != NULL) {
-        printf("~%s> ", topic);
-
         char *command = trim(input);
         if (strlen(command) == 0) {
+            printf("~%s> ", topic);
             continue;
         }
 
@@ -75,17 +97,31 @@ int command_capture(int argc, char *argv[]) {
         }
 
         if (command[0] == '!') {
-        char *text = trim(command + 1);
+            char *text = trim(command + 1);
 
-        if (*text == '\0') {
-            log_warning("Todo text cannot be empty.\n");
-        } else {
-            char *todo_argv[] = {"add", text};
-
-            if (command_todo(2, todo_argv) != R_OK) {
-            log_error("Failed capturing todo.\n");
+            if(*text == '\0') {
+                log_warning("Todo text cannot be empty.\n");
+                printf("~%s> ", topic);
+                continue;
             }
-        }
+
+            char *todo_argv[32];
+            int todo_argc = 0;
+
+            todo_argv[todo_argc++] = "add";
+
+            todo_argc += split_args(
+                text,
+                &todo_argv[todo_argc],
+                32 - todo_argc
+            );
+
+            if(command_todo(
+                todo_argc,
+                todo_argv
+            ) != R_OK) {
+                log_error("Failed capturing todo.\n");
+            }
         } else {
             if(strlen(topic) > 0) {
                 char *note_argv[] = {"--topic", (char *)topic,command};
@@ -95,6 +131,7 @@ int command_capture(int argc, char *argv[]) {
                 command_add(1, note_argv);
             }
         } 
+        printf("~%s> ", topic);
     }
 
     log_success("Capture mode ended.");
