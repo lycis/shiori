@@ -7,7 +7,6 @@ Here are some ideas for later:
 ## Notes
 * `append_on_top` config switch that adds new day blocks to the top of the file instead of the bottom (for notes and days separately)
 * tags for notes to find them by
-* a "continuous topic mode" where repreaded `add`s land in the same topic (don't know if that is a good idea usability wise, but could be useful for taking notes on meetings or longer sesions in the same context)
 
 
 ## Todos
