@@ -83,7 +83,7 @@ int command_today(int argc, char* argv[]) {
     for(size_t i = 0; i < in_progress_todos.count; ++i) {
         struct todo *item = &in_progress_todos.items[i];
 
-        printf("    %s🚧 %4llu%s  %s\n", ANSI_FG_RGB(255, 190, 80), item->id, ANSI_RESET, item->text);
+        printf("    %s› %4llu%s  %s\n", ANSI_FG_RGB(255, 190, 80), item->id, ANSI_RESET, item->text);
     }
     todo_list_free(&in_progress_todos);
     printf("\n");
@@ -93,7 +93,7 @@ int command_today(int argc, char* argv[]) {
     for(size_t i = 0; i < open_todos.count; ++i) {
         struct todo *item = &open_todos.items[i];
 
-        printf("    %s🔳 %4llu%s  %s\n", ANSI_FG_RGB(110, 190, 255), item->id, ANSI_RESET, item->text);
+        printf("    %s· %4llu%s  %s\n", ANSI_FG_RGB(110, 190, 255), item->id, ANSI_RESET, item->text);
     }
     todo_list_free(&open_todos);
 
