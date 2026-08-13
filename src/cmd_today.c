@@ -55,6 +55,31 @@ static int parse_date_arg(const char *value, time_t *result) {
 }
 
 int command_today(int argc, char* argv[]) {
+    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
+
+        printf(
+            "Usage:\n"
+            "  %s today [options]\n"
+            "\n"
+            "Shows a daily dashboard with notes and active todos.\n"
+            "\n"
+            "Options:\n"
+            "  %-20s Show the dashboard for a specific date\n"
+            "  %-20s Show this help\n"
+            "\n"
+            "Examples:\n"
+            "  %s today\n"
+            "  %s today --date 2026-08-12\n",
+            APP_NAME,
+            "--date YYYY-MM-DD",
+            "-h, --help",
+            APP_NAME,
+            APP_NAME
+        );
+
+        return R_OK;
+    }
+
     // get the selected day
     time_t selected_date = time(NULL);
 
@@ -83,7 +108,7 @@ int command_today(int argc, char* argv[]) {
     else {
         log_debug("Creating daily dashboard.\n");
     }
-    
+
     // Heading
     char heading[DEFAULT_BUFFER_SIZE];
     if(build_dashboard_heading(heading, sizeof(heading), &selected_date) != R_OK) {
