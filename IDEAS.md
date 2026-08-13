@@ -12,6 +12,5 @@ Here are some ideas for later:
 ## Todos
 * additional status like cancelled or deferred
 * priorities
-* due dates
 * tracking of start and completion date
 * comments for ideas (as sub bullets?)
