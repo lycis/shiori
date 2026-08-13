@@ -1,5 +1,6 @@
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
 #include "common.h"
 #include "logging.h"
 #include "cli.h"
@@ -8,10 +9,9 @@
 #include "todo.h"
 #include "todo_list.h"
 
-static int build_dashboard_heading(char* buffer, size_t size) {
-    time_t now = time(NULL);
+static int build_dashboard_heading(char* buffer, size_t size, time_t* date) {
     struct tm local_time;
-    if(localtime_s(&local_time, &now) != 0) {
+    if(localtime_s(&local_time, date) != 0) {
         log_error("Failed to get local time.");
         return R_ERROR;
     }
@@ -31,11 +31,62 @@ static int build_dashboard_heading(char* buffer, size_t size) {
     return R_OK;
 }
 
+static int parse_date_arg(const char *value, time_t *result) {
+    struct tm date = {0};
+
+    if(sscanf_s(value, "%d-%d-%d", &date.tm_year, &date.tm_mon, &date.tm_mday) != 3) {
+        log_error("Invalid date: %s\n", value);
+        return R_ERROR;
+    }
+
+    date.tm_year -= 1900;
+    date.tm_mon -= 1;
+    date.tm_hour = 12;
+    date.tm_isdst = -1;
+
+    *result = mktime(&date);
+
+    if(*result == (time_t)-1) {
+        log_error("Failed converting date: %s\n", value);
+        return R_ERROR;
+    }
+
+    return R_OK;
+}
+
 int command_today(int argc, char* argv[]) {
-    log_debug("Creating daily dashboard.\n");
+    // get the selected day
+    time_t selected_date = time(NULL);
+
+    for(int i = 0; i < argc; ++i) {
+        if(strcmp(argv[i], "--date") == 0) {
+            if(i + 1 >= argc) {
+                log_error("--date requires a date in YYYY-MM-DD format.\n");
+                return R_ERROR;
+            }
+
+            if(parse_date_arg(argv[i + 1], &selected_date) != R_OK) {
+                return R_ERROR;
+            }
+
+            i++;
+        }
+    }
+
+    struct tm local_time;
+    char date_str[11];
+
+    if(localtime_s(&local_time, &selected_date) == 0 &&
+    strftime(date_str, sizeof(date_str), "%Y-%m-%d", &local_time) > 0) {
+        log_debug("Creating daily dashboard for %s.\n", date_str);
+    }
+    else {
+        log_debug("Creating daily dashboard.\n");
+    }
+    
     // Heading
     char heading[DEFAULT_BUFFER_SIZE];
-    if(build_dashboard_heading(heading, sizeof(heading)) != R_OK) {
+    if(build_dashboard_heading(heading, sizeof(heading), &selected_date) != R_OK) {
         return R_ERROR;
     }
 
@@ -47,7 +98,7 @@ int command_today(int argc, char* argv[]) {
     printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD ANSI_FG_RGB(110, 190, 255), "🗒️ Notes", ANSI_RESET);
     struct note_list note_list;
     note_list_init(&note_list);
-    if(read_notes_for_date("NOTES.md", time(NULL), &note_list) != R_OK) {
+    if(read_notes_for_date("NOTES.md", selected_date, &note_list) != R_OK) {
         note_list_free(&note_list);
         return R_ERROR;
     }
