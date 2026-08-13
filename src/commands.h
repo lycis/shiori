@@ -7,5 +7,6 @@ int command_todo(int argc, char* argv[]);
 int command_add(int argc, char* argv[]);
 int command_today(int argc, char* argv[]);
 int command_topic(int argc, char *argv[]);
+int command_capture(int argc, char *argv[]);
 
 #endif

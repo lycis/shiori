@@ -186,6 +186,8 @@ int run_command(char* command, int argc, char* argv[]) {
         return command_today(argc, argv);
     } else if(strcmp(command, "topic") == 0) {
         return command_topic(argc, argv);
+    } else if(strcmp(command, "capture") == 0) {
+        return command_capture(argc, argv);
     } else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
