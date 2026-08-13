@@ -32,22 +32,59 @@ static int build_dashboard_heading(char* buffer, size_t size, time_t* date) {
 }
 
 static int parse_date_arg(const char *value, time_t *result) {
-    struct tm date = {0};
+    time_t now = time(NULL);
 
-    if(sscanf_s(value, "%d-%d-%d", &date.tm_year, &date.tm_mon, &date.tm_mday) != 3) {
-        log_error("Invalid date: %s\n", value);
+    struct tm date;
+
+    if(localtime_s(&date, &now) != 0) {
+        log_error("Failed getting local date.\n");
         return R_ERROR;
     }
 
-    date.tm_year -= 1900;
-    date.tm_mon -= 1;
+    // Normalize to noon so date arithmetic is less likely to stumble over DST boundaries.
     date.tm_hour = 12;
+    date.tm_min = 0;
+    date.tm_sec = 0;
     date.tm_isdst = -1;
 
-    *result = mktime(&date);
+    if(strcmp(value, "today") == 0) {
+        *result = mktime(&date);
+    }
+    else if(strcmp(value, "yesterday") == 0) {
+        date.tm_mday -= 1;
+        *result = mktime(&date);
+    }
+    else if(strcmp(value, "tomorrow") == 0) {
+        date.tm_mday += 1;
+        *result = mktime(&date);
+    }
+    else {
+        struct tm parsed = {0};
+
+        if(sscanf_s(
+            value,
+            "%d-%d-%d",
+            &parsed.tm_year,
+            &parsed.tm_mon,
+            &parsed.tm_mday
+        ) != 3) {
+            log_error(
+                "Invalid date '%s'. Use YYYY-MM-DD, today, yesterday or tomorrow.\n",
+                value
+            );
+            return R_ERROR;
+        }
+
+        parsed.tm_year -= 1900;
+        parsed.tm_mon -= 1;
+        parsed.tm_hour = 12;
+        parsed.tm_isdst = -1;
+
+        *result = mktime(&parsed);
+    }
 
     if(*result == (time_t)-1) {
-        log_error("Failed converting date: %s\n", value);
+        log_error("Failed converting date '%s'.\n", value);
         return R_ERROR;
     }
 
@@ -69,10 +106,12 @@ int command_today(int argc, char* argv[]) {
             "\n"
             "Examples:\n"
             "  %s today\n"
-            "  %s today --date 2026-08-12\n",
+            "  %s today --date 2026-08-12\n"
+            "  %s today --date yesterday\n",
             APP_NAME,
-            "--date YYYY-MM-DD",
+            "--date YYYY-MM-DD|yesterday|tomorrow|today",
             "-h, --help",
+            APP_NAME,
             APP_NAME,
             APP_NAME
         );
