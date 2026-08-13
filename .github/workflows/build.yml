@@ -52,3 +52,4 @@ jobs:
           name: shiori-windows-x64
           path: shiori.exe
           if-no-files-found: error
+          retention-days: 90
