@@ -1,0 +1,354 @@
+# Shiori User Guide
+
+Shiori is a local-first command-line scratchpad and task tracker. It stores notes and todos as ordinary Markdown files in a directory you control.
+
+This guide covers installation, configuration, every current workflow, and the on-disk formats. For the project overview and build status, see the [README](../README.md).
+
+## Contents
+
+- [Installation](#installation)
+- [Initialization and configuration](#initialization-and-configuration)
+- [Command overview](#command-overview)
+- [Adding notes](#adding-notes)
+- [Managing todos](#managing-todos)
+- [Daily dashboard](#daily-dashboard)
+- [Interactive console](#interactive-console)
+- [Debugging](#debugging)
+- [Version information](#version-information)
+- [Data storage and safety](#data-storage-and-safety)
+- [Using Shiori with Obsidian](#using-shiori-with-obsidian)
+
+## Installation
+
+### Download the standalone executable
+
+Every successful GitHub Actions build publishes a `shiori-windows-x64` artifact containing `shiori.exe`. Download the artifact, extract it, and verify the executable:
+
+```console
+.\shiori.exe help
+```
+
+The release executable statically links the C runtime. It does not require a separate Visual C++ Redistributable or third-party DLLs; it only uses DLLs provided by Windows.
+
+### Build from source
+
+You need:
+
+- a C23-capable compiler
+- GNU Make
+- currently, a Windows development environment with Clang
+
+Build a debug executable:
+
+```console
+make
+```
+
+Build an optimized release executable:
+
+```console
+make release
+```
+
+Remove build output:
+
+```console
+make clean
+```
+
+### Put Shiori on your PATH
+
+You can run `shiori.exe` directly from the project directory or copy it to a directory on your user `PATH`, such as:
+
+```text
+C:\Tools\shiori\
+```
+
+After adding that directory to `PATH`, this should work from any terminal:
+
+```console
+shiori help
+```
+
+## Initialization and configuration
+
+Initialize Shiori in the current directory:
+
+```console
+shiori init
+```
+
+This creates a `.shiori` file similar to:
+
+```yaml
+# Initialized: ...
+version: 1
+base_dir: C:\path\to\your\notes
+```
+
+By default, `base_dir` is the directory where you ran `shiori init`. Shiori stores `NOTES.md` and `TODOS.md` there.
+
+To intentionally recreate an existing local configuration:
+
+```console
+shiori init --reinit
+```
+
+Show the loaded configuration:
+
+```console
+shiori config show
+```
+
+Shiori searches for `.shiori` in this order:
+
+1. the current working directory
+2. the user's home directory
+
+A project-specific configuration therefore takes precedence over a user-level fallback.
+
+## Command overview
+
+```text
+shiori [options] <command> [options] [subcommand] ...
+```
+
+### Global options
+
+| Option | Description |
+|---|---|
+| `--debug` | Show debug and plumbing output. |
+
+### Commands
+
+| Command | Description |
+|---|---|
+| `init` | Initialize a new `.shiori` configuration. |
+| `add` | Add a note or thought to today's section. |
+| `todo` | Add, list, update, and remove todos. |
+| `today` | Show notes and active todos in a daily dashboard. |
+| `config` | Show the loaded configuration. |
+| `console` | Start interactive console mode. |
+| `help` | Show command help. |
+| `version` | Display version and build information. |
+
+## Adding notes
+
+Add a thought without opening an editor:
+
+```console
+shiori add remember to review the architecture diagram
+```
+
+If today's section already exists in `NOTES.md`, Shiori adds the note to that block. Otherwise it creates the section:
+
+```markdown
+# 2026-08-13
+* remember to review the architecture diagram
+* investigate SQLite later, but probably do not need it
+
+# 2026-08-12
+* rename the project
+```
+
+Notes are stored as Markdown bullet points using `*`.
+
+## Managing todos
+
+Todos live in `TODOS.md`. Add one with:
+
+```console
+shiori todo add prepare release notes "#work"
+```
+
+Each todo receives a stable numeric ID, a creation date, and an initial status of open.
+
+Quote tags when using PowerShell because an unquoted `#` starts a comment.
+
+### Change status
+
+Use the task ID to move it through its lifecycle:
+
+```console
+shiori todo start 1
+shiori todo done 1
+shiori todo reopen 1
+```
+
+- `start` moves a task to in progress.
+- `done` marks a task as completed.
+- `reopen` returns a task to open.
+
+### List and filter
+
+By default, the list contains open and in-progress todos:
+
+```console
+shiori todo list
+```
+
+Filter by status:
+
+```console
+shiori todo list --open
+shiori todo list --in-progress
+shiori todo list --done
+shiori todo list --all
+```
+
+Explicit status switches replace the default selection. Multiple status switches combine.
+
+Filter by tags contained in the todo text:
+
+```console
+shiori todo list --tag work
+shiori todo list --tag work --tag urgent
+shiori todo list --done --tag work
+```
+
+`--tag` may be repeated. A todo must contain every selected tag to match.
+
+### Rewrite and remove
+
+Change a todo's text while preserving its ID, status, and creation date:
+
+```console
+shiori todo rewrite 1 prepare final release notes
+```
+
+Permanently remove one todo:
+
+```console
+shiori todo remove 1
+```
+
+Remove all completed todos by first previewing the number affected and then confirming:
+
+```console
+shiori todo prune
+shiori todo prune --force
+```
+
+Run `shiori todo --help` or `shiori todo list --help` for the built-in command reference.
+
+## Daily dashboard
+
+Show today's notes and current active todos in a styled terminal dashboard:
+
+```console
+shiori today
+```
+
+Select another day with an ISO date or relative selector:
+
+```console
+shiori today --date 2026-08-12
+shiori today --date yesterday
+shiori today --date tomorrow
+shiori today --date today
+```
+
+The **Notes** section follows the selected date. Current active todos are grouped into **In Progress** and **Open** sections. Completed todos are not shown in the dashboard.
+
+Use `shiori today --help` for the built-in reference.
+
+## Interactive console
+
+Keep Shiori open while capturing several thoughts:
+
+```console
+shiori console
+```
+
+The interactive prompt accepts Shiori commands directly:
+
+```text
+shiori 🦊> add remember to fix the parser
+shiori 🦊> config show
+shiori 🦊> exit
+```
+
+Enter `exit` or `quit` to leave console mode.
+
+## Debugging
+
+Enable diagnostic output with the global `--debug` option:
+
+```console
+shiori --debug add something is behaving strangely
+```
+
+Debug output includes internal operations such as file lookup, heading detection, temporary-file handling, and backup replacement. It is intended for development and troubleshooting.
+
+## Version information
+
+```console
+shiori version
+```
+
+The output includes Shiori's version, compiler, platform, architecture, and detected C standard:
+
+```text
+shiori 0.1.0
+compiler: clang 22.1.8
+platform: windows x86_64
+c standard: C23
+```
+
+## Data storage and safety
+
+Shiori avoids proprietary storage. Markdown remains the source of truth.
+
+### Notes
+
+`NOTES.md` is a chronological stream of daily sections:
+
+```markdown
+# YYYY-MM-DD
+* note
+* another note
+```
+
+When adding to an existing day, Shiori:
+
+1. opens `NOTES.md`
+2. writes a modified copy to `NOTES.md.tmp`
+3. locates today's Markdown heading
+4. inserts the new note
+5. backs up the original file
+6. replaces it with the updated file
+7. removes the backup after a successful replacement
+
+If replacement fails, Shiori attempts to restore the original from its backup.
+
+### Todos
+
+`TODOS.md` uses Markdown task-list syntax plus Shiori metadata tags:
+
+```markdown
+---
+version: 1
+last_id: 4
+---
+
+* [ ] prepare release notes #work #shiori/id/1 #shiori/created/2026-08-12
+* [/] verify the Windows build #shiori/id/2 #shiori/created/2026-08-12
+* [x] update screenshots #shiori/id/3 #shiori/created/2026-08-11
+```
+
+Checkbox markers represent open (`[ ]`), in progress (`[/]`), and done (`[x]`). The front matter maintains the next stable ID. Status changes and other todo rewrites use the same temporary-file, backup, replacement, and restore strategy as notes.
+
+## Using Shiori with Obsidian
+
+Set `base_dir` to a directory inside your Obsidian vault:
+
+```yaml
+version: 1
+base_dir: C:\Users\you\Documents\Obsidian\MyVault
+```
+
+Shiori maintains `NOTES.md` and `TODOS.md` inside that directory. Both are ordinary Markdown, so Obsidian requires no plugin or special integration.
+
+---
+
+Return to the [Shiori README](../README.md).
