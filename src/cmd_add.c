@@ -6,6 +6,30 @@
 #include "cmd_shared.h"
 
 int command_add(int argc, char* argv[]) {
+    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
+        printf(
+        "Usage:\n"
+        "  %s add [options] <text...>\n"
+        "\n"
+        "Adds a note to today's daily section.\n"
+        "\n"
+        "Options:\n"
+        "  %-22s Assign a topic to the note\n"
+        "  %-22s Show this help\n"
+        "\n"
+        "Examples:\n"
+        "  %s add Remember to review the proposal\n"
+        "  %s add -t Rail4Climate Discuss pilot scope\n",
+        APP_NAME,
+        "-t, --topic <topic>",
+        "-h, --help",
+        APP_NAME,
+        APP_NAME
+    );
+
+    return R_OK;
+    }
+
     log_debug("Adding new note.\n");
 
     const char *topic = NULL;
