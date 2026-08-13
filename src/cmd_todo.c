@@ -1,4 +1,3 @@
-#include <corecrt.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -691,12 +690,27 @@ static int command_todo_list(int argc, char* argv[]) {
         }
 
         if(todo_matches_filter(item, & filter)) {
+            char due_buffer[DEFAULT_BUFFER_SIZE];
+            if(item->due != 0) {
+                char dbuffer[20];
+                if(format_date(item->due, dbuffer, sizeof(dbuffer)) != R_OK) {
+                    log_critical("Failed to format due date.\n");
+                    todo_list_free(&todos);
+                    return R_ERROR;
+                }
+
+                sprintf(due_buffer, " ⏰ %s", dbuffer);
+            } else {
+                sprintf(due_buffer, "");
+            }
+
             printf(
-                "%s %-4llu %-40s 📅 %s\n",
+                "%s %-4llu %-40s ➕ %s%s\n",
                 todo_status_icon(item->status),
                 item->id,
                 item->text,
-                date
+                date,
+                due_buffer
             );
         }
     }

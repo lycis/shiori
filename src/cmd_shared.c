@@ -6,6 +6,7 @@
 #include "config.h"
 #include "todo.h"
 #include "todo_list.h"
+#include "cmd_shared.h"
 
 
 bool is_heading(const char *line) {
@@ -200,19 +201,25 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
     return R_OK;
 }
 
-static int create_todo_from_markdown(const char* markdown, struct todo *item) {
+static int create_todo_from_markdown(const char *markdown, struct todo *item) {
     if(strncmp(markdown, "* [", 3) != 0) {
-        log_error("Invalid markdown line passed");
+        log_error("Invalid markdown line passed.\n");
         return R_ERROR;
     }
 
     markdown += 3;
 
-    if(markdown[0] == ' ') item->status = OPEN;
-    else if(markdown[0] == 'X' || markdown[0] == 'x') item->status = DONE;
-    else if(markdown[0] == '/') item->status = IN_PROGRESS;
+    if(markdown[0] == ' ') {
+        item->status = OPEN;
+    }
+    else if(markdown[0] == 'X' || markdown[0] == 'x') {
+        item->status = DONE;
+    }
+    else if(markdown[0] == '/') {
+        item->status = IN_PROGRESS;
+    }
     else {
-        log_error("Invalid TODO status '%s'\n", markdown[0]);
+        log_error("Invalid TODO status '%c'.\n", markdown[0]);
         return R_ERROR;
     }
 
@@ -220,12 +227,16 @@ static int create_todo_from_markdown(const char* markdown, struct todo *item) {
         log_error("Malformed TODO checkbox.\n");
         return R_ERROR;
     }
+
     markdown += 2;
 
-    if(markdown[0] == ' ') markdown++; // there may be a space after the closing bracket
+    if(markdown[0] == ' ') {
+        markdown++;
+    }
 
-    const char *id_tag = strstr(markdown, "#shiori/id/");
+    const char *id_tag      = strstr(markdown, "#shiori/id/");
     const char *created_tag = strstr(markdown, "#shiori/created/");
+    const char *due_tag     = strstr(markdown, "#shiori/due/");
 
     if(id_tag == NULL || created_tag == NULL) {
         log_error("Missing TODO metadata (id or creation date).\n");
@@ -237,11 +248,13 @@ static int create_todo_from_markdown(const char* markdown, struct todo *item) {
         return R_ERROR;
     }
 
-    // now let's extract the text
+    /*
+     * Extract visible todo text.
+     */
     size_t text_len = (size_t)(id_tag - markdown);
 
-    // remove white spaces before the tags
-    while(text_len > 0 && isspace((unsigned char)markdown[text_len - 1])) {
+    while(text_len > 0 &&
+          isspace((unsigned char)markdown[text_len - 1])) {
         text_len--;
     }
 
@@ -253,8 +266,11 @@ static int create_todo_from_markdown(const char* markdown, struct todo *item) {
     memcpy(item->text, markdown, text_len);
     item->text[text_len] = '\0';
 
-    // next extract the ID tag
+    /*
+     * ID
+     */
     const char *id_value = id_tag + strlen("#shiori/id/");
+
     char *id_end = NULL;
 
     item->id = strtoull(id_value, &id_end, 10);
@@ -264,46 +280,56 @@ static int create_todo_from_markdown(const char* markdown, struct todo *item) {
         return R_ERROR;
     }
 
-    if(*id_end != '\0' && !isspace((unsigned char)*id_end)) {
+    if(*id_end != '\0' &&
+       !isspace((unsigned char)*id_end)) {
         log_error("Invalid TODO ID.\n");
         return R_ERROR;
     }
 
-    // now extract the creation date
+    /*
+     * Creation date
+     */
     const char *created_value = created_tag + strlen("#shiori/created/");
-    char date_str[11];
+
+    char created_date[11];
 
     if(strlen(created_value) < 10) {
         log_error("Invalid TODO creation date.\n");
         return R_ERROR;
     }
 
-    memcpy(date_str, created_value, 10);
-    date_str[10] = '\0';
+    memcpy(created_date, created_value, 10);
 
-    struct tm created = {0};
+    created_date[10] = '\0';
 
-    if(sscanf_s(
-        date_str,
-        "%d-%d-%d",
-        &created.tm_year,
-        &created.tm_mon,
-        &created.tm_mday
-    ) != 3) {
-        log_error("Invalid TODO creation date.\n");
+    if(parse_date_arg(created_date, &item->created) != R_OK) {
+        log_error("Invalid TODO creation date '%s'.\n", created_date);
         return R_ERROR;
     }
 
-    created.tm_year -= 1900;
-    created.tm_mon -= 1;
-    created.tm_hour = 12;
-    created.tm_isdst = -1;
+    /*
+     * Due date is optional.
+     */
+    item->due = 0;
 
-    item->created = mktime(&created);
+    if(due_tag != NULL) {
+        const char *due_value = due_tag + strlen("#shiori/due/");
 
-    if(item->created == (time_t)-1) {
-        log_error("Failed converting TODO creation date.\n");
-        return R_ERROR;
+        char due_date[11];
+
+        if(strlen(due_value) < 10) {
+            log_error("Invalid TODO due date.\n");
+            return R_ERROR;
+        }
+
+        memcpy(due_date, due_value, 10);
+
+        due_date[10] = '\0';
+
+        if(parse_date_arg(due_date, &item->due) != R_OK) {
+            log_error("Invalid TODO due date '%s'.\n", due_date);
+            return R_ERROR;
+        }
     }
 
     return R_OK;
