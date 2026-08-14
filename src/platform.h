@@ -25,6 +25,6 @@ int terminal_enable_utf8(void);
 int get_user_home(char* buffer, size_t size);
 char* get_current_path(char *buffer, size_t size);
 int set_environment_variable(const char* name, const char *value);
-int run_command(const char* command);
+int run_system_command(const char* command);
 
 #endif

@@ -22,6 +22,9 @@ int command_config(int argc, char* argv[]) {
     if(strcmp(argv[0], "show") == 0) {
         printf("version: %d\n", g_config.version);
         printf("base_dir: %s\n", g_config.base_dir);
+        printf("\n");
+        printf("hooks:\n");
+        if(g_config.hooks.after_command[0] != '\0') printf("  after_command: %s", g_config.hooks.after_command);
     } else {
         log_error("Unknown config command. See --help\n", argv[0]);
         return R_ERROR;

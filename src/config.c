@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include <string.h>
 
 #include "platform.h"
 #include "common.h"
@@ -9,6 +10,10 @@
 struct configuration g_config;
 
 int read_config_file() {
+
+    // clear the whole config
+    memset(&g_config, 0, sizeof(g_config));
+
     char config_path[DEFAULT_BUFFER_SIZE];
 
     if(access(CONFIG_FILE_NAME, F_OK) == 0) {
@@ -76,6 +81,14 @@ int read_config_file() {
                 strcpy_s(g_config.base_dir, sizeof(g_config.base_dir), value);
             } else {
                 log_error("invalid configuration (line %d): Empty base directory is not permitted.\n", lnr);
+            }
+        } else if(strcmp(key, "hook_after_command") == 0) {
+            if(strlen(value) > 0) {
+                if(strcpy_s(g_config.hooks.after_command, sizeof(g_config.hooks.after_command), value) != 0) {
+                    log_error("invalid configuration (line %d): after_command_hook path is too long\n", lnr);
+                    fclose(config_file);
+                    return R_ERROR;
+                }
             }
         }
     }
