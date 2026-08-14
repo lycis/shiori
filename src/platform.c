@@ -61,3 +61,8 @@ int set_environment_variable(const char* name, const char *value) {
     #error not implemented
     #endif
 }
+
+int run_command(const char *command) {
+    // TODO replace with a better option than system
+    return system(command);
+}
