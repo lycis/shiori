@@ -189,3 +189,34 @@ int compare_dates(time_t a, time_t b) {
 
     return 0;
 }
+
+int join_array(int argc, char *argv[], char *buffer, size_t buffer_size) {
+    if(buffer == NULL || buffer_size == 0) {
+        return R_ERROR;
+    }
+
+    buffer[0] = '\0';
+
+    if(argc <= 0) {
+        return R_OK;
+    }
+
+    if(argv == NULL) {
+        return R_ERROR;
+    }
+
+    size_t used = 0;
+
+    for(int i = 0; i < argc; ++i) {
+        int written = snprintf(buffer + used, buffer_size - used, "%s%s", i > 0 ? " " : "", argv[i]);
+        if(written < 0 ||
+           (size_t)written >= buffer_size - used) {
+            log_error("Joined argument string is too long.\n");
+            return R_ERROR;
+        }
+
+        used += (size_t)written;
+    }
+
+    return R_OK;
+}

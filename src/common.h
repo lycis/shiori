@@ -30,5 +30,6 @@ bool str_ends_with(const char *str, const char *suffix);
 bool dates_equal(time_t a, time_t b);
 int format_date(time_t date, char *buffer, size_t buffer_size);
 int compare_dates(time_t a, time_t b);
+int join_array(int argc, char *argv[], char *buffer, size_t buffer_size);
 
 #endif

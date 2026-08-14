@@ -23,6 +23,7 @@
 #include "config.h"
 #include "cli.h"
 #include "commands.h"
+#include "hooks.h"
 
 // --------------------- Prototypes
 int run_command(char* command, int argc, char* argv[]);
@@ -194,6 +195,11 @@ int run_command(char* command, int argc, char* argv[]) {
     } else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
+    }
+
+    // call after command hook
+    if(g_config.hooks.after_command[0] != '\0') {
+        hook_after_command();
     }
     
     return 0;
