@@ -85,7 +85,7 @@ int read_config_file() {
         } else if(strcmp(key, "hook_after_command") == 0) {
             if(strlen(value) > 0) {
                 if(strcpy_s(g_config.hooks.after_command, sizeof(g_config.hooks.after_command), value) != 0) {
-                    log_error("invalid configuration (line %d): after_command_hook path is too long\n", lnr);
+                    log_error("invalid configuration (line %d): hook_after_command path is too long\n", lnr);
                     fclose(config_file);
                     return R_ERROR;
                 }
