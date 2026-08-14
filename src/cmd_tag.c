@@ -54,16 +54,16 @@ int command_tag(int argc, char* argv[]) {
        has_switch(argc, argv, "-h", false)) {
         printf(
             "Usage:\n"
-            "  %s tag <tag>\n"
+            "  %s tag <tag> [tag...]\n"
             "\n"
-            "Shows all notes containing the specified tag.\n"
+            "Shows all notes containing all specified tags.\n"
             "\n"
             "Options:\n"
             "  %-22s Show this help\n"
             "\n"
             "Examples:\n"
             "  %s tag decision\n"
-            "  %s tag followup\n",
+            "  %s tag decision followup\n",
             APP_NAME,
             "-h, --help",
             APP_NAME,
@@ -73,7 +73,7 @@ int command_tag(int argc, char* argv[]) {
         return R_OK;
     }
 
-    if(argc != 1) {
+    if(argc < 1) {
         log_error("You need to specify at least one tag.");
         return R_ERROR;
     }
@@ -99,7 +99,18 @@ int command_tag(int argc, char* argv[]) {
     time_t last_date = 0;
     bool have_last_date = false;
     for(size_t i = 0; i < list.count; ++i) {
-        if(!note_has_tag(&list.items[i], argv[0])) continue; // not a note of this topic
+        bool matches_all = true;
+
+        for(int t = 0; t < argc; ++t) {
+            if(!note_has_tag(&list.items[i], argv[t])) {
+                matches_all = false;
+                break;
+            }
+        }
+
+        if(!matches_all) {
+            continue;
+        }
 
         if(!have_last_date || !dates_equal(last_date, list.items[i].created)) {
             char date_heading[32];
