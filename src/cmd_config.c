@@ -24,7 +24,7 @@ int command_config(int argc, char* argv[]) {
         printf("base_dir: %s\n", g_config.base_dir);
         printf("\n");
         printf("hooks:\n");
-        if(g_config.hooks.after_command[0] != '\0') printf("  after_command: %s", g_config.hooks.after_command);
+        printf("  after_command: %s", g_config.hooks.after_command[0] != '\0' ? g_config.hooks.after_command : "(not configured)");
     } else {
         log_error("Unknown config command. See --help\n", argv[0]);
         return R_ERROR;
