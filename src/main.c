@@ -17,6 +17,11 @@
     #error "fopen_s is not available on this platform"
 #endif 
 
+#ifdef _WIN32
+#include <windows.h>
+#include <wchar.h>
+#endif
+
 #include "common.h"
 #include "logging.h"
 #include "platform.h"
@@ -24,6 +29,7 @@
 #include "cli.h"
 #include "commands.h"
 #include "hooks.h"
+#include "utf8.h"
 
 // --------------------- Prototypes
 int run_command(char* command, int argc, char* argv[]);
@@ -206,7 +212,8 @@ int run_command(char* command, int argc, char* argv[]) {
     return rc;
 } 
 
-int main(int argc, char* argv[]) {
+
+int shiori_main(int argc, char *argv[]) {
     terminal_enable_utf8();
 
     if(argc > 1) {
@@ -245,3 +252,29 @@ int main(int argc, char* argv[]) {
 
     return SHIORI_EXIT_SUCCESS;
 }
+
+#ifdef _WIN32
+
+int wmain(int argc, wchar_t *wargv[]) {
+    char **argv = convert_wargv_to_utf8(argc, wargv);
+
+    if(argv == NULL) {
+        return SHIORI_EXIT_COMMAND_FAILED;
+    }
+
+    int result = shiori_main(argc, argv);
+
+    free_utf8_argv(argc, argv);
+
+    return result;
+}
+
+#else
+
+int main(int argc, char *argv[])
+{
+    return shiori_main(argc, argv);
+}
+
+#endif
+

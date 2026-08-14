@@ -19,7 +19,10 @@ int terminal_enable_utf8(void) {
         return R_OK;
     }
 
-    return SetConsoleOutputCP(CP_UTF8) ? R_OK : R_ERROR;
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
+    return R_OK;
     #else
      setlocale(LC_CTYPE, "");
 
