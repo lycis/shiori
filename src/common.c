@@ -48,7 +48,7 @@ int create_file_if_not_exists(char* fname) {
     return R_OK;
 }
 
-int get_base_dir_file_path(char *filename, char *buffer, size_t buffer_size) {
+int get_base_dir_file_path(const char *filename, char *buffer, size_t buffer_size) {
     int written = snprintf(buffer, buffer_size, "%s%s%s", g_config.base_dir, get_path_separator(), filename);
     if(written < 0 || (size_t)written >= buffer_size) {
         log_error("File path too long.\n");
