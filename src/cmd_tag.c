@@ -50,6 +50,29 @@ bool note_has_tag(const struct note *note, const char *tag) {
 }
 
 int command_tag(int argc, char* argv[]) {
+    if(has_switch(argc, argv, "--help", false) ||
+       has_switch(argc, argv, "-h", false)) {
+        printf(
+            "Usage:\n"
+            "  %s tag <tag>\n"
+            "\n"
+            "Shows all notes containing the specified tag.\n"
+            "\n"
+            "Options:\n"
+            "  %-22s Show this help\n"
+            "\n"
+            "Examples:\n"
+            "  %s tag decision\n"
+            "  %s tag followup\n",
+            APP_NAME,
+            "-h, --help",
+            APP_NAME,
+            APP_NAME
+        );
+
+        return R_OK;
+    }
+
     if(argc != 1) {
         log_error("You need to specify at least one tag.");
         return R_ERROR;
