@@ -51,3 +51,13 @@ char* get_current_path(char *buffer, size_t size) {
 
     return ptr;
 }
+
+int set_environment_variable(const char* name, const char *value) {
+    #ifdef _WIN32
+    errno_t err = _putenv_s(name, value);
+    if(err != 0) return R_ERROR;
+    return R_OK;
+    #else
+    #error not implemented
+    #endif
+}

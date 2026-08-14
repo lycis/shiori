@@ -24,5 +24,6 @@ char* get_path_separator();
 int terminal_enable_utf8(void);
 int get_user_home(char* buffer, size_t size);
 char* get_current_path(char *buffer, size_t size);
+int set_environment_variable(const char* name, const char *value);
 
 #endif
