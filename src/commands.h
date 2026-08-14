@@ -8,5 +8,6 @@ int command_add(int argc, char* argv[]);
 int command_today(int argc, char* argv[]);
 int command_topic(int argc, char *argv[]);
 int command_capture(int argc, char *argv[]);
+int command_tag(int argc, char *argv[]);
 
 #endif
