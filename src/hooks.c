@@ -15,14 +15,8 @@ int hook_after_command(const char* command, int argc, char* argv[]) {
         return R_ERROR;
     }
     set_environment_variable("SHIORI_COMMAND_ARGS", args);
-
-    char command_path[DEFAULT_BUFFER_SIZE * 2];
-    if(get_base_dir_file_path(g_config.hooks.after_command, command_path, sizeof(command_path)) != R_OK) {
-        log_warning("Executing hook_after_command failed: Too long hook script path.\n");
-        return R_ERROR;
-    }
-
-    int exit_code = run_system_command(command_path);
+    
+    int exit_code = run_script_basedir(g_config.hooks.after_command);
     if(exit_code != 0) {
         log_warning("Executing hook_after_command failed: Exit code %d.", exit_code);
     }

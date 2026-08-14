@@ -178,20 +178,21 @@ int run_command(char* command, int argc, char* argv[]) {
         exit(SHIORI_EXIT_CONFIG_ERROR);
     }
 
+    int rc = -1;
     if(strcmp(command, "config") == 0) {
-        return command_config(argc, argv);
+        rc = command_config(argc, argv);
     } else if(strcmp(command, "console") == 0) {
-        return command_console(argc, argv);
+        rc = command_console(argc, argv);
     } else if(strcmp(command, "add") == 0) {
-        return command_add(argc, argv);
+        rc = command_add(argc, argv);
     } else if(strcmp(command, "todo") == 0) {
-        return command_todo(argc, argv);
+        rc = command_todo(argc, argv);
     } else if(strcmp(command, "today") == 0) {
-        return command_today(argc, argv);
+        rc = command_today(argc, argv);
     } else if(strcmp(command, "topic") == 0) {
-        return command_topic(argc, argv);
+        rc = command_topic(argc, argv);
     } else if(strcmp(command, "capture") == 0) {
-        return command_capture(argc, argv);
+        rc = command_capture(argc, argv);
     } else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
@@ -199,11 +200,11 @@ int run_command(char* command, int argc, char* argv[]) {
 
     // call after command hook
     if(g_config.hooks.after_command[0] != '\0') {
-        hook_after_command();
+        hook_after_command(command, argc, argv);
     }
     
-    return 0;
-}
+    return rc;
+} 
 
 int main(int argc, char* argv[]) {
     terminal_enable_utf8();
