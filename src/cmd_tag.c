@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "cmd_shared.h"
 #include "common.h"
 #include "note.h"
 #include "logging.h"
@@ -6,8 +7,15 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "todo.h"
+#include "todo_list.h"
 
-bool note_has_tag(const struct note *note, const char *tag) {
+bool text_has_tag(const char *text, const char *tag)
+{
+    if(text == NULL || tag == NULL || *tag == '\0') {
+        return false;
+    }
+
     char needle[DEFAULT_BUFFER_SIZE];
 
     int written = snprintf(
@@ -21,19 +29,23 @@ bool note_has_tag(const struct note *note, const char *tag) {
         return false;
     }
 
-    const char *current = note->text;
+    size_t needle_len = strlen(needle);
+    const char *current = text;
 
     while((current = strstr(current, needle)) != NULL) {
-        char before = current == note->text
-            ? '\0'
-            : current[-1];
-
-        char after = current[strlen(needle)];
-
+        /*
+         * A tag must start at the beginning of the text
+         * or after whitespace.
+         */
         bool valid_before =
-            current == note->text ||
-            isspace((unsigned char)before);
+            current == text ||
+            isspace((unsigned char)current[-1]);
 
+        char after = current[needle_len];
+
+        /*
+         * Prevent #work from matching #workshop.
+         */
         bool valid_after =
             after == '\0' ||
             isspace((unsigned char)after) ||
@@ -43,10 +55,20 @@ bool note_has_tag(const struct note *note, const char *tag) {
             return true;
         }
 
-        current += strlen(needle);
+        current += needle_len;
     }
 
     return false;
+}
+
+bool note_has_tag(const struct note *item, const char *tag)
+{
+    return text_has_tag(item->text, tag);
+}
+
+bool todo_has_tag(const struct todo *item, const char *tag)
+{
+    return text_has_tag(item->text, tag);
 }
 
 int command_tag(int argc, char* argv[]) {
@@ -84,6 +106,7 @@ int command_tag(int argc, char* argv[]) {
     print_divider(60);
     printf("\n");
 
+    printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD ANSI_FG_RGB(110, 190, 255), "🗒️ Notes", ANSI_RESET);
     struct note_list list;
     note_list_init(&list);
     if(read_notes("NOTES.md", &list) != R_OK) {
@@ -121,20 +144,77 @@ int command_tag(int argc, char* argv[]) {
             }
 
             printf(ANSI_BOLD);
-            printf("%s\n", date_heading);
+            printf("  %s\n", date_heading);
             printf(ANSI_RESET);
 
             last_date = list.items[i].created;
             have_last_date = true;
         }
 
-        printf("  • %s\n", list.items[i].text);
+        printf("    • %s\n", list.items[i].text);
     }
-
-    printf("\n");
-    print_divider(60);
 
     note_list_free(&list);
 
+    printf("\n");
+    print_divider(60);
+    printf("\n");
+
+    printf("  %s%s%s\n", ANSI_FG_RGB(255, 105, 120), "📌 Todos", ANSI_RESET);
+    
+    struct todo_list todos;
+    todo_list_init(&todos);
+
+    if(read_todos(TODO_FILE, &todos) != R_OK) {
+        log_critical("Failed reading todo list.\n");
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    for(size_t i = 0; i < todos.count; ++i) {
+        bool matches_all = true;
+
+        for(int t = 0; t < argc; ++t) {
+            if(!todo_has_tag(&todos.items[i], argv[t])) {
+                matches_all = false;
+                break;
+            }
+        }
+
+        if(!matches_all) {
+            continue;
+        }
+
+        printf(
+            "    %s %4llu  %s",
+            todo_status_simple_icon(todos.items[i].status),
+            todos.items[i].id,
+            todos.items[i].text
+        );
+
+        if(todos.items[i].due != 0) {
+            char due_date[11];
+
+            if(format_date(
+                todos.items[i].due,
+                due_date,
+                sizeof(due_date)
+            ) != R_OK) {
+                todo_list_free(&todos);
+                return R_ERROR;
+            }
+
+            printf(
+                "  %s📅 %s%s",
+                ANSI_FG_RGB(255, 190, 80),
+                due_date,
+                ANSI_RESET
+            );
+        }
+
+        printf("\n");
+    }
+
+    todo_list_free(&todos);
     return R_OK;
 }
