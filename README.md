@@ -69,6 +69,7 @@ Your data remains ordinary Markdown that works with any text editor or Markdown 
 - 🌅 **Daily dashboard** — review notes and active work for today or another selected date.
 - 💻 **Interactive console** — keep Shiori open while capturing several thoughts.
 - 🛡️ **Safe updates** — file rewrites use temporary files with backup and restore handling.
+- 🪝 **Command hooks** — run your own local automation after Shiori commands.
 - 🔌 **Obsidian-friendly** — point `base_dir` at a vault; no plugin is required.
 
 ---
@@ -130,7 +131,7 @@ shiori [options] <command> [options] [subcommand] ...
 
 Use the global `--debug` option to show diagnostic output.
 
-See the **[User Guide](docs/USER_GUIDE.md)** for capture sessions, topics, due dates, the todo command reference, filters, date selection, configuration, data formats, and troubleshooting.
+See the **[User Guide](docs/USER_GUIDE.md)** for capture sessions, topics, due dates, the todo command reference, filters, date selection, configuration, data formats, and troubleshooting. Automation authors can use the dedicated **[Hooks Guide](docs/HOOKS.md)**.
 
 ---
 

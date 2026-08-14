@@ -8,6 +8,7 @@ This guide covers installation, configuration, every current workflow, and the o
 
 - [Installation](#installation)
 - [Initialization and configuration](#initialization-and-configuration)
+- [Hooks and automation](#hooks-and-automation)
 - [Command overview](#command-overview)
 - [Adding notes](#adding-notes)
 - [Capture sessions](#capture-sessions)
@@ -108,6 +109,24 @@ Shiori searches for `.shiori` in this order:
 2. the user's home directory
 
 A project-specific configuration therefore takes precedence over a user-level fallback.
+
+## Hooks and automation
+
+Shiori can run a local script after a command, making it possible to trigger backups, version-control workflows, notifications, or other personal automation.
+
+Configure the current `after_command` hook in `.shiori` with a path relative to `base_dir`:
+
+```yaml
+version: 1
+base_dir: C:\Users\you\Notes
+hook_after_command: hooks\after_command.bat
+```
+
+The hook runs synchronously after recognized commands and receives command information through environment variables. Hook scripts are executable code, so only configure scripts you trust.
+
+`shiori config show` displays the configured hook path under `hooks`, or `(not configured)` when it is disabled.
+
+See the dedicated **[Shiori Hooks Guide](HOOKS.md)** for the complete lifecycle, environment variables, platform support, examples, failure behavior, and current limitations.
 
 ## Command overview
 
