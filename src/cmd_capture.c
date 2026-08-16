@@ -135,7 +135,7 @@ int command_capture(int argc, char *argv[]) {
         printf("~%s> ", topic);
     }
 
-    log_success("Capture mode ended.");
+    log_success("Capture mode ended.\n");
 
     return R_OK;
 }
