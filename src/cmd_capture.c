@@ -31,11 +31,17 @@ static int split_args(char *input, char *argv[], int max_args) {
 
 static const char *capture_completion(const char *input)
 {
-    if(strncmp("/done", input, strlen(input)) == 0) {
-        return "/done";
-    }
+    static const char *commands[] = {
+        "/done",
+        "/exit",
+        "/quit"
+    };
 
-    return NULL;
+    return find_completion(
+        input,
+        commands,
+        sizeof(commands) / sizeof(commands[0])
+    );
 }
 
 int command_capture(int argc, char *argv[]) {

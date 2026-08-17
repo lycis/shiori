@@ -11,5 +11,6 @@ void print_divider(size_t width);
 typedef const char *(*completion_fn)(const char *input);
 
 int read_interactive_line(const char *prompt, char *buffer, size_t buffer_size, completion_fn complete);
+const char *find_completion(const char *input, const char *options[], size_t option_count);
 
 #endif

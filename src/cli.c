@@ -202,3 +202,23 @@ int read_interactive_line(
         }
     }
 }
+
+const char *find_completion(const char *input, const char *options[], size_t option_count) {
+    if(input == NULL || input[0] == '\0') {
+        return NULL;
+    }
+
+    size_t input_length = strlen(input);
+
+    for(size_t i = 0; i < option_count; ++i) {
+        if(strncmp(
+            options[i],
+            input,
+            input_length
+        ) == 0) {
+            return options[i];
+        }
+    }
+
+    return NULL;
+}
