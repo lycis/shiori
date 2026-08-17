@@ -53,7 +53,11 @@ int note_list_add(
     return R_OK;
 }
 
-int create_note_from_markdown(const char *markdown, time_t created,struct note *item) {
+int create_note_from_markdown(const char *markdown, time_t created, struct note *item) {
+    if(markdown == NULL || item == NULL) {
+        return R_ERROR;
+    }
+
     const char *topic_tag = strstr(markdown, "#shiori/topic/");
     const char *id_tag = strstr(markdown, "<!-- shiori:id=");
 
@@ -61,8 +65,18 @@ int create_note_from_markdown(const char *markdown, time_t created,struct note *
     item->topic[0] = '\0';
     item->id[0] = '\0';
 
-    size_t text_len = topic_tag != NULL
-        ? (size_t)(topic_tag - markdown)
+    const char *metadata_start = NULL;
+
+    if(topic_tag != NULL) {
+        metadata_start = topic_tag;
+    }
+
+    if(id_tag != NULL && (metadata_start == NULL || id_tag < metadata_start)) {
+        metadata_start = id_tag;
+    }
+
+    size_t text_len = metadata_start != NULL
+        ? (size_t)(metadata_start - markdown)
         : strlen(markdown);
 
     while(text_len > 0 &&
@@ -72,7 +86,7 @@ int create_note_from_markdown(const char *markdown, time_t created,struct note *
     }
 
     if(text_len >= sizeof(item->text)) {
-        log_error("Note text is too long.");
+        log_error("Note text is too long.\n");
         return R_ERROR;
     }
 
@@ -81,7 +95,6 @@ int create_note_from_markdown(const char *markdown, time_t created,struct note *
 
     if(topic_tag != NULL) {
         const char *topic = topic_tag + strlen("#shiori/topic/");
-
         size_t topic_len = 0;
 
         while(topic[topic_len] != '\0' &&
@@ -93,19 +106,16 @@ int create_note_from_markdown(const char *markdown, time_t created,struct note *
         }
 
         if(topic_len >= sizeof(item->topic)) {
-            log_error("Topic name is too long.");
+            log_error("Topic name is too long.\n");
             return R_ERROR;
         }
 
         memcpy(item->topic, topic, topic_len);
         item->topic[topic_len] = '\0';
-    } else {
-        memset(item->topic, 0, 1); // set topic to nothing
     }
 
     if(id_tag != NULL) {
         const char *id = id_tag + strlen("<!-- shiori:id=");
-
         size_t id_len = 0;
 
         while(id[id_len] != '\0' &&
@@ -122,10 +132,8 @@ int create_note_from_markdown(const char *markdown, time_t created,struct note *
         } else if(id_len >= sizeof(item->id)) {
             log_error("Note id is too long.\n");
             return R_ERROR;
-        }
-        else {
+        } else {
             memcpy(item->id, id, id_len);
-
             item->id[id_len] = '\0';
         }
     }
