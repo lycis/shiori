@@ -6,23 +6,57 @@
 #include "cli.h"
 #include "commands.h"
 
-int command_console(int argc, char* argv[]) {
+static const char *console_completion(const char *input) {
+    static const char *commands[] = {
+        "add",
+        "capture",
+        "config",
+        "console",
+        "tag",
+        "today",
+        "todo",
+        "topic",
+        "version",
+        "exit",
+        "quit"
+    };
 
-    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
+    return find_completion(input, commands, sizeof(commands) / sizeof(commands[0]));
+}
+
+int command_console(int argc, char *argv[]) {
+    if(has_switch(argc, argv, "--help", false) ||
+       has_switch(argc, argv, "-h", false)) {
         printf("Starts an interactive console mode.\n");
         printf("\n");
-        printf("You can enter %s commands directly in the console. This helps as you do not have to run `%s <command>` all the time. Useful if you want to work continuously.", APP_NAME, APP_NAME);
+        printf(
+            "You can enter %s commands directly in the console. "
+            "This helps as you do not have to run `%s <command>` all the time. "
+            "Useful if you want to work continuously.\n",
+            APP_NAME,
+            APP_NAME
+        );
+
         return R_OK;
     }
 
     log_info("Starting interactive console mode\n");
     printf("Type 'exit' or 'quit' to exit the console.\n");
 
-    char input[DEFAULT_BUFFER_SIZE];
-    printf("%s 🦊> ", APP_NAME);
-    while(fgets(input, sizeof(input), stdin) != NULL) {
+    char prompt[DEFAULT_BUFFER_SIZE];
+    snprintf(prompt, sizeof(prompt), "%s 🦊> ", APP_NAME);
+
+    while(true) {
+        char input[DEFAULT_BUFFER_SIZE];
+
+        if(read_interactive_line(prompt, input, sizeof(input), console_completion) != R_OK) {
+            log_error("Failed reading console input.\n");
+            break;
+        }
+
         char *command = trim(input);
-        if(strlen(command) == 0) {
+
+        if(*command == '\0') {
             continue;
         }
 
@@ -31,18 +65,26 @@ int command_console(int argc, char* argv[]) {
             break;
         }
 
-        // split command into arguments
-        char *argv[DEFAULT_BUFFER_SIZE];
-        int argc = 0;
+        /*
+         * Split command into argv.
+         */
+        char *command_argv[64];
+        int command_argc = 0;
+
         char *context = NULL;
-        char *token = strtok_s(command, " ", &context);
-        while(token != NULL && argc < DEFAULT_BUFFER_SIZE) {
-            argv[argc++] = token;
-            token = strtok_s(NULL, " ", &context);
+
+        char *token = strtok_s(command, " \t", &context);
+
+        while(token != NULL && command_argc < 64) {
+            command_argv[command_argc++] = token;
+            token = strtok_s(NULL, " \t", &context);
         }
 
-        run_command(argv[0], argc - 1, &argv[1]);
-        printf("%s 🦊> ", APP_NAME);
+        if(command_argc == 0) {
+            continue;
+        }
+
+        run_command(command_argv[0], command_argc - 1, &command_argv[1]);
     }
 
     return R_OK;
