@@ -1,4 +1,5 @@
 #include "cli.h"
+#include "color.h"
 #include "commands.h"
 #include "common.h"
 #include "logging.h"
@@ -93,7 +94,7 @@ int command_capture(int argc, char *argv[]) {
     if(topic == NULL) {
         topic = "";
     } else {
-        printf("✍️ Capturing topic: %s%s%s\n", ANSI_FG_RGB(180, 140, 255), topic,ANSI_RESET);
+        printf("✍️ Capturing topic: %s%s%s\n", COLOR_TOPIC, topic,ANSI_RESET);
         print_divider(60);
         printf("\n");
     }

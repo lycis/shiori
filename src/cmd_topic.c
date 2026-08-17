@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <string.h>
+#include "color.h"
 #include "common.h"
 #include "note.h"
 #include "logging.h"
@@ -88,7 +89,7 @@ static int command_topic_list() {
         return R_OK;
     }
 
-     printf("%s%s🏷️ Topics%s\n", ANSI_FG_RGB(180, 140, 255), ANSI_BOLD,ANSI_RESET);
+     printf("%s%s🏷️ Topics%s\n", COLOR_TOPIC, ANSI_BOLD,ANSI_RESET);
     print_divider(60);
 
     for(size_t i = 0; i < topic_count; ++i) {
@@ -138,7 +139,7 @@ int command_topic(int argc, char *argv[]) {
     const char *topic = argv[0];
 
     char heading[DEFAULT_BUFFER_SIZE];
-    sprintf(heading, ANSI_FG_RGB(180, 140, 255) ANSI_BOLD "🏷️ Topic: %s", topic);
+    sprintf(heading, COLOR_TOPIC ANSI_BOLD "🏷️ Topic: %s", topic);
     printf("%s\n", heading);
     print_divider(60);
     printf("\n");

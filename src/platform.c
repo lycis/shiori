@@ -327,7 +327,7 @@ void terminal_render_input(
          */
         printf(
             "%s%s%s",
-            ANSI_FG_RGB(120, 130, 145),
+            COLOR_COMPLETION_REMAINDER,
             suggestion + typed_length,
             ANSI_RESET
         );

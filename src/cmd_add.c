@@ -1,6 +1,7 @@
 #include <time.h>
 #include <string.h>
 #include "cli.h"
+#include "color.h"
 #include "common.h"
 #include "logging.h"
 #include "cmd_shared.h"
@@ -82,6 +83,6 @@ int command_add(int argc, char* argv[]) {
     }
 
     if(topic == NULL) log_success("Added your note.\n");
-    else log_success("Added your note. %s[%s]%s\n", ANSI_FG_RGB(140, 180, 255), topic, ANSI_RESET);
+    else log_success("Added your note. %s[%s]%s\n", COLOR_SUCCESS, topic, ANSI_RESET);
     return R_OK;
 }

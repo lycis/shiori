@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdio.h>
 #include "cli.h" 
+#include "color.h"
 #include "platform.h"
 #include "common.h"
 
@@ -42,7 +43,7 @@ bool has_switch(int argc, char *argv[], const char *sw, bool allow_subcommands){
 }
 
 void print_divider(size_t width) {
-    printf(ANSI_FG_RGB(90, 105, 120));
+    printf(COLOR_DIVIDER);
 
     for(size_t i = 0; i < width; ++i) {
         printf("─");

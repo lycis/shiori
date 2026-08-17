@@ -101,12 +101,12 @@ int command_tag(int argc, char* argv[]) {
     }
 
     char heading[DEFAULT_BUFFER_SIZE];
-    sprintf(heading, ANSI_FG_RGB(180, 140, 255) ANSI_BOLD "🏷️ Tag: %s", argv[0]);
+    sprintf(heading, COLOR_TAG ANSI_BOLD "🏷️ Tag: %s", argv[0]);
     printf("%s\n", heading);
     print_divider(60);
     printf("\n");
 
-    printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD ANSI_FG_RGB(110, 190, 255), "🗒️ Notes", ANSI_RESET);
+    printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD COLOR_NOTES, "🗒️ Notes", ANSI_RESET);
     struct note_list list;
     note_list_init(&list);
     if(read_notes("NOTES.md", &list) != R_OK) {
@@ -160,7 +160,7 @@ int command_tag(int argc, char* argv[]) {
     print_divider(60);
     printf("\n");
 
-    printf("  %s%s%s\n", ANSI_FG_RGB(255, 105, 120), "📌 Todos", ANSI_RESET);
+    printf("  %s%s%s\n", COLOR_TODOS, "📌 Todos", ANSI_RESET);
     
     struct todo_list todos;
     todo_list_init(&todos);
@@ -206,7 +206,7 @@ int command_tag(int argc, char* argv[]) {
 
             printf(
                 "  %s📅 %s%s",
-                ANSI_FG_RGB(255, 190, 80),
+                COLOR_DUE_DATE,
                 due_date,
                 ANSI_RESET
             );

@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include "color.h"
 #include "common.h"
 #include "logging.h"
 #include "cli.h"
@@ -94,12 +95,12 @@ int command_today(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    printf("%s%s%s\n", ANSI_BOLD ANSI_BOLD ANSI_FG_RGB(255, 180, 80), heading, ANSI_RESET);
+    printf("%s%s%s\n", ANSI_BOLD ANSI_BOLD COLOR_HEADING, heading, ANSI_RESET);
     print_divider(60);
     printf("\n");
 
     // Today's notes
-    printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD ANSI_FG_RGB(110, 190, 255), "🗒️ Notes", ANSI_RESET);
+    printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD COLOR_NOTES, "🗒️ Notes", ANSI_RESET);
     struct note_list note_list;
     note_list_init(&note_list);
     if(read_notes_for_date("NOTES.md", selected_date, &note_list) != R_OK) {
@@ -110,7 +111,7 @@ int command_today(int argc, char* argv[]) {
     for(size_t i = 0; i < note_list.count; ++i) {
         char topic[DEFAULT_BUFFER_SIZE];
         if(strlen(note_list.items[i].topic) > 0) {
-            sprintf(topic, ANSI_FG_RGB(180, 140, 255) " 🏷️ %s" ANSI_RESET, note_list.items[i].topic);
+            sprintf(topic, COLOR_TOPIC " 🏷️ %s" ANSI_RESET, note_list.items[i].topic);
         } else {
             sprintf(topic, "");
         }
@@ -172,44 +173,44 @@ int command_today(int argc, char* argv[]) {
 
     // overdue tasks
     if(overdue_todos.count > 0) {
-        printf("  %s%s%s\n", ANSI_FG_RGB(255, 105, 120), "⚠️ Overdue", ANSI_RESET);
+        printf("  %s%s%s\n", COLOR_OVERDUE, "⚠️ Overdue", ANSI_RESET);
         for(size_t i = 0; i < overdue_todos.count; ++i) {
             struct todo *item = &overdue_todos.items[i];
-            printf("    %s%s %4llu%s  %s\n", ANSI_FG_RGB(255, 190, 80), todo_status_simple_icon(item->status), item->id, ANSI_RESET, item->text);
+            printf("    %s%s %4llu%s  %s\n", COLOR_OVERDUE, todo_status_simple_icon(item->status), item->id, ANSI_RESET, item->text);
         }
         printf("\n");
     }
     todo_list_free(&overdue_todos);
 
     // today due tasks
-    printf("  %s%s%s\n", ANSI_FG_RGB(255, 190, 80), "📅 Due Today", ANSI_RESET);
+    printf("  %s%s%s\n", COLOR_TODOS, "📅 Due Today", ANSI_RESET);
     if(today_todos.count > 0) {
         for(size_t i = 0; i < today_todos.count; ++i) {
             struct todo *item = &today_todos.items[i];
-            printf("    %s%s %4llu%s  %s\n", ANSI_FG_RGB(255, 190, 80), todo_status_simple_icon(item->status), item->id, ANSI_RESET, item->text);
+            printf("    %s%s %4llu%s  %s\n", COLOR_TODOS, todo_status_simple_icon(item->status), item->id, ANSI_RESET, item->text);
         }
     } else {
-        printf(ANSI_FG_RGB(0, 255, 0)"    All clear 👍\n" ANSI_RESET);
+        printf(COLOR_SUCCESS "    All clear 👍\n" ANSI_RESET);
     }
     printf("\n");
     todo_list_free(&overdue_todos);
 
     // print active todos
-    printf("  %s%s%s\n", ANSI_BOLD ANSI_FG_RGB(255, 190, 80), "🚧 In Progress", ANSI_RESET);
+    printf("  %s%s%s\n", ANSI_BOLD COLOR_IN_PROGRESS, "🚧 In Progress", ANSI_RESET);
     for(size_t i = 0; i < in_progress_todos.count; ++i) {
         struct todo *item = &in_progress_todos.items[i];
 
-        printf("    %s› %4llu%s  %s\n", ANSI_FG_RGB(255, 190, 80), item->id, ANSI_RESET, item->text);
+        printf("    %s› %4llu%s  %s\n", ANSI_BOLD, item->id, ANSI_RESET, item->text);
     }
     todo_list_free(&in_progress_todos);
     printf("\n");
 
     // print open todos
-    printf("  %s%s%s\n", ANSI_BOLD ANSI_FG_RGB(110, 190, 255), "📌 Open", ANSI_RESET);
+    printf("  %s%s%s\n", ANSI_BOLD COLOR_OPEN, "📌 Open", ANSI_RESET);
     for(size_t i = 0; i < open_todos.count; ++i) {
         struct todo *item = &open_todos.items[i];
 
-        printf("    %s· %4llu%s  %s\n", ANSI_FG_RGB(110, 190, 255), item->id, ANSI_RESET, item->text);
+        printf("    %s· %4llu%s  %s\n", COLOR_OPEN, item->id, ANSI_RESET, item->text);
     }
     todo_list_free(&open_todos);
 
