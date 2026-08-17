@@ -29,62 +29,40 @@ No database. No account. No cloud. Just plain text.
 
 ## Why Shiori?
 
-Most notes do not begin as documents. They begin as a thought that needs to get out of your head before it disappears:
+Most notes begin as a thought that needs to get out of your head before it disappears:
 
 ```console
 shiori add --topic development investigate UTF-8 path handling
-```
-
-Shiori writes it under today's heading in `NOTES.md`:
-
-```markdown
-# 2026-08-13
-* investigate UTF-8 path handling #shiori/topic/development
-```
-
-Tasks are just as quick:
-
-```console
 shiori todo add --due tomorrow prepare release notes "#work"
-shiori todo start 1
+shiori today
 ```
 
-Then `shiori today` brings the day's notes and active todos together in a styled terminal dashboard.
-
-For a longer brainstorming session, enter capture mode and write notes or prefix a line with `!` to turn it into a todo:
+For a longer session, stay in a focused capture prompt:
 
 ```console
 shiori capture --topic planning
 ```
 
-Your data remains ordinary Markdown that works with any text editor or Markdown tool, including Obsidian.
+Shiori keeps the result in ordinary `NOTES.md` and `TODOS.md` files that work with any editor or Markdown tool, including Obsidian.
 
 ---
 
 ## Features
 
-- 🦊 **Quick capture** — add a thought directly from the command line.
-- ✍️ **Capture sessions** — rapidly collect multiple notes and todos from one focused prompt.
-- 📝 **Plain Markdown** — your notes and tasks stay readable without Shiori.
-- 📅 **Automatic daily sections** — notes are grouped under `# YYYY-MM-DD` headings.
-- 🪧 **Note topics** — organize related notes and review them across daily sections.
-- 🏷️ **Cross-file tags** — find related notes and todos with one or more matching tags.
-- ✅ **Todo tracking** — move stable task IDs through open, in-progress, and done states.
-- ⏰ **Due dates** — schedule tasks and surface due or overdue work in the dashboard.
-- 🏷️ **Flexible filtering** — find todos by status or one or more Markdown tags.
-- ✏️ **Task maintenance** — rewrite, remove, reopen, or prune completed tasks.
-- 🌅 **Daily dashboard** — review notes and active work for today or another selected date.
-- 💻 **Interactive console** — keep Shiori open while capturing several thoughts.
-- ✨ **Interactive suggestions** — use colored completions and Tab expansion in console and capture modes.
-- 🛡️ **Safe updates** — file rewrites use temporary files with backup and restore handling.
-- 🪝 **Command hooks** — run your own local automation after Shiori commands.
-- 🔌 **Obsidian-friendly** — point `base_dir` at a vault; no plugin is required.
+- 🦊 **Fast capture** — add one thought or collect many in an interactive session.
+- 📝 **Plain Markdown** — daily notes and task lists remain readable without Shiori.
+- 🪧 **Topics and tags** — organize notes and search related notes and todos together.
+- ✅ **Todo workflows** — track status, due dates, tags, and overdue work.
+- 🌅 **Daily dashboard** — review a selected day's notes and active tasks.
+- ✨ **Friendly terminal UI** — colored output, UTF-8 input, suggestions, and Tab completion.
+- 🛡️ **Safe, extensible storage** — guarded file replacement plus local command hooks.
+- 🔌 **Obsidian-friendly** — use a vault as `base_dir` without a plugin.
 
 ---
 
 ## Quick start
 
-Every successful GitHub Actions build publishes a `shiori-windows-x64` artifact containing the standalone `shiori.exe`. Download and extract it, then run:
+Download the `shiori-windows-x64` artifact from a successful GitHub Actions build, extract `shiori.exe`, then run:
 
 ```console
 .\shiori.exe help
@@ -93,28 +71,19 @@ Every successful GitHub Actions build publishes a `shiori-windows-x64` artifact 
 .\shiori.exe today
 ```
 
-`shiori init` creates a `.shiori` configuration in the current directory and uses that directory for `NOTES.md` and `TODOS.md` by default.
-
-For installation details and complete usage examples, see the **[Shiori User Guide](docs/USER_GUIDE.md)**.
+`init` creates `.shiori` in the current directory and stores `NOTES.md` and `TODOS.md` there by default.
 
 ---
 
 ## Build from source
 
-You need a C23-capable compiler, GNU Make, and currently a Windows development environment with Clang.
+You need GNU Make and a C23-capable compiler; the current supported development setup is Windows with Clang.
 
 ```console
 make
 ```
 
-This creates `shiori.exe`. Other useful targets are:
-
-```console
-make release
-make clean
-```
-
-The release executable statically links the C runtime and requires no third-party DLLs.
+This creates `shiori.exe`. Use `make release` for an optimized, statically linked executable or `make clean` to remove build output.
 
 ---
 
@@ -138,49 +107,29 @@ shiori [options] <command> [options] [subcommand] ...
 | `help` | Show command help. |
 | `version` | Display version and build information. |
 
-Use the global `--debug` option to show diagnostic output.
+Use the global `--debug` option for diagnostic output.
 
-See the **[User Guide](docs/USER_GUIDE.md)** for capture sessions, topics and tags, due dates, interactive completion, the todo command reference, configuration, data formats, and troubleshooting. Automation authors can use the dedicated **[Hooks Guide](docs/HOOKS.md)**.
+---
+
+## Documentation
+
+- **[User Guide](docs/USER_GUIDE.md)** — installation, configuration, commands, workflows, storage formats, and troubleshooting
+- **[Hooks Guide](docs/HOOKS.md)** — hook lifecycle, environment variables, examples, security, and limitations
+- **[Contributing](CONTRIBUTING.md)** — development setup and project conventions
 
 ---
 
 ## Status
 
-Shiori is young and actively evolving. The current implementation is **Windows-first** and developed with **Clang + C23**. Some Windows and Linux platform abstractions exist, but Linux support is not complete.
-
-Current areas being explored include:
-
-- complete Linux support
-- versioned releases and easier installation
-- configurable note ordering
-- richer note and todo workflows beyond the current topics, due dates, filtering, and editing features
-- additional configuration commands
-- improved interactive console parsing
-- safer and more portable filesystem abstractions
+Shiori is alpha software, currently Windows-first, and developed with Clang + C23. Linux abstractions exist, but Linux support is incomplete. Current ideas and planned work live in [`IDEAS.md`](IDEAS.md).
 
 The project will stay focused on quick capture rather than becoming a full knowledge-management platform wearing a tiny CLI hat.
 
 ---
 
-## Philosophy
-
-**Local first.** Your thoughts should not require a network connection.
-
-**Plain text.** Markdown is durable, portable, and easy to inspect.
-
-**Fast capture over organization.** Get the thought out of your head first. Structure can come later.
-
-**Small software.** Shiori is intentionally compact and dependency-free.
-
-**Interoperability over lock-in.** If you stop using Shiori tomorrow, your notes and todos are still Markdown.
-
----
-
 ## Contributing and license
 
-Contributions, bug reports, and ideas are welcome. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for development setup and project conventions.
-
-Shiori is available under the [`MIT License`](LICENSE).
+Contributions, bug reports, and ideas are welcome. Shiori is available under the [`MIT License`](LICENSE).
 
 ---
 
