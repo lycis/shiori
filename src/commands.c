@@ -128,6 +128,8 @@ int run_command(char* command, int argc, char* argv[]) {
         rc = command_capture(argc, argv);
     } else if(strcmp(command, "tag") == 0) {
         rc = command_tag(argc, argv);
+    } else if(strcmp(command, "util") == 0) {
+        rc = command_util(argc, argv);
     } else {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
