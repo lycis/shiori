@@ -1466,34 +1466,8 @@ int command_todo(int argc, char* argv[]) {
     printf("  %-16s %s\n", "prune", "remove all completed todo items");
         return R_OK;
     }
-
-    char* command = argv[0];
-    argc--;
-    argv++;
-
-    if(strcmp(command, "add") == 0) {
-        log_debug("Running `todo add` command.\n");
-        return command_todo_add(argc, argv);
-    } else if(strcmp(command, "list") == 0) {
-        return command_todo_list(argc, argv);
-    } else if(strcmp(command, "start") == 0) {
-        return command_todo_start(argc, argv);
-    } else if(strcmp(command, "done") == 0) {
-        return command_todo_done(argc, argv);
-    } else if(strcmp(command, "reopen") == 0) {
-        return command_todo_reopen(argc, argv);
-    } else if(strcmp(command, "rewrite") == 0) {
-        return command_todo_rewrite(argc, argv);
-    } else if(strcmp(command, "remove") == 0) {
-        return command_todo_remove(argc, argv);
-    } else if(strcmp(command, "prune") == 0) {
-        return command_todo_prune(argc, argv);
-    } else {
-        log_error("Invalid `todo` command. See --help for reference.");
-        return R_ERROR;
-    }
-
-    return R_OK;
+    
+    return R_ERROR;
 }
 
 static const struct command_definition todo_commands[] = {

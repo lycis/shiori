@@ -163,6 +163,28 @@ const struct command_definition *find_subcommand(const struct command_definition
     return find_command_definition(parent->subcommands,parent->subcommand_count, name);
 }
 
+static int execute_command(const struct command_definition* command, int argc, char* argv[]) {
+    if(command == NULL) return R_ERROR;
+
+    if(command->subcommand_count > 0 && command->subcommands != NULL && argc > 0) {
+        const struct command_definition* subcommand = find_command_definition(command->subcommands, command->subcommand_count, argv[0]);
+        if(subcommand == NULL) {
+            log_error("No such subcommand '%s'.\n", argv[0]);
+            return R_ERROR;
+        }
+
+        return execute_command(subcommand, argc-1, &argv[1]);
+    }
+
+    // no subcommand
+    if(command->handler == NULL) {
+        log_critical("No command handler registered for command '%s'\n", command->name);
+        return R_ERROR;
+    }
+
+    return command->handler(argc, argv);
+}
+
 int run_command(char* command, int argc, char* argv[]) {
     size_t command_count = 0;
     const struct command_definition* commands = get_commands(&command_count);
@@ -179,7 +201,7 @@ int run_command(char* command, int argc, char* argv[]) {
         }   
     }
 
-    int rc = current_command->handler(argc, argv);
+    int rc = execute_command(current_command, argc, argv);
     
     // call after command hook
     if(current_command->requires_config && g_config.hooks.after_command[0] != '\0') {

@@ -153,14 +153,6 @@ int command_util(int argc, char *argv[]) {
         return R_OK;
     }
 
-    if(strcmp(argv[0], "completion") == 0) {
-        return command_util_completion(
-            argc - 1,
-            &argv[1]
-        );
-    }
-
-    log_error("Unknown util command: %s\n", argv[0]);
     return R_ERROR;
 }
 
