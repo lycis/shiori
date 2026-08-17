@@ -12,15 +12,46 @@ static int build_note_from_args(int argc, char *argv[], struct note *note) {
         return R_ERROR;
     }
 
+    char *text_argv[argc];
+    int text_argc = 0;
+
+    const char *topic = NULL;
+
+    for(int i = 0; i < argc; ++i) {
+        if(strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--topic") == 0) {
+            if(i + 1 >= argc) {
+                log_error("%s requires a topic name.\n", argv[i]);
+                return R_ERROR;
+            }
+
+            topic = argv[++i];
+            continue;
+        }
+
+        text_argv[text_argc++] = argv[i];
+    }
+
+    if(text_argc == 0) {
+        log_error("Note text cannot be empty.\n");
+        return R_ERROR;
+    }
+
     char buffer[DEFAULT_BUFFER_SIZE * 3];
 
-    if(join_array(argc, argv, buffer, sizeof(buffer)) != R_OK) {
+    if(join_array(text_argc, text_argv, buffer, sizeof(buffer)) != R_OK) {
         return R_ERROR;
     }
 
     if(create_note_from_markdown(buffer, time(NULL), note) != R_OK) {
         log_critical("Error creating note.\n");
         return R_ERROR;
+    }
+
+    if(topic != NULL) {
+        if(strcpy_s(note->topic, sizeof(note->topic), topic) != 0) {
+            log_error("Topic name is too long.\n");
+            return R_ERROR;
+        }
     }
 
     return R_OK;
@@ -217,7 +248,7 @@ int command_add(int argc, char* argv[]) {
         log_critical("Coult not assign note id.\n");
         return R_ERROR;
     }
-    
+
     char heading[DEFAULT_BUFFER_SIZE];
 
     if(build_daily_heading(heading, sizeof(heading), n.created) != R_OK) {
