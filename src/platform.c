@@ -299,8 +299,7 @@ void terminal_render_input(
     printf("%s%s", prompt, buffer);
 
     /*
-     * Move to the suggestion line and clear whatever
-     * was rendered there previously.
+     * Move to suggestion line and clear it.
      */
     printf("\n\x1b[2K");
 
@@ -308,25 +307,40 @@ void terminal_render_input(
        suggestion[0] != '\0' &&
        strcmp(suggestion, buffer) != 0) {
 
+        size_t typed_length = strlen(buffer);
+
+        printf("  ");
+
+        /*
+         * Already typed part in green.
+         */
         printf(
-            "%s  %s%s",
-            ANSI_FG_RGB(120, 130, 145),
+            "%s%.*s%s",
+            COLOR_SUCCESS,
+            (int)typed_length,
             suggestion,
+            ANSI_RESET
+        );
+
+        /*
+         * Remaining completion in grey.
+         */
+        printf(
+            "%s%s%s",
+            ANSI_FG_RGB(120, 130, 145),
+            suggestion + typed_length,
             ANSI_RESET
         );
     }
 
     /*
-     * Return to the input line.
+     * Return to input line.
      */
     printf("\x1b[1A\r");
 
     /*
-     * Redraw the prompt and input so the cursor ends up
-     * immediately after the entered text.
-     *
-     * This is slightly redundant, but keeps the first
-     * version simple.
+     * Redraw prompt and current input so cursor ends up
+     * after the entered text.
      */
     printf("%s%s", prompt, buffer);
 
