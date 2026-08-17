@@ -6,23 +6,58 @@
 #include "cli.h"
 #include "commands.h"
 
+
+struct completion_result complete_command_definitions(const char *input, const struct command_definition *commands, size_t command_count) {
+    struct completion_result result = {0};
+
+    if(input == NULL || input[0] == '\0') {
+        return result;
+    }
+
+    size_t input_length = strlen(input);
+
+    for(size_t i = 0; i < command_count; ++i) {
+        if(strncmp(
+            commands[i].name,
+            input,
+            input_length
+        ) == 0) {
+            if(result.count >= MAX_COMPLETIONS) {
+                break;
+            }
+
+            result.items[result.count++] = commands[i].name;
+        }
+    }
+
+    return result;
+}
+
 static struct completion_result console_completion(const char *input) {
-    static const char *commands[] = {
-        "add",
-        "capture",
-        "config",
-        "console",
-        "tag",
-        "today",
-        "todo",
-        "topic",
-        "version",
+    size_t command_count = 0;
+    const struct command_definition *commands =  get_commands(&command_count);
+    struct completion_result result = complete_command_definitions(input, commands, command_count);
+
+    static const char *console_commands[] = {
         "exit",
         "quit"
     };
 
-    return find_completions(input,commands, sizeof(commands) / sizeof(commands[0]));
+    size_t input_length = strlen(input);
+
+    for(size_t i = 0;  i < sizeof(console_commands) / sizeof(console_commands[0]); ++i) {
+        if(strncmp(console_commands[i], input, input_length) == 0) {
+            if(result.count >= MAX_COMPLETIONS) {
+                break;
+            }
+
+            result.items[result.count++] = console_commands[i];
+        }
+    }
+
+    return result;
 }
+
 int command_console(int argc, char *argv[]) {
     if(has_switch(argc, argv, "--help", false) ||
        has_switch(argc, argv, "-h", false)) {
