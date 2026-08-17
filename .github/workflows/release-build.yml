@@ -1,0 +1,65 @@
+name: Release build
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: read
+
+jobs:
+  windows-clang:
+    name: Windows x64 / Clang / C23
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out tagged revision
+        uses: actions/checkout@v7
+
+      - name: Show compiler version
+        run: clang --version
+
+      - name: Build release executable
+        shell: pwsh
+        run: |
+          $sources = Get-ChildItem src -Filter *.c | ForEach-Object FullName
+          clang -std=c23 -Wall -Wextra -Wpedantic -O2 -fms-runtime-lib=static $sources -o shiori.exe
+
+      - name: Verify self-contained runtime
+        shell: pwsh
+        run: |
+          $imports = llvm-objdump -p shiori.exe |
+            Select-String 'DLL Name:' |
+            ForEach-Object { ($_ -split 'DLL Name:')[1].Trim() }
+          $imports | ForEach-Object { Write-Host "Imports: $_" }
+
+          $runtimeDlls = $imports | Where-Object {
+            $_ -match '^(ucrtbase|vcruntime\d*|msvcp\d*|api-ms-win-crt-.+)\.dll$'
+          }
+          if ($runtimeDlls) {
+            throw "Release depends on dynamically linked C/C++ runtime DLLs: $($runtimeDlls -join ', ')"
+          }
+
+      - name: Smoke-check executable
+        run: .\shiori.exe version
+
+      - name: Package release
+        shell: pwsh
+        env:
+          RELEASE_VERSION: ${{ github.ref_name }}
+        run: |
+          $archive = "shiori-$env:RELEASE_VERSION-windows-x64.zip"
+          Compress-Archive -Path shiori.exe, LICENSE, README.md -DestinationPath $archive
+          (Get-FileHash $archive -Algorithm SHA256).Hash.ToLower() + "  $archive" |
+            Set-Content "$archive.sha256"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: shiori-${{ github.ref_name }}-windows-x64
+          path: |
+            shiori-${{ github.ref_name }}-windows-x64.zip
+            shiori-${{ github.ref_name }}-windows-x64.zip.sha256
+          if-no-files-found: error
+          retention-days: 90
