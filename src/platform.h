@@ -19,6 +19,8 @@
 #include <langinfo.h>
 #endif
 
+#include "cli.h"
+
 
 char* get_path_separator();
 int terminal_enable_utf8(void);
@@ -43,7 +45,7 @@ struct key_event {
 
 int terminal_enter_interactive_mode(void);
 void terminal_leave_interactive_mode(void);
-void terminal_render_input(const char *prompt, const char *buffer, size_t cursor,const char *suggestion);
+void terminal_render_input(const char *prompt, const char *buffer, size_t cursor, const struct completion_result *completions);
 void terminal_finish_input_line(void);
 int terminal_read_key(struct key_event *event);
 

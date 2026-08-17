@@ -30,7 +30,7 @@ static int split_args(char *input, char *argv[], int max_args) {
     return argc;
 }
 
-static const char *capture_completion(const char *input)
+static struct completion_result capture_completion(const char *input)
 {
     static const char *commands[] = {
         "/done",
@@ -38,11 +38,7 @@ static const char *capture_completion(const char *input)
         "/quit"
     };
 
-    return find_completion(
-        input,
-        commands,
-        sizeof(commands) / sizeof(commands[0])
-    );
+    return find_completions(input, commands, sizeof(commands) / sizeof(commands[0]));
 }
 
 int command_capture(int argc, char *argv[]) {

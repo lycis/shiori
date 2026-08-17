@@ -160,6 +160,8 @@ static bool g_interactive_mode_active = false;
 static HANDLE g_console_input = NULL;
 static HANDLE g_console_output = NULL;
 
+static size_t g_previous_suggestion_lines = 0;
+
 int terminal_enter_interactive_mode(void)
 {
     g_console_input = GetStdHandle(STD_INPUT_HANDLE);
@@ -277,10 +279,28 @@ void terminal_leave_interactive_mode(void)
 void terminal_finish_input_line(void)
 {
     /*
-     * Move to the suggestion line, clear it,
-     * and leave the cursor there for subsequent output.
+     * We are currently on the input line.
+     * Clear all suggestion lines below it.
      */
-    printf("\n\x1b[2K");
+    for(size_t i = 0; i < g_previous_suggestion_lines; ++i) {
+        printf("\n\x1b[2K");
+    }
+
+    /*
+     * Leave the cursor one line below the submitted input,
+     * not at the bottom of the old suggestion block.
+     */
+    if(g_previous_suggestion_lines > 0) {
+        printf(
+            "\x1b[%zuA",
+            g_previous_suggestion_lines
+        );
+    }
+
+    printf("\n");
+
+    g_previous_suggestion_lines = 0;
+
     fflush(stdout);
 }
 
@@ -288,61 +308,100 @@ void terminal_render_input(
     const char *prompt,
     const char *buffer,
     size_t cursor,
-    const char *suggestion
+    const struct completion_result *completions
 ) {
     (void)cursor;
 
     /*
-     * Redraw the input line.
+     * We enter this function with the cursor on the input line.
+     *
+     * First clear the input line and all suggestion lines left
+     * behind by the previous render.
      */
     printf("\r\x1b[2K");
-    printf("%s%s", prompt, buffer);
+
+    for(size_t i = 0; i < g_previous_suggestion_lines; ++i) {
+        printf("\n\x1b[2K");
+    }
 
     /*
-     * Move to suggestion line and clear it.
+     * Return to the input line after clearing old suggestions.
      */
-    printf("\n\x1b[2K");
-
-    if(suggestion != NULL &&
-       suggestion[0] != '\0' &&
-       strcmp(suggestion, buffer) != 0) {
-
-        size_t typed_length = strlen(buffer);
-
-        printf("  ");
-
-        /*
-         * Already typed part in green.
-         */
+    if(g_previous_suggestion_lines > 0) {
         printf(
-            "%s%.*s%s",
-            COLOR_SUCCESS,
-            (int)typed_length,
-            suggestion,
-            ANSI_RESET
-        );
-
-        /*
-         * Remaining completion in grey.
-         */
-        printf(
-            "%s%s%s",
-            COLOR_COMPLETION_REMAINDER,
-            suggestion + typed_length,
-            ANSI_RESET
+            "\x1b[%zuA\r",
+            g_previous_suggestion_lines
         );
     }
 
     /*
-     * Return to input line.
-     */
-    printf("\x1b[1A\r");
-
-    /*
-     * Redraw prompt and current input so cursor ends up
-     * after the entered text.
+     * Draw current input.
      */
     printf("%s%s", prompt, buffer);
+
+    /*
+     * Draw current suggestions.
+     */
+    size_t rendered_suggestions = 0;
+    size_t typed_length = strlen(buffer);
+
+    if(completions != NULL) {
+        for(size_t i = 0; i < completions->count; ++i) {
+            const char *suggestion = completions->items[i];
+
+            /*
+             * Don't show an exact match as a suggestion.
+             */
+            if(strcmp(suggestion, buffer) == 0) {
+                continue;
+            }
+
+            printf("\n\x1b[2K  ");
+
+            /*
+             * Already typed part.
+             */
+            printf(
+                "%s%.*s%s",
+                COLOR_COMPLETION_MATCH,
+                (int)typed_length,
+                suggestion,
+                ANSI_RESET
+            );
+
+            /*
+             * Remaining part.
+             */
+            printf(
+                "%s%s%s",
+                COLOR_COMPLETION_REMAINDER,
+                suggestion + typed_length,
+                ANSI_RESET
+            );
+
+            rendered_suggestions++;
+        }
+    }
+
+    /*
+     * Return cursor to the input line.
+     */
+    if(rendered_suggestions > 0) {
+        printf(
+            "\x1b[%zuA\r",
+            rendered_suggestions
+        );
+    } else {
+        printf("\r");
+    }
+
+    /*
+     * Redraw the input so the cursor ends up after the
+     * current text.
+     */
+    printf("%s%s", prompt, buffer);
+
+    g_previous_suggestion_lines = rendered_suggestions;
 
     fflush(stdout);
 }

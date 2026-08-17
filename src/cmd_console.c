@@ -6,7 +6,7 @@
 #include "cli.h"
 #include "commands.h"
 
-static const char *console_completion(const char *input) {
+static struct completion_result console_completion(const char *input) {
     static const char *commands[] = {
         "add",
         "capture",
@@ -21,9 +21,8 @@ static const char *console_completion(const char *input) {
         "quit"
     };
 
-    return find_completion(input, commands, sizeof(commands) / sizeof(commands[0]));
+    return find_completions(input,commands, sizeof(commands) / sizeof(commands[0]));
 }
-
 int command_console(int argc, char *argv[]) {
     if(has_switch(argc, argv, "--help", false) ||
        has_switch(argc, argv, "-h", false)) {

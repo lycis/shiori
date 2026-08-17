@@ -99,6 +99,34 @@ static int append_codepoint_utf8(
     return R_OK;
 }
 
+static size_t completion_common_prefix_length(const struct completion_result *completions) {
+    if(completions == NULL || completions->count == 0) {
+        return 0;
+    }
+
+    const char *first = completions->items[0];
+    size_t prefix_length = strlen(first);
+
+    for(size_t i = 1; i < completions->count; ++i) {
+        const char *current = completions->items[i];
+        size_t j = 0;
+
+        while(j < prefix_length &&
+              current[j] != '\0' &&
+              first[j] == current[j]) {
+            j++;
+        }
+
+        prefix_length = j;
+
+        if(prefix_length == 0) {
+            break;
+        }
+    }
+
+    return prefix_length;
+}
+
 int read_interactive_line(
     const char *prompt,
     char *buffer,
@@ -119,18 +147,13 @@ int read_interactive_line(
     }
 
     while(true) {
-        const char *suggestion = NULL;
+        struct completion_result completions = {0};
 
         if(complete != NULL && length > 0) {
-            suggestion = complete(buffer);
+            completions = complete(buffer);
         }
 
-        terminal_render_input(
-            prompt,
-            buffer,
-            cursor,
-            suggestion
-        );
+        terminal_render_input(prompt, buffer, cursor, &completions);
 
         struct key_event event;
 
@@ -169,20 +192,51 @@ int read_interactive_line(
                 break;
 
             case KEY_TAB:
-                if(suggestion != NULL) {
-                    size_t suggestion_length = strlen(suggestion);
+                if(completions.count == 0) {
+                    break;
+                }
 
-                    if(suggestion_length < buffer_size) {
+                if(completions.count == 1) {
+                    const char *completion = completions.items[0];
+                    size_t completion_length = strlen(completion);
+
+                    if(completion_length < buffer_size) {
                         if(strcpy_s(
                             buffer,
                             buffer_size,
-                            suggestion
+                            completion
                         ) == 0) {
-                            length = suggestion_length;
+                            length = completion_length;
                             cursor = length;
                         }
                     }
+
+                    break;
                 }
+
+                /*
+                * Multiple matches:
+                * extend only as far as their common prefix.
+                */
+                size_t prefix_length =
+                    completion_common_prefix_length(&completions);
+
+                if(prefix_length > length &&
+                prefix_length < buffer_size) {
+
+                    memcpy(
+                        buffer,
+                        completions.items[0],
+                        prefix_length
+                    );
+
+                    buffer[prefix_length] = '\0';
+
+                    length = prefix_length;
+                    cursor = length;
+                }
+
+                break;
                 break;
 
             case KEY_ENTER:
@@ -204,9 +258,11 @@ int read_interactive_line(
     }
 }
 
-const char *find_completion(const char *input, const char *options[], size_t option_count) {
+struct completion_result find_completions(const char *input, const char *options[], size_t option_count) {
+    struct completion_result result = {0};
+
     if(input == NULL || input[0] == '\0') {
-        return NULL;
+        return result;
     }
 
     size_t input_length = strlen(input);
@@ -217,9 +273,13 @@ const char *find_completion(const char *input, const char *options[], size_t opt
             input,
             input_length
         ) == 0) {
-            return options[i];
+            if(result.count >= MAX_COMPLETIONS) {
+                break;
+            }
+
+            result.items[result.count++] = options[i];
         }
     }
 
-    return NULL;
+    return result;
 }
