@@ -53,11 +53,13 @@ int note_list_add(
     return R_OK;
 }
 
-static int create_note_from_markdown(const char *markdown, time_t created,struct note *item) {
+int create_note_from_markdown(const char *markdown, time_t created,struct note *item) {
     const char *topic_tag = strstr(markdown, "#shiori/topic/");
+    const char *id_tag = strstr(markdown, "<!-- shiori:id=");
 
     item->created = created;
     item->topic[0] = '\0';
+    item->id[0] = '\0';
 
     size_t text_len = topic_tag != NULL
         ? (size_t)(topic_tag - markdown)
@@ -99,6 +101,33 @@ static int create_note_from_markdown(const char *markdown, time_t created,struct
         item->topic[topic_len] = '\0';
     } else {
         memset(item->topic, 0, 1); // set topic to nothing
+    }
+
+    if(id_tag != NULL) {
+        const char *id = id_tag + strlen("<!-- shiori:id=");
+
+        size_t id_len = 0;
+
+        while(id[id_len] != '\0' &&
+              id[id_len] != ' ' &&
+              id[id_len] != '\t' &&
+              id[id_len] != '\r' &&
+              id[id_len] != '\n' &&
+              id[id_len] != '>') {
+            id_len++;
+        }
+
+        if(id_len == 0) {
+            log_warning("Note contains an empty id.\n");
+        } else if(id_len >= sizeof(item->id)) {
+            log_error("Note id is too long.\n");
+            return R_ERROR;
+        }
+        else {
+            memcpy(item->id, id, id_len);
+
+            item->id[id_len] = '\0';
+        }
     }
 
     return R_OK;

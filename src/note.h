@@ -6,6 +6,7 @@
 #include "common.h"
 
 struct note {
+    char id[32];
     char text[DEFAULT_BUFFER_SIZE * 2];
     char topic[DEFAULT_BUFFER_SIZE];
     time_t created;
@@ -27,5 +28,6 @@ int note_list_add(
 
 int read_notes_for_date(const char *filename, const time_t date, struct note_list *notes);
 int read_notes(const char *filename, struct note_list *list);
+int create_note_from_markdown(const char *markdown, time_t created,struct note *item);
 
 #endif
