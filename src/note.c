@@ -173,6 +173,12 @@ static int parse_daily_heading(const char *heading, time_t *date) {
 }
  
 int read_notes(const char *filename, struct note_list *list) {
+    struct notes_metadata md;
+    if(read_notes_metadata(filename, &md) != R_OK) {
+        log_critical("Failed reading NOTES metadata.\n");
+        return R_ERROR;
+    }
+
     FILE *file = open_base_dir_file(filename, "r");
     if(file == NULL) {
         log_critical("Failed opening %s.\n", filename);
@@ -288,6 +294,74 @@ int read_notes_for_date(const char *filename, const time_t date, struct note_lis
     note_list_free(&all_notes);
 
     log_debug("Loaded %zu note%s for requested date.\n", list->count, list->count == 1 ? "" : "s");
+
+    return R_OK;
+}
+
+int read_notes_metadata(const char *filename, struct notes_metadata* md) {
+    FILE *file = open_base_dir_file(filename, "r");
+    if(file == NULL) {
+        log_error("Failed opening %s.\n", filename);
+        return R_ERROR;
+    }
+
+    md->version = 0;
+
+    char line[DEFAULT_BUFFER_SIZE];
+
+    // Front matter must start with ---
+    if(fgets(line, sizeof(line), file) == NULL) {
+        fclose(file);
+        return R_OK;
+    }
+
+    if(strcmp(trim(line), "---") != 0) {
+        log_warning("`%s` is an old version of the NOTES format. Please run `%s util migrate`.\n", filename, APP_NAME);
+        fclose(file);
+        return R_OK;
+    }
+
+    bool found_end = false;
+
+    while(fgets(line, sizeof(line), file) != NULL) {
+        char *current = trim(line);
+
+        if(strcmp(current, "---") == 0) {
+            found_end = true;
+            break;
+        }
+
+        // Ignore empty lines
+        if(*current == '\0') {
+            continue;
+        }
+
+        char *colon = strchr(current, ':');
+
+        if(colon == NULL) {
+            log_error("Invalid TODO metadata entry: %s\n", current);
+            fclose(file);
+            return R_ERROR;
+        }
+
+        *colon = '\0';
+
+        char *key = trim(current);
+        char *value = trim(colon + 1);
+
+        if(strcmp(key, "version") == 0) {
+            md->version = atoi(value);
+        } else {
+            log_debug("Ignoring unknown TODO metadata key: %s\n", key);
+        }
+    }
+
+    fclose(file);
+
+    if(!found_end) {
+        log_error("Unterminated TODO front matter in %s.\n", filename);
+        return R_ERROR;
+    }
 
     return R_OK;
 }
