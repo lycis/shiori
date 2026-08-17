@@ -116,7 +116,7 @@ int command_today(int argc, char* argv[]) {
             sprintf(topic, "");
         }
 
-        printf("    • %s%s\n", note_list.items[i].text, topic);
+        printf(COLOR_NOTE_ID "   %s " ANSI_RESET "%s%s\n", note_list.items[i].id, note_list.items[i].text, topic);
     }
 
     note_list_free(&note_list);
