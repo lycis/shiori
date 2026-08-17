@@ -310,8 +310,6 @@ void terminal_render_input(
     size_t cursor,
     const struct completion_result *completions
 ) {
-    (void)cursor;
-
     /*
      * We enter this function with the cursor on the input line.
      *
@@ -384,7 +382,7 @@ void terminal_render_input(
     }
 
     /*
-     * Return cursor to the input line.
+     * Return to the input line.
      */
     if(rendered_suggestions > 0) {
         printf(
@@ -396,10 +394,13 @@ void terminal_render_input(
     }
 
     /*
-     * Redraw the input so the cursor ends up after the
-     * current text.
+     * Move the physical terminal cursor to the logical
+     * cursor position.
+     *
+     * cursor is a UTF-8 byte offset into buffer.
      */
-    printf("%s%s", prompt, buffer);
+    printf("%s", prompt);
+    fwrite(buffer, 1, cursor, stdout);
 
     g_previous_suggestion_lines = rendered_suggestions;
 
@@ -449,24 +450,44 @@ int terminal_read_key(struct key_event *event)
         switch(key.wVirtualKeyCode) {
             case VK_RETURN:
                 event->type = KEY_ENTER;
-                event->codepoint = 0;
-                return R_OK;
+                break;
 
             case VK_BACK:
                 event->type = KEY_BACKSPACE;
-                event->codepoint = 0;
-                return R_OK;
+                break;
 
             case VK_TAB:
                 event->type = KEY_TAB;
-                event->codepoint = 0;
-                return R_OK;
+                break;
 
             case VK_ESCAPE:
                 event->type = KEY_ESCAPE;
-                event->codepoint = 0;
-                return R_OK;
+                break;
+
+            case VK_LEFT:
+                event->type = KEY_LEFT;
+                break;
+
+            case VK_RIGHT:
+                event->type = KEY_RIGHT;
+                break;
+
+            case VK_UP:
+                event->type = KEY_UP;
+                break;
+
+            case VK_DOWN:
+                event->type = KEY_DOWN;
+                break;
+
+            default:
+                goto character;
         }
+
+        event->codepoint = 0;
+        return R_OK;
+
+        character:
 
         wchar_t wc = key.uChar.UnicodeChar;
 

@@ -29,15 +29,17 @@ char* get_current_path(char *buffer, size_t size);
 int set_environment_variable(const char* name, const char *value);
 int run_script_basedir(const char* path);
 
-
 enum key_type {
     KEY_CHARACTER,
     KEY_ENTER,
     KEY_BACKSPACE,
     KEY_TAB,
-    KEY_ESCAPE
+    KEY_ESCAPE,
+    KEY_LEFT,
+    KEY_RIGHT,
+    KEY_UP,
+    KEY_DOWN
 };
-
 struct key_event {
     enum key_type type;
     unsigned int codepoint;

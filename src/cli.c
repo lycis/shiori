@@ -252,6 +252,28 @@ int read_interactive_line(
 
                 return R_ERROR;
 
+            case KEY_LEFT:
+                if(cursor > 0) {
+                    cursor--;
+                    
+                    while(cursor > 0 &&
+                        ((unsigned char)buffer[cursor] & 0xC0) == 0x80) {
+                        cursor--;
+                    }
+                }
+                break;
+
+            case KEY_RIGHT:
+                if(cursor < length) {
+                    cursor++;
+
+                    while(cursor < length &&
+                        ((unsigned char)buffer[cursor] & 0xC0) == 0x80) {
+                        cursor++;
+                    }
+                }
+                break;
+
             default:
                 break;
         }
