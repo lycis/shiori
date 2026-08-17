@@ -14,7 +14,7 @@
 #define CONFIG_FILE_NAME ".shiori"
 #define CONFIG_VERSION 1
 #define APP_NAME "shiori"
-#define APP_VERSION "0.1.0"
+#define APP_VERSION "0.2.0"
 
 #define TODO_FILE "TODOS.md"
 
