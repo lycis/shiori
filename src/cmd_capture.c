@@ -29,6 +29,15 @@ static int split_args(char *input, char *argv[], int max_args) {
     return argc;
 }
 
+static const char *capture_completion(const char *input)
+{
+    if(strncmp("/done", input, strlen(input)) == 0) {
+        return "/done";
+    }
+
+    return NULL;
+}
+
 int command_capture(int argc, char *argv[]) {
     if (has_switch(argc, argv, "--help", false) ||
         has_switch(argc, argv, "-h", false)) {
@@ -75,20 +84,33 @@ int command_capture(int argc, char *argv[]) {
         }
     }
 
-    if(topic == NULL) topic = "\0";
-    else {
+    if(topic == NULL) {
+        topic = "";
+    } else {
         printf("✍️ Capturing topic: %s%s%s\n", ANSI_FG_RGB(180, 140, 255), topic,ANSI_RESET);
         print_divider(60);
         printf("\n");
     }
 
-    char input[DEFAULT_BUFFER_SIZE];
-    
-    printf("~%s> ", topic);
-    while (fgets(input, sizeof(input), stdin) != NULL) {
+
+    while (true) {
+        char prompt[DEFAULT_BUFFER_SIZE];
+
+        if(topic != NULL && topic[0] != '\0') {
+            snprintf(prompt,  sizeof(prompt), "~%s> ", topic);
+        } else {
+            snprintf(prompt, sizeof(prompt), "~> ");
+        }
+
+        char input[DEFAULT_BUFFER_SIZE];
+
+        if(read_interactive_line(prompt, input, sizeof(input), capture_completion) != R_OK) {
+            log_critical("Failed to read interactive input.\n");
+            break;
+        }
+
         char *command = trim(input);
         if (strlen(command) == 0) {
-            printf("~%s> ", topic);
             continue;
         }
 
@@ -102,7 +124,6 @@ int command_capture(int argc, char *argv[]) {
 
             if(*text == '\0') {
                 log_warning("Todo text cannot be empty.\n");
-                printf("~%s> ", topic);
                 continue;
             }
 
@@ -131,8 +152,7 @@ int command_capture(int argc, char *argv[]) {
                 char *note_argv[] = {command};
                 command_add(1, note_argv);
             }
-        } 
-        printf("~%s> ", topic);
+        }
     }
 
     log_success("Capture mode ended.\n");

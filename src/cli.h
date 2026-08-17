@@ -2,13 +2,14 @@
 #define _SHIORI_CLI_H
 
 #include <stdbool.h>
+#include "color.h"
 
 void strip_leading_flags(int *argc, char ***argv);
 bool has_switch(int argc, char *argv[], const char *sw, bool allow_subcommands);
 void print_divider(size_t width);
 
-#define ANSI_BOLD  "\x1b[1m"
-#define ANSI_RESET "\x1b[0m"
-#define ANSI_FG_RGB(r, g, b) "\x1b[38;2;" #r ";" #g ";" #b "m"
+typedef const char *(*completion_fn)(const char *input);
+
+int read_interactive_line(const char *prompt, char *buffer, size_t buffer_size, completion_fn complete);
 
 #endif

@@ -4,6 +4,7 @@
 #include "platform.h"
 #include "logging.h"
 #include "config.h"
+#include "color.h"
 
 char* get_path_separator() {
     #ifdef _WIN32
@@ -148,3 +149,265 @@ int run_script_basedir(const char* path) {
 
     return run_process(script_path, g_config.base_dir);
 }
+
+// Terminal rendering functions
+#ifdef _WIN32
+static DWORD g_original_console_input_mode = 0;
+static DWORD g_original_console_output_mode = 0;
+
+static bool g_interactive_mode_active = false;
+
+static HANDLE g_console_input = NULL;
+static HANDLE g_console_output = NULL;
+
+int terminal_enter_interactive_mode(void)
+{
+    g_console_input = GetStdHandle(STD_INPUT_HANDLE);
+    g_console_output = GetStdHandle(STD_OUTPUT_HANDLE);
+
+    if(g_console_input == INVALID_HANDLE_VALUE ||
+       g_console_input == NULL) {
+        log_error("Failed getting console input handle.\n");
+        return R_ERROR;
+    }
+
+    if(g_console_output == INVALID_HANDLE_VALUE ||
+       g_console_output == NULL) {
+        log_error("Failed getting console output handle.\n");
+        return R_ERROR;
+    }
+
+    /*
+     * Input mode
+     */
+    DWORD input_mode;
+
+    if(!GetConsoleMode(g_console_input, &input_mode)) {
+        log_error(
+            "Failed reading console input mode (error %lu).\n",
+            GetLastError()
+        );
+        return R_ERROR;
+    }
+
+    g_original_console_input_mode = input_mode;
+
+    input_mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
+    input_mode |= ENABLE_PROCESSED_INPUT;
+
+    if(!SetConsoleMode(g_console_input, input_mode)) {
+        log_error(
+            "Failed enabling interactive input mode (error %lu).\n",
+            GetLastError()
+        );
+        return R_ERROR;
+    }
+
+    /*
+     * Output mode
+     */
+    DWORD output_mode;
+
+    if(!GetConsoleMode(g_console_output, &output_mode)) {
+        log_error(
+            "Failed reading console output mode (error %lu).\n",
+            GetLastError()
+        );
+
+        SetConsoleMode(
+            g_console_input,
+            g_original_console_input_mode
+        );
+
+        return R_ERROR;
+    }
+
+    g_original_console_output_mode = output_mode;
+
+    output_mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+
+    if(!SetConsoleMode(g_console_output, output_mode)) {
+        log_error(
+            "Failed enabling virtual terminal processing (error %lu).\n",
+            GetLastError()
+        );
+
+        SetConsoleMode(
+            g_console_input,
+            g_original_console_input_mode
+        );
+
+        return R_ERROR;
+    }
+
+    g_interactive_mode_active = true;
+
+    return R_OK;
+}
+
+void terminal_leave_interactive_mode(void)
+{
+    if(!g_interactive_mode_active) {
+        return;
+    }
+
+    if(!SetConsoleMode(
+        g_console_input,
+        g_original_console_input_mode
+    )) {
+        log_warning(
+            "Failed restoring console input mode (error %lu).\n",
+            GetLastError()
+        );
+    }
+
+    if(!SetConsoleMode(
+        g_console_output,
+        g_original_console_output_mode
+    )) {
+        log_warning(
+            "Failed restoring console output mode (error %lu).\n",
+            GetLastError()
+        );
+    }
+
+    g_interactive_mode_active = false;
+}
+
+void terminal_finish_input_line(void)
+{
+    /*
+     * Move to the suggestion line, clear it,
+     * and leave the cursor there for subsequent output.
+     */
+    printf("\n\x1b[2K");
+    fflush(stdout);
+}
+
+void terminal_render_input(
+    const char *prompt,
+    const char *buffer,
+    size_t cursor,
+    const char *suggestion
+) {
+    (void)cursor;
+
+    /*
+     * Redraw the input line.
+     */
+    printf("\r\x1b[2K");
+    printf("%s%s", prompt, buffer);
+
+    /*
+     * Move to the suggestion line and clear whatever
+     * was rendered there previously.
+     */
+    printf("\n\x1b[2K");
+
+    if(suggestion != NULL &&
+       suggestion[0] != '\0' &&
+       strcmp(suggestion, buffer) != 0) {
+
+        printf(
+            "%s  %s%s",
+            ANSI_FG_RGB(120, 130, 145),
+            suggestion,
+            ANSI_RESET
+        );
+    }
+
+    /*
+     * Return to the input line.
+     */
+    printf("\x1b[1A\r");
+
+    /*
+     * Redraw the prompt and input so the cursor ends up
+     * immediately after the entered text.
+     *
+     * This is slightly redundant, but keeps the first
+     * version simple.
+     */
+    printf("%s%s", prompt, buffer);
+
+    fflush(stdout);
+}
+
+int terminal_read_key(struct key_event *event)
+{
+    if(event == NULL) {
+        return R_ERROR;
+    }
+
+    INPUT_RECORD record;
+    DWORD records_read;
+
+    while(true) {
+        if(!ReadConsoleInputW(
+            g_console_input,
+            &record,
+            1,
+            &records_read
+        )) {
+            log_error(
+                "Failed reading console input (error %lu).\n",
+                GetLastError()
+            );
+            return R_ERROR;
+        }
+
+        if(records_read == 0) {
+            continue;
+        }
+
+        if(record.EventType != KEY_EVENT) {
+            continue;
+        }
+
+        KEY_EVENT_RECORD key = record.Event.KeyEvent;
+
+        /*
+         * Ignore key-up events.
+         */
+        if(!key.bKeyDown) {
+            continue;
+        }
+
+        switch(key.wVirtualKeyCode) {
+            case VK_RETURN:
+                event->type = KEY_ENTER;
+                event->codepoint = 0;
+                return R_OK;
+
+            case VK_BACK:
+                event->type = KEY_BACKSPACE;
+                event->codepoint = 0;
+                return R_OK;
+
+            case VK_TAB:
+                event->type = KEY_TAB;
+                event->codepoint = 0;
+                return R_OK;
+
+            case VK_ESCAPE:
+                event->type = KEY_ESCAPE;
+                event->codepoint = 0;
+                return R_OK;
+        }
+
+        wchar_t wc = key.uChar.UnicodeChar;
+
+        if(wc == L'\0') {
+            /*
+             * Modifier/function/arrow key we don't support yet.
+             */
+            continue;
+        }
+
+        event->type = KEY_CHARACTER;
+        event->codepoint = (unsigned int)wc;
+
+        return R_OK;
+    }
+}
+#endif

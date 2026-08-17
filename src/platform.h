@@ -27,4 +27,24 @@ char* get_current_path(char *buffer, size_t size);
 int set_environment_variable(const char* name, const char *value);
 int run_script_basedir(const char* path);
 
+
+enum key_type {
+    KEY_CHARACTER,
+    KEY_ENTER,
+    KEY_BACKSPACE,
+    KEY_TAB,
+    KEY_ESCAPE
+};
+
+struct key_event {
+    enum key_type type;
+    unsigned int codepoint;
+};
+
+int terminal_enter_interactive_mode(void);
+void terminal_leave_interactive_mode(void);
+void terminal_render_input(const char *prompt, const char *buffer, size_t cursor,const char *suggestion);
+void terminal_finish_input_line(void);
+int terminal_read_key(struct key_event *event);
+
 #endif
