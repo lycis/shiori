@@ -31,5 +31,6 @@ bool dates_equal(time_t a, time_t b);
 int format_date(time_t date, char *buffer, size_t buffer_size);
 int compare_dates(time_t a, time_t b);
 int join_array(int argc, char *argv[], char *buffer, size_t buffer_size);
+bool ends_with_whitespace(const char *text);
 
 #endif

@@ -10,18 +10,20 @@
 struct completion_result complete_command_definitions(const char *input, const struct command_definition *commands, size_t command_count) {
     struct completion_result result = {0};
 
-    if(input == NULL || input[0] == '\0') {
+    if(commands == NULL) {
         return result;
     }
 
-    size_t input_length = strlen(input);
+    size_t input_length = 0;
+
+    if(input != NULL) {
+        input_length = strlen(input);
+    }
 
     for(size_t i = 0; i < command_count; ++i) {
-        if(strncmp(
-            commands[i].name,
-            input,
-            input_length
-        ) == 0) {
+        if(input_length == 0 ||
+           strncmp(commands[i].name, input, input_length) == 0) {
+
             if(result.count >= MAX_COMPLETIONS) {
                 break;
             }
@@ -33,26 +35,143 @@ struct completion_result complete_command_definitions(const char *input, const s
     return result;
 }
 
-static struct completion_result console_completion(const char *input) {
-    size_t command_count = 0;
-    const struct command_definition *commands =  get_commands(&command_count);
-    struct completion_result result = complete_command_definitions(input, commands, command_count);
-
+static void add_console_special_completions(struct completion_result *result, const char *input) {
     static const char *console_commands[] = {
         "exit",
         "quit"
     };
 
-    size_t input_length = strlen(input);
+    size_t input_length = 0;
 
-    for(size_t i = 0;  i < sizeof(console_commands) / sizeof(console_commands[0]); ++i) {
-        if(strncmp(console_commands[i], input, input_length) == 0) {
-            if(result.count >= MAX_COMPLETIONS) {
-                break;
+    if(input != NULL) {
+        input_length = strlen(input);
+    }
+
+    for(size_t i = 0; i < sizeof(console_commands) / sizeof(console_commands[0]); ++i) {
+        if(input_length == 0 ||
+           strncmp(console_commands[i], input, input_length) == 0) {
+
+            if(result->count >= MAX_COMPLETIONS) {
+                return;
             }
 
-            result.items[result.count++] = console_commands[i];
+            result->items[result->count++] = console_commands[i];
         }
+    }
+}
+
+static struct completion_result console_completion(const char *input) {
+    struct completion_result result = {0};
+
+    size_t command_count = 0;
+    const struct command_definition *current_commands =
+        get_commands(&command_count);
+
+    if(input == NULL) {
+        return result;
+    }
+
+    char buffer[DEFAULT_BUFFER_SIZE];
+
+    if(strcpy_s(buffer, sizeof(buffer), input) != 0) {
+        return result;
+    }
+
+    bool trailing_space = ends_with_whitespace(input);
+
+    char *argv[32];
+    int argc = 0;
+
+    char *context = NULL;
+    char *token = strtok_s(buffer, " \t", &context);
+
+    while(token != NULL && argc < 32) {
+        argv[argc++] = token;
+        token = strtok_s(NULL, " \t", &context);
+    }
+
+    /*
+     * If there are no tokens yet, complete at the top level.
+     * (May not be used right now if completion only starts
+     * after at least one typed character, but it keeps the
+     * function complete.)
+     */
+    if(argc == 0) {
+        result = complete_command_definitions("", current_commands, command_count);
+        add_console_special_completions(&result, "");
+        return result;
+    }
+
+    /*
+     * If input ends with whitespace:
+     *
+     * Example:
+     *   "todo "
+     *
+     * Then "todo" is complete, and we want to suggest all of
+     * its subcommands.
+     */
+    if(trailing_space) {
+        for(int i = 0; i < argc; ++i) {
+            const struct command_definition *definition =
+                find_command_definition(
+                    current_commands,
+                    command_count,
+                    argv[i]
+                );
+
+            if(definition == NULL) {
+                return result;
+            }
+
+            current_commands = definition->subcommands;
+            command_count = definition->subcommand_count;
+        }
+
+        return complete_command_definitions(
+            "",
+            current_commands,
+            command_count
+        );
+    }
+
+    /*
+     * Otherwise, the last token is partial and should be completed.
+     *
+     * Example:
+     *   "todo l"
+     *
+     * Resolve "todo", then complete "l" within its subcommands.
+     */
+    for(int i = 0; i < argc - 1; ++i) {
+        const struct command_definition *definition =
+            find_command_definition(
+                current_commands,
+                command_count,
+                argv[i]
+            );
+
+        if(definition == NULL ||
+           definition->subcommands == NULL ||
+           definition->subcommand_count == 0) {
+            return result;
+        }
+
+        current_commands = definition->subcommands;
+        command_count = definition->subcommand_count;
+    }
+
+    result = complete_command_definitions(
+        argv[argc - 1],
+        current_commands,
+        command_count
+    );
+
+    /*
+     * Only add console-local commands at the top level.
+     */
+    if(argc == 1) {
+        add_console_special_completions(&result, argv[0]);
     }
 
     return result;

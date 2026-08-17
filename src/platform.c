@@ -303,6 +303,22 @@ void terminal_finish_input_line(void)
 
     fflush(stdout);
 }
+static const char *current_token(const char *buffer)
+{
+    if(buffer == NULL) {
+        return "";
+    }
+
+    const char *token = buffer;
+
+    for(const char *p = buffer; *p != '\0'; ++p) {
+        if(*p == ' ' || *p == '\t') {
+            token = p + 1;
+        }
+    }
+
+    return token;
+}
 
 void terminal_render_input(
     const char *prompt,
@@ -311,10 +327,8 @@ void terminal_render_input(
     const struct completion_result *completions
 ) {
     /*
-     * We enter this function with the cursor on the input line.
-     *
-     * First clear the input line and all suggestion lines left
-     * behind by the previous render.
+     * Clear the current input line and all suggestion lines
+     * left behind by the previous render.
      */
     printf("\r\x1b[2K");
 
@@ -333,31 +347,43 @@ void terminal_render_input(
     }
 
     /*
-     * Draw current input.
+     * Draw the complete current input.
      */
     printf("%s%s", prompt, buffer);
 
     /*
-     * Draw current suggestions.
+     * Completion applies to the current token only.
+     *
+     * Example:
+     *
+     *   buffer:     "todo ad"
+     *   token:      "ad"
+     *   suggestion: "add"
      */
+    const char *token = current_token(buffer);
+    size_t typed_length = strlen(token);
+
     size_t rendered_suggestions = 0;
-    size_t typed_length = strlen(buffer);
 
     if(completions != NULL) {
         for(size_t i = 0; i < completions->count; ++i) {
             const char *suggestion = completions->items[i];
 
+            if(suggestion == NULL) {
+                continue;
+            }
+
             /*
              * Don't show an exact match as a suggestion.
              */
-            if(strcmp(suggestion, buffer) == 0) {
+            if(strcmp(suggestion, token) == 0) {
                 continue;
             }
 
             printf("\n\x1b[2K  ");
 
             /*
-             * Already typed part.
+             * Already typed portion in green.
              */
             printf(
                 "%s%.*s%s",
@@ -368,7 +394,7 @@ void terminal_render_input(
             );
 
             /*
-             * Remaining part.
+             * Remaining portion in grey.
              */
             printf(
                 "%s%s%s",
@@ -394,13 +420,18 @@ void terminal_render_input(
     }
 
     /*
-     * Move the physical terminal cursor to the logical
+     * Position the physical terminal cursor at the logical
      * cursor position.
      *
      * cursor is a UTF-8 byte offset into buffer.
      */
     printf("%s", prompt);
-    fwrite(buffer, 1, cursor, stdout);
+    fwrite(
+        buffer,
+        1,
+        cursor,
+        stdout
+    );
 
     g_previous_suggestion_lines = rendered_suggestions;
 

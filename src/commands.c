@@ -141,11 +141,7 @@ const struct command_definition* get_commands(size_t *count) {
     return commands;
 }
 
-const struct command_definition* find_command_definition(const struct command_definition *commands, size_t command_count, const char *name) {
-    if(commands == NULL || name == NULL) {
-        return NULL;
-    }
-
+const struct command_definition *find_command_definition(const struct command_definition *commands, size_t command_count, const char *name) {
     for(size_t i = 0; i < command_count; ++i) {
         if(strcmp(commands[i].name, name) == 0) {
             return &commands[i];

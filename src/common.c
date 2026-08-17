@@ -220,3 +220,19 @@ int join_array(int argc, char *argv[], char *buffer, size_t buffer_size) {
 
     return R_OK;
 }
+
+bool ends_with_whitespace(const char *text) {
+    size_t len;
+
+    if(text == NULL) {
+        return false;
+    }
+
+    len = strlen(text);
+
+    if(len == 0) {
+        return false;
+    }
+
+    return isspace((unsigned char)text[len - 1]) != 0;
+}
