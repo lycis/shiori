@@ -127,6 +127,27 @@ static size_t completion_common_prefix_length(const struct completion_result *co
     return prefix_length;
 }
 
+static size_t current_token_start(const char *buffer) {
+    if(buffer == NULL) {
+        return 0;
+    }
+
+    size_t length = strlen(buffer);
+    size_t start = length;
+
+    while(start > 0) {
+        char c = buffer[start - 1];
+
+        if(c == ' ' || c == '\t') {
+            break;
+        }
+
+        start--;
+    }
+
+    return start;
+}
+
 int read_interactive_line(
     const char *prompt,
     char *buffer,
@@ -191,24 +212,31 @@ int read_interactive_line(
                 }
                 break;
 
-            case KEY_TAB:
+            case KEY_TAB: {
                 if(completions.count == 0) {
                     break;
                 }
+
+                size_t token_start = current_token_start(buffer);
 
                 if(completions.count == 1) {
                     const char *completion = completions.items[0];
                     size_t completion_length = strlen(completion);
 
-                    if(completion_length < buffer_size) {
-                        if(strcpy_s(
-                            buffer,
-                            buffer_size,
-                            completion
-                        ) == 0) {
-                            length = completion_length;
-                            cursor = length;
-                        }
+                    size_t new_length =
+                        token_start + completion_length;
+
+                    if(new_length < buffer_size) {
+                        memcpy(
+                            buffer + token_start,
+                            completion,
+                            completion_length
+                        );
+
+                        buffer[new_length] = '\0';
+
+                        length = new_length;
+                        cursor = length;
                     }
 
                     break;
@@ -216,29 +244,34 @@ int read_interactive_line(
 
                 /*
                 * Multiple matches:
-                * extend only as far as their common prefix.
+                * extend current token only as far as the common prefix.
                 */
                 size_t prefix_length =
                     completion_common_prefix_length(&completions);
 
-                if(prefix_length > length &&
-                prefix_length < buffer_size) {
+                size_t current_token_length =
+                    length - token_start;
 
-                    memcpy(
-                        buffer,
-                        completions.items[0],
-                        prefix_length
-                    );
+                if(prefix_length > current_token_length) {
+                    size_t new_length =
+                        token_start + prefix_length;
 
-                    buffer[prefix_length] = '\0';
+                    if(new_length < buffer_size) {
+                        memcpy(
+                            buffer + token_start,
+                            completions.items[0],
+                            prefix_length
+                        );
 
-                    length = prefix_length;
-                    cursor = length;
+                        buffer[new_length] = '\0';
+
+                        length = new_length;
+                        cursor = length;
+                    }
                 }
 
                 break;
-                break;
-
+            }
             case KEY_ENTER:
                 terminal_finish_input_line();
                 terminal_leave_interactive_mode();
