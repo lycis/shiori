@@ -19,6 +19,12 @@ No database. No account. No cloud. Just plain text.
 
 </div>
 
+<div align="center">
+  <img src="docs/assets/shiori-demo.gif"
+       alt="Shiori terminal demo"
+       width="760">
+</div>
+
 ---
 
 ## Why Shiori?
