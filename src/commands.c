@@ -96,6 +96,7 @@ int run_command(char* command, int argc, char* argv[]) {
         printf("  %-16s %s\n", "add",    "Add a new note or thought to the day");
         printf("  %-16s %s\n", "capture","Interactively capture notes and todos");
         printf("  %-16s %s\n", "topic",  "Browse notes by topic");
+        printf("  %-16s %s\n", "tag",    "Find notes and todos by tag");
         printf("  %-16s %s\n", "todo",   "Manage your todos and tasks");
         printf("  %-16s %s\n", "today",  "Your overview for the current day");
         printf("  %-16s %s\n", "console","Start the interactive console");

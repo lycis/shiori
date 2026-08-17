@@ -13,6 +13,7 @@ This guide covers installation, configuration, every current workflow, and the o
 - [Adding notes](#adding-notes)
 - [Capture sessions](#capture-sessions)
 - [Organizing notes with topics](#organizing-notes-with-topics)
+- [Finding notes and todos by tag](#finding-notes-and-todos-by-tag)
 - [Managing todos](#managing-todos)
 - [Daily dashboard](#daily-dashboard)
 - [Interactive console](#interactive-console)
@@ -148,6 +149,7 @@ shiori [options] <command> [options] [subcommand] ...
 | `add` | Add a note or thought to today's section. |
 | `capture` | Start an interactive session for capturing notes and todos. |
 | `topic` | Show notes for a topic or list topic statistics. |
+| `tag` | Find notes and todos containing all specified tags. |
 | `todo` | Add, list, update, and remove todos. |
 | `today` | Show notes and active todos in a daily dashboard. |
 | `config` | Show the loaded configuration. |
@@ -267,6 +269,35 @@ shiori topic -l
 The daily dashboard displays a note's topic beside its text. Topic names are currently single values without spaces.
 
 Use `shiori topic --help` for the built-in reference.
+
+## Finding notes and todos by tag
+
+Tags are ordinary `#name` tokens in note or todo text. Unlike a topic, which is structured note metadata assigned with `--topic`, tags can be added freely and are shared by notes and todos.
+
+Add tags as part of the captured text. Quote them in PowerShell because an unquoted `#` begins a comment:
+
+```console
+shiori add record the architecture decision "#decision" "#backend"
+shiori todo add follow up with the team "#backend"
+```
+
+Search both `NOTES.md` and `TODOS.md` by writing tag names without the leading `#`:
+
+```console
+shiori tag backend
+```
+
+The result groups matching notes under their dates and then lists matching todos with status, ID, and due date when present. Todos of every status are included.
+
+Specify multiple tags to require all of them:
+
+```console
+shiori tag decision backend
+```
+
+Matching uses complete tags, so searching for `work` does not match `#workshop`.
+
+Use `shiori tag --help` for the built-in reference. The `todo list --tag` filters remain useful when you only want todos and want to combine tags with todo status filters.
 
 ## Managing todos
 
@@ -409,6 +440,10 @@ shiori 🦊> exit
 ```
 
 Enter `exit` or `quit` to leave console mode.
+
+As you type a command, Shiori displays matching suggestions in color. Press Tab to accept a single match; when several commands match, Tab expands the input to their longest shared prefix. Console completion includes Shiori commands plus `exit` and `quit`.
+
+Capture mode uses the same UTF-8-aware input renderer and suggests its slash commands (`/done`, `/exit`, and `/quit`). Backspace removes a complete UTF-8 character rather than an individual encoded byte.
 
 ## Debugging
 

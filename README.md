@@ -62,12 +62,14 @@ Your data remains ordinary Markdown that works with any text editor or Markdown 
 - 📝 **Plain Markdown** — your notes and tasks stay readable without Shiori.
 - 📅 **Automatic daily sections** — notes are grouped under `# YYYY-MM-DD` headings.
 - 🪧 **Note topics** — organize related notes and review them across daily sections.
+- 🏷️ **Cross-file tags** — find related notes and todos with one or more matching tags.
 - ✅ **Todo tracking** — move stable task IDs through open, in-progress, and done states.
 - ⏰ **Due dates** — schedule tasks and surface due or overdue work in the dashboard.
 - 🏷️ **Flexible filtering** — find todos by status or one or more Markdown tags.
 - ✏️ **Task maintenance** — rewrite, remove, reopen, or prune completed tasks.
 - 🌅 **Daily dashboard** — review notes and active work for today or another selected date.
 - 💻 **Interactive console** — keep Shiori open while capturing several thoughts.
+- ✨ **Interactive suggestions** — use colored completions and Tab expansion in console and capture modes.
 - 🛡️ **Safe updates** — file rewrites use temporary files with backup and restore handling.
 - 🪝 **Command hooks** — run your own local automation after Shiori commands.
 - 🔌 **Obsidian-friendly** — point `base_dir` at a vault; no plugin is required.
@@ -122,6 +124,7 @@ shiori [options] <command> [options] [subcommand] ...
 | `add` | Add a note to today's section. |
 | `capture` | Start an interactive session for rapidly capturing notes and todos. |
 | `topic` | Browse notes by topic or list topic statistics. |
+| `tag` | Find notes and todos containing all specified tags. |
 | `todo` | Add, list, update, and remove todos. |
 | `today` | Show notes and active todos in a daily dashboard. |
 | `config` | View the loaded configuration. |
@@ -131,7 +134,7 @@ shiori [options] <command> [options] [subcommand] ...
 
 Use the global `--debug` option to show diagnostic output.
 
-See the **[User Guide](docs/USER_GUIDE.md)** for capture sessions, topics, due dates, the todo command reference, filters, date selection, configuration, data formats, and troubleshooting. Automation authors can use the dedicated **[Hooks Guide](docs/HOOKS.md)**.
+See the **[User Guide](docs/USER_GUIDE.md)** for capture sessions, topics and tags, due dates, interactive completion, the todo command reference, configuration, data formats, and troubleshooting. Automation authors can use the dedicated **[Hooks Guide](docs/HOOKS.md)**.
 
 ---
 

@@ -78,7 +78,7 @@ int command_tag(int argc, char* argv[]) {
             "Usage:\n"
             "  %s tag <tag> [tag...]\n"
             "\n"
-            "Shows all notes containing all specified tags.\n"
+            "Shows all notes and todos containing all specified tags.\n"
             "\n"
             "Options:\n"
             "  %-22s Show this help\n"

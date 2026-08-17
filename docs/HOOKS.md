@@ -89,6 +89,7 @@ Current command examples include:
 - `capture`
 - `config`
 - `console`
+- `tag`
 - `today`
 - `todo`
 - `topic`
