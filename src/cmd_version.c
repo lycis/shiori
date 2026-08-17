@@ -69,6 +69,9 @@ static void print_c_standard(void)
 }
 
 int command_version(int argc, char * argv[]) {
+    (void) argc;
+    (void) argv;
+    
     printf("%s %s\n", APP_NAME, APP_VERSION);
     print_compiler();
     print_platform();

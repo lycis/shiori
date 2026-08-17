@@ -27,6 +27,7 @@ int command_tag(int argc, char *argv[]);
 int command_console(int argc, char*argv[]);
 int command_util(int argc, char*argv[]);
 int command_version(int argc, char * argv[]);
+int command_help(int argc, char* argv[]);
 
 const struct command_definition *get_commands(size_t *count);
 const struct command_definition *find_command(const struct command_definition *commands, size_t command_count, const char *name);
