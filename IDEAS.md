@@ -86,7 +86,6 @@ Ideas and possible improvements for future Shiori versions.
 
 ## Quality of Life
 
-* shell completion scripts for PowerShell, Bash, and Zsh
 * configurable output colors
 * optional plain/no-color output
 * improve handling of very long interactive input lines
