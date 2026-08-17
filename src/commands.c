@@ -1,0 +1,141 @@
+#include "common.h"
+#include "commands.h"
+#include "config.h"
+#include "hooks.h"
+#include "logging.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+static void print_compiler(void) {
+#if defined(__clang__)
+    printf("compiler: clang %d.%d.%d\n",
+           __clang_major__,
+           __clang_minor__,
+           __clang_patchlevel__);
+
+#elif defined(__GNUC__)
+    printf("compiler: gcc %d.%d.%d\n",
+           __GNUC__,
+           __GNUC_MINOR__,
+           __GNUC_PATCHLEVEL__);
+
+#elif defined(_MSC_VER)
+    printf("compiler: msvc %d\n", _MSC_VER);
+
+#else
+    printf("compiler: unknown\n");
+#endif
+}
+
+static void print_platform(void)
+{
+#if defined(_WIN32)
+    printf("platform: windows");
+#elif defined(__linux__)
+    printf("platform: linux");
+#elif defined(__APPLE__)
+    printf("platform: macos");
+#else
+    printf("platform: unknown");
+#endif
+}
+
+static void print_architecture(void) {
+#if defined(__x86_64__) || defined(_M_X64)
+    printf(" x86_64");
+#elif defined(__aarch64__) || defined(_M_ARM64)
+    printf(" arm64");
+#elif defined(__i386__) || defined(_M_IX86)
+    printf(" x86");
+#else
+    printf(" unknown-arch");
+#endif
+
+    printf("\n");
+}
+
+static void print_c_standard(void)
+{
+#if defined(__STDC_VERSION__)
+    #if __STDC_VERSION__ >= 202311L
+        printf("c standard: C23\n");
+    #elif __STDC_VERSION__ >= 201710L
+        printf("c standard: C17\n");
+    #elif __STDC_VERSION__ >= 201112L
+        printf("c standard: C11\n");
+    #elif __STDC_VERSION__ >= 199901L
+        printf("c standard: C99\n");
+    #else
+        printf("c standard: pre-C99\n");
+    #endif
+#else
+    printf("c standard: C90\n");
+#endif
+}
+
+
+int run_command(char* command, int argc, char* argv[]) {
+    if(strcmp(command, "version") == 0) {
+         printf("%s %s\n", APP_NAME, APP_VERSION);
+         print_compiler();
+         print_platform();
+         print_architecture();
+         print_c_standard();
+         return R_OK;
+    } else if(strcmp(command, "help") == 0) {
+        printf("%s is a console scratchpad tool that helps you maintain thoughts, quick notes and todos in a quick fire-and-forget fashion.", APP_NAME);
+        printf("usage: %s [options] <command> [options] [subcommand] ...\n", APP_NAME);
+        printf("\n");
+        printf("Options:\n");
+        printf("  %-16s %s\n", "--debug", "Show debug and plumbing output.");
+        printf("\n");
+        printf("Available commands:\n");
+        printf("  %-16s %s\n", "init",   "Initialize a new configuration");
+        printf("  %-16s %s\n", "config", "Show or modify configuration");
+        printf("  %-16s %s\n", "add",    "Add a new note or thought to the day");
+        printf("  %-16s %s\n", "capture","Interactively capture notes and todos");
+        printf("  %-16s %s\n", "topic",  "Browse notes by topic");
+        printf("  %-16s %s\n", "todo",   "Manage your todos and tasks");
+        printf("  %-16s %s\n", "today",  "Your overview for the current day");
+        printf("  %-16s %s\n", "console","Start the interactive console");
+        printf("  %-16s %s\n", "help",   "Show this help");
+        printf("  %-16s %s\n", "version","Display current version information");
+        return R_OK;
+    } else if(strcmp(command, "init") == 0) {
+        return command_init(argc, argv);
+    }
+
+    if(read_config_file() != R_OK) {
+        exit(SHIORI_EXIT_CONFIG_ERROR);
+    }
+
+    int rc = -1;
+    if(strcmp(command, "config") == 0) {
+        rc = command_config(argc, argv);
+    } else if(strcmp(command, "console") == 0) {
+        rc = command_console(argc, argv);
+    } else if(strcmp(command, "add") == 0) {
+        rc = command_add(argc, argv);
+    } else if(strcmp(command, "todo") == 0) {
+        rc = command_todo(argc, argv);
+    } else if(strcmp(command, "today") == 0) {
+        rc = command_today(argc, argv);
+    } else if(strcmp(command, "topic") == 0) {
+        rc = command_topic(argc, argv);
+    } else if(strcmp(command, "capture") == 0) {
+        rc = command_capture(argc, argv);
+    } else if(strcmp(command, "tag") == 0) {
+        rc = command_tag(argc, argv);
+    } else {
+        log_error("Unknown command: %s\n", command);
+        return R_ERROR;
+    }
+
+    // call after command hook
+    if(g_config.hooks.after_command[0] != '\0') {
+        hook_after_command(command, argc, argv);
+    }
+    
+    return rc;
+} 
