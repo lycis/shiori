@@ -18,6 +18,10 @@ struct note_list {
     size_t capacity;
 };
 
+struct notes_metadata {
+    unsigned int version;
+};
+
 void note_list_init(struct note_list *list);
 void note_list_free(struct note_list *list);
 
@@ -29,5 +33,6 @@ int note_list_add(
 int read_notes_for_date(const char *filename, const time_t date, struct note_list *notes);
 int read_notes(const char *filename, struct note_list *list);
 int create_note_from_markdown(const char *markdown, time_t created,struct note *item);
+int read_notes_metadata(const char *filename, struct notes_metadata* md);
 
 #endif
