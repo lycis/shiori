@@ -10,6 +10,7 @@
 #include "cmd_shared.h"
 #include "todo.h"
 #include "todo_list.h"
+#include "commands.h"
 
 // Prototypes
 int write_todo_metadata(const char *filename, const struct todo_metadata *md);
@@ -526,7 +527,7 @@ int write_todo(char *filename, struct todo *item)
     return result;
 }
 
-int command_todo_add(int argc, char* argv[]) {
+static int command_todo_add(int argc, char* argv[]) {
     log_debug("Adding a new todo.\n");
     
     struct todo item;
@@ -1493,4 +1494,79 @@ int command_todo(int argc, char* argv[]) {
     }
 
     return R_OK;
+}
+
+static const struct command_definition todo_commands[] = {
+    {
+        "add",
+        "Add a new todo",
+        command_todo_add,
+        NULL,
+        0,
+        true
+    },
+    {
+        "list",
+        "List todos",
+        command_todo_list,
+        NULL,
+        0,
+        true
+    },
+    {
+        "start",
+        "Mark a todo as in progress",
+        command_todo_start,
+        NULL,
+        0,
+        true
+    },
+    {
+        "done",
+        "Mark a todo as completed",
+        command_todo_done,
+        NULL,
+        0,
+        true
+    },
+    {
+        "reopen",
+        "Reopen a todo",
+        command_todo_reopen,
+        NULL,
+        0,
+        true
+    },
+    {
+        "rewrite",
+        "Rewrite a todo",
+        command_todo_rewrite,
+        NULL,
+        0,
+        true
+    },
+    {
+        "remove",
+        "Remove a todo",
+        command_todo_remove,
+        NULL,
+        0,
+        true
+    },
+    {
+        "prune",
+        "Remove completed todos",
+        command_todo_prune,
+        NULL,
+        0,
+        true
+    }
+};
+
+const struct command_definition* get_todo_commands(size_t* count) {
+    if(count != NULL) {
+        *count = sizeof(todo_commands) / sizeof(todo_commands[0]);
+    }
+
+    return todo_commands;
 }

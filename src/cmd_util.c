@@ -3,6 +3,7 @@
 #include "common.h"
 #include "cli.h"
 #include "logging.h"
+#include "commands.h"
 
 static int print_powershell_completion(void)
 {
@@ -161,4 +162,24 @@ int command_util(int argc, char *argv[]) {
 
     log_error("Unknown util command: %s\n", argv[0]);
     return R_ERROR;
+}
+
+static const struct command_definition util_commands[] = {
+    {
+        "completion",
+        "Generate shell completion definitions",
+        command_util_completion,
+        NULL,
+        0,
+        false
+    }
+};
+
+
+const struct command_definition* get_util_commands(size_t* count) {
+    if(count != NULL) {
+        *count = sizeof(util_commands) / sizeof(util_commands[0]);
+    }
+
+    return util_commands;
 }
