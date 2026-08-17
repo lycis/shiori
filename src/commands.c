@@ -88,7 +88,7 @@ static const struct command_definition commands[] = {
         true
     },
     {
-        "help",
+        "help", 
         "Show this help",
         command_help,
         NULL,
@@ -128,44 +128,25 @@ const struct command_definition* find_command(const struct command_definition *c
 }
 
 int run_command(char* command, int argc, char* argv[]) {
-    if(strcmp(command, "version") == 0) {
-        return command_version(argc, argv);
-    } else if(strcmp(command, "help") == 0) {
-        return command_help(argc, argv);
-    } else if(strcmp(command, "init") == 0) {
-        return command_init(argc, argv);
-    }
+    size_t command_count = 0;
+    const struct command_definition* commands = get_commands(&command_count);
+    const struct command_definition* current_command = find_command(commands, command_count, command);
 
-    if(read_config_file() != R_OK) {
-        exit(SHIORI_EXIT_CONFIG_ERROR);
-    }
-
-    int rc = -1;
-    if(strcmp(command, "config") == 0) {
-        rc = command_config(argc, argv);
-    } else if(strcmp(command, "console") == 0) {
-        rc = command_console(argc, argv);
-    } else if(strcmp(command, "add") == 0) {
-        rc = command_add(argc, argv);
-    } else if(strcmp(command, "todo") == 0) {
-        rc = command_todo(argc, argv);
-    } else if(strcmp(command, "today") == 0) {
-        rc = command_today(argc, argv);
-    } else if(strcmp(command, "topic") == 0) {
-        rc = command_topic(argc, argv);
-    } else if(strcmp(command, "capture") == 0) {
-        rc = command_capture(argc, argv);
-    } else if(strcmp(command, "tag") == 0) {
-        rc = command_tag(argc, argv);
-    } else if(strcmp(command, "util") == 0) {
-        rc = command_util(argc, argv);
-    } else {
+    if(current_command == NULL) {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
     }
 
+    if(current_command->requires_config) {
+        if(read_config_file() != R_OK) {
+            return R_ERROR;
+        }   
+    }
+
+    int rc = current_command->handler(argc, argv);
+    
     // call after command hook
-    if(g_config.hooks.after_command[0] != '\0') {
+    if(current_command->requires_config && g_config.hooks.after_command[0] != '\0') {
         hook_after_command(command, argc, argv);
     }
     
