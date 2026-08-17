@@ -151,7 +151,7 @@ int command_tag(int argc, char* argv[]) {
             have_last_date = true;
         }
 
-        printf("    • %s\n", list.items[i].text);
+        printf(COLOR_NOTE_ID "    %s " ANSI_RESET "%s\n", list.items[i].id, list.items[i].text);
     }
 
     note_list_free(&list);
