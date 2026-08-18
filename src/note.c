@@ -7,6 +7,7 @@
 #include "logging.h"
 #include "cmd_shared.h"
 #include "platform.h"
+#include "common.h"
 
 void note_list_init(struct note_list *list)
 {
@@ -336,7 +337,32 @@ int read_notes_for_date(const char *filename, const time_t date, struct note_lis
     return R_OK;
 }
 
+static void write_note_metadata_to_file(FILE* f, struct notes_metadata* md) {
+    fprintf(f,
+        "---\n"
+        "version: %d\n"
+        "---\n",
+        md->version
+    );
+}
+
 int read_notes_metadata(const char *filename, struct notes_metadata* md) {
+    if(file_access_utf8(filename, F_OK) != 0) {
+       FILE* file = open_base_dir_file(filename, "w");
+       if(file == NULL) {
+            log_error("Failed opening %s for write.\n", filename);
+            return R_ERROR;
+       }
+
+       // initialize metadata
+       struct notes_metadata init_md = {
+        NOTES_FORMAT_VERSION
+       };
+
+       write_note_metadata_to_file(file, &init_md);
+       fclose(file);
+    }
+
     FILE *file = open_base_dir_file(filename, "r");
     if(file == NULL) {
         log_error("Failed opening %s.\n", filename);
@@ -466,12 +492,7 @@ int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
         return R_ERROR;
     }
 
-    fprintf(temp,
-        "---\n"
-        "version: %d\n"
-        "---\n",
-        md->version
-    );
+    write_note_metadata_to_file(temp, md);
 
     time_t last_date = 0;
 
