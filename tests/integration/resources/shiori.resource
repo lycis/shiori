@@ -82,6 +82,12 @@ Data File Should Not Contain
     ${content}=    Get File    ${TEST_DATA}${/}${filename}    encoding=UTF-8
     Should Not Contain    ${content}    ${unexpected}
 
+Data File Should Equal
+    [Arguments]    ${filename}    ${expected}
+    File Should Exist    ${TEST_DATA}${/}${filename}
+    ${content}=    Get File    ${TEST_DATA}${/}${filename}    encoding=UTF-8
+    Should Be Equal    ${content}    ${expected}
+
 No Rewrite Artifacts Should Remain
     File Should Not Exist    ${TEST_DATA}${/}NOTES.md.tmp
     File Should Not Exist    ${TEST_DATA}${/}NOTES.md.bak
