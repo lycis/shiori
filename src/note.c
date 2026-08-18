@@ -53,6 +53,18 @@ int note_list_add(
     return R_OK;
 }
 
+struct note* note_list_find_by_id(const struct note_list *list, const char *id) {
+    if(list == NULL || id == NULL)  return NULL;
+
+    for(size_t i = 0; i < list->count; ++i) {
+        if(strcmp(list->items[i].id, id) == 0) {
+            return &list->items[i];
+        }
+    }
+
+    return NULL;
+}
+
 int create_note_from_markdown(const char *markdown, time_t created, struct note *item) {
     if(markdown == NULL || item == NULL) {
         return R_ERROR;

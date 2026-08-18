@@ -42,6 +42,9 @@ int command_version(int argc, char * argv[]);
 
 int command_help(int argc, char* argv[]);
 
+int command_note(int argc, char* argv[]);
+const struct command_definition* get_note_commands(size_t* count);
+
 const struct command_definition *get_commands(size_t *count);
 const struct command_definition *find_command_definition(const struct command_definition *commands, size_t command_count, const char *name);
 const struct command_definition *find_subcommand(const struct command_definition *parent, const char *name);

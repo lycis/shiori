@@ -6,7 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define COMMAND_COUNT 12
+#define COMMAND_COUNT 13
 
 static struct command_definition commands[COMMAND_COUNT];
 static bool commands_initialized = false;
@@ -17,6 +17,9 @@ static void init_commands() {
 
     size_t util_commands_count = 0;
     const struct command_definition* util_commands = get_util_commands(&util_commands_count);
+
+    size_t note_commands_count = 0;
+    const struct command_definition* note_commands = get_note_commands(&note_commands_count);
 
     commands[0] = (struct command_definition) {
         "init",
@@ -123,6 +126,15 @@ static void init_commands() {
         command_version,
         NULL,
         0,
+        false
+    };
+
+    commands[12] = (struct command_definition) {
+        "note",
+        "Access and display details around your notes",
+        command_note,
+        note_commands,
+        note_commands_count,
         false
     };
 

@@ -36,5 +36,6 @@ int read_notes(const char *filename, struct note_list *list);
 int create_note_from_markdown(const char *markdown, time_t created,struct note *item);
 int read_notes_metadata(const char *filename, struct notes_metadata* md);
 int write_note(FILE *file, const struct note *note);
+struct note* note_list_find_by_id(const struct note_list *list, const char *id);
 
 #endif
