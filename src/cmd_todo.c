@@ -46,7 +46,8 @@ int read_todo_metadata(char *filename, struct todo_metadata *md)
     // Front matter must start with ---
     if(fgets(line, sizeof(line), file) == NULL) {
         fclose(file);
-        return R_OK;
+        initialize_todo_front_matter(filename);
+        return read_todo_metadata(filename, md);
     }
 
     if(strcmp(trim(line), "---") != 0) {

@@ -95,7 +95,7 @@ Todo Mutations Honor Configured Base Directory
 
 New Todo File Uses Current Format Version
     [Documentation]    Known defect: an empty TODO file is treated as metadata version zero.
-    [Tags]    robot:skip    known-issue
+    [Tags]    known-issue
     ${result}=    Run Shiori    todo    add    Versioned task
     Shiori Should Succeed    ${result}
     Data File Should Contain    TODOS.md    version: 1
