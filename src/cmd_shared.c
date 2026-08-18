@@ -180,7 +180,13 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
         return R_ERROR;
     }
 
-    if(rename(temp_path, file_path) != 0) {
+    char temp_path_base_dir[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_filepath(temp_path, temp_path_base_dir, sizeof(temp_path_base_dir)) != R_OK) {
+        log_critical("Error when creating temp restore path.\n");
+        return R_ERROR;
+    }
+
+    if(rename(temp_path_base_dir, file_path) != 0) {
         log_error("Failed replacing %s.\n", filename);
 
         if(rename(backup_path, file_path) != 0) {

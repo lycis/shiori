@@ -44,7 +44,7 @@ Missing Note Text Does Not Modify Notes
 
 Notes Are Written To Configured Base Directory
     [Documentation]    Known defect: note rewrite temp paths currently use cwd instead of base_dir.
-    [Tags]    robot:skip    known-issue
+    [Tags]    known-issue
     Set Test Variable    ${TEST_DATA}    ${TEST_ROOT}${/}data
     Write Shiori Config
     ${result}=    Run Shiori    add    Stored outside cwd
