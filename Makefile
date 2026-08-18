@@ -38,7 +38,7 @@ TARGET := shiori$(EXE)
 DEBUG_BINARY := $(DEBUG_DIR)/$(TARGET)
 RELEASE_BINARY := $(RELEASE_DIR)/$(TARGET)
 
-.PHONY: all debug release clean run
+.PHONY: all debug release clean run test test-integration
 
 all: debug
 
@@ -64,6 +64,13 @@ $(RELEASE_DIR)/%.o: $(SOURCE_DIR)/%.c
 
 run: debug
 	./$(TARGET)
+
+PYTHON ?= python
+
+test: test-integration
+
+test-integration: debug
+	$(PYTHON) -m robot --variable SHIORI_BINARY:$(abspath $(DEBUG_BINARY)) --outputdir $(BUILD_DIR)/test-results tests/integration
 
 clean:
 	@$(RM_BUILD)

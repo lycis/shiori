@@ -46,6 +46,33 @@ jobs:
       - name: Smoke-check executable
         run: .\shiori.exe version
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install integration test dependencies
+        run: python -m pip install -r requirements-test.txt
+
+      - name: Run integration tests
+        shell: pwsh
+        run: |
+          python -m robot `
+            --variable "SHIORI_BINARY:$((Resolve-Path .\shiori.exe).Path)" `
+            --outputdir build/test-results `
+            --xunit xunit.xml `
+            tests/integration
+
+      - name: Upload integration test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: shiori-integration-test-results
+          path: build/test-results
+          if-no-files-found: ignore
+          retention-days: 30
+
       - name: Upload standalone executable
         uses: actions/upload-artifact@v6
         with:
