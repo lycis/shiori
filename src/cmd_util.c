@@ -6,51 +6,112 @@
 #include "commands.h"
 #include "note.h"
 
-static int print_powershell_completion(void)
-{
-    fputs(
-        "Register-ArgumentCompleter -Native -CommandName shiori -ScriptBlock {\n"
+static int print_powershell_command_array(const char *name, const struct command_definition *commands, size_t command_count) {
+    printf("    $commands_%s = @(\n", name);
+
+    for(size_t i = 0; i < command_count; ++i) {
+        printf(
+            "        '%s'%s\n",
+            commands[i].name,
+            i + 1 < command_count ? "," : ""
+        );
+    }
+
+    printf("    )\n\n");
+
+    return R_OK;
+}
+
+static int print_powershell_command_arrays(const char *path, const struct command_definition *commands, size_t command_count) {
+    if(print_powershell_command_array( path, commands, command_count) != R_OK) {
+        return R_ERROR;
+    }
+
+    for(size_t i = 0; i < command_count; ++i) {
+        if(commands[i].subcommands == NULL ||
+           commands[i].subcommand_count == 0) {
+            continue;
+        }
+
+        char child_path[DEFAULT_BUFFER_SIZE];
+
+        int written = snprintf(child_path, sizeof(child_path), "%s_%s", path, commands[i].name);
+        if(written < 0 || (size_t)written >= sizeof(child_path)) {
+            return R_ERROR;
+        }
+
+        if(print_powershell_command_arrays(child_path, commands[i].subcommands, commands[i].subcommand_count) != R_OK) {
+            return R_ERROR;
+        }
+    }
+
+    return R_OK;
+}
+
+static int print_powershell_routes(const char *parent_path, const struct command_definition *commands, size_t command_count, size_t depth) {
+    for(size_t i = 0; i < command_count; ++i) {
+        if(commands[i].subcommands == NULL ||
+           commands[i].subcommand_count == 0) {
+            continue;
+        }
+
+        char child_path[DEFAULT_BUFFER_SIZE];
+
+        int written = snprintf(child_path, sizeof(child_path), "%s_%s", parent_path, commands[i].name);
+        if(written < 0 || (size_t)written >= sizeof(child_path)) {
+            return R_ERROR;
+        }
+
+        printf(
+            "    elseif ($elements[%zu].Extent.Text -eq '%s' -and "
+            "$elements.Count -le %zu) {\n",
+            depth,
+            commands[i].name,
+            depth + 2
+        );
+
+        printf(
+            "        $candidates = $commands_%s\n",
+            child_path
+        );
+
+        printf("    }\n");
+
+        if(print_powershell_routes(
+            child_path,
+            commands[i].subcommands,
+            commands[i].subcommand_count,
+            depth + 1
+        ) != R_OK) {
+            return R_ERROR;
+        }
+    }
+
+    return R_OK;
+}
+
+static int print_powershell_completion() {
+    size_t command_count = 0;
+
+    const struct command_definition *commands = get_commands(&command_count);
+
+    printf(
+        "Register-ArgumentCompleter -Native -CommandName %s -ScriptBlock {\n",
+        APP_NAME
+    );
+
+    printf(
         "    param($wordToComplete, $commandAst, $cursorPosition)\n"
         "\n"
         "    $elements = @($commandAst.CommandElements)\n"
         "\n"
-        "    $topLevel = @(\n"
-        "        'add',\n"
-        "        'capture',\n"
-        "        'config',\n"
-        "        'console',\n"
-        "        'note',\n"
-        "        'tag',\n"
-        "        'today',\n"
-        "        'todo',\n"
-        "        'topic',\n"
-        "        'util',\n"
-        "        'version'\n"
-        "    )\n"
-        "\n"
-        "    $noteCommands = @(\n"
-        "        'show',\n"
-        "        'edit',\n"
-        "        'retopic',\n"
-        "        'remove',\n"
-        "        'help'\n"
-        "    )\n"
-        "\n"
-        "    $todoCommands = @(\n"
-        "        'add',\n"
-        "        'list',\n"
-        "        'start',\n"
-        "        'done',\n"
-        "        'reopen',\n"
-        "        'rewrite',\n"
-        "        'remove',\n"
-        "        'prune'\n"
-        "    )\n"
-        "\n"
-        "    $utilCommands = @(\n"
-        "        'completion'\n"
-        "    )\n"
-        "\n"
+    );
+
+    if(print_powershell_command_arrays("root", commands, command_count) != R_OK) {
+        return R_ERROR;
+    }
+
+    printf(
         "    $shells = @(\n"
         "        'powershell'\n"
         "    )\n"
@@ -58,21 +119,36 @@ static int print_powershell_completion(void)
         "    $candidates = @()\n"
         "\n"
         "    if ($elements.Count -le 2) {\n"
-        "        $candidates = $topLevel\n"
+        "        $candidates = $commands_root\n"
         "    }\n"
-        "    elseif ($elements[1].Extent.Text -eq 'note' -and $elements.Count -le 3) {\n"
-        "        $candidates = $noteCommands\n"
-        "    }\n"
-        "    elseif ($elements[1].Extent.Text -eq 'todo' -and $elements.Count -le 3) {\n"
-        "        $candidates = $todoCommands\n"
-        "    }\n"
-        "    elseif ($elements[1].Extent.Text -eq 'util') {\n"
-        "        if ($elements.Count -le 3) {\n"
-        "            $candidates = $utilCommands\n"
-        "        }\n"
-        "        elseif ($elements[2].Extent.Text -eq 'completion' -and $elements.Count -le 4) {\n"
-        "            $candidates = $shells\n"
-        "        }\n"
+    );
+
+    for(size_t i = 0; i < command_count; ++i) {
+        if(commands[i].subcommands == NULL ||
+           commands[i].subcommand_count == 0) {
+            continue;
+        }
+
+        printf(
+            "    elseif ($elements[1].Extent.Text -eq '%s' "
+            "-and $elements.Count -le 3) {\n"
+            "        $candidates = $commands_root_%s\n"
+            "    }\n",
+            commands[i].name,
+            commands[i].name
+        );
+    }
+
+    /*
+     * Special argument completion for:
+     *
+     * shiori util completion <shell>
+     */
+    printf(
+        "    elseif ($elements[1].Extent.Text -eq 'util' "
+        "-and $elements[2].Extent.Text -eq 'completion' "
+        "-and $elements.Count -le 4) {\n"
+        "        $candidates = $shells\n"
         "    }\n"
         "\n"
         "    $candidates |\n"
@@ -85,8 +161,7 @@ static int print_powershell_completion(void)
         "                $_\n"
         "            )\n"
         "        }\n"
-        "}\n",
-        stdout
+        "}\n"
     );
 
     return R_OK;
