@@ -96,6 +96,8 @@ int command_capture(int argc, char *argv[]) {
     }
 
 
+    struct command_history history = {0};
+
     while (true) {
         char prompt[DEFAULT_BUFFER_SIZE];
 
@@ -107,7 +109,7 @@ int command_capture(int argc, char *argv[]) {
 
         char input[DEFAULT_BUFFER_SIZE];
 
-        if(read_interactive_line(prompt, input, sizeof(input), capture_completion) != R_OK) {
+        if(read_interactive_line(prompt, input, sizeof(input), capture_completion, &history) != R_OK) {
             log_critical("Failed to read interactive input.\n");
             break;
         }

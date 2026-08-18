@@ -3,12 +3,14 @@
 
 #include <stdbool.h>
 #include "color.h"
+#include "common.h"
 
 void strip_leading_flags(int *argc, char ***argv);
 bool has_switch(int argc, char *argv[], const char *sw, bool allow_subcommands);
 void print_divider(size_t width);
 
 #define MAX_COMPLETIONS 16
+#define MAX_HISTORY_ITEMS 64
 
 struct completion_result {
     const char *items[MAX_COMPLETIONS];
@@ -17,7 +19,12 @@ struct completion_result {
 
 typedef struct completion_result (*completion_fn)(const char *input);
 
-int read_interactive_line(const char *prompt, char *buffer, size_t buffer_size, completion_fn complete);
+struct command_history {
+    char items[MAX_HISTORY_ITEMS][DEFAULT_BUFFER_SIZE];
+    size_t count;
+};
+
+int read_interactive_line(const char *prompt, char *buffer, size_t buffer_size, completion_fn complete, struct command_history *history);
 struct completion_result find_completions(const char *input, const char *options[], size_t option_count);
 
 #endif

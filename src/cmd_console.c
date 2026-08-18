@@ -198,11 +198,12 @@ int command_console(int argc, char *argv[]) {
 
     char prompt[DEFAULT_BUFFER_SIZE];
     snprintf(prompt, sizeof(prompt), "%s 🦊> ", APP_NAME);
+    struct command_history history = {0};
 
     while(true) {
         char input[DEFAULT_BUFFER_SIZE];
 
-        if(read_interactive_line(prompt, input, sizeof(input), console_completion) != R_OK) {
+        if(read_interactive_line(prompt, input, sizeof(input), console_completion, &history) != R_OK) {
             log_error("Failed reading console input.\n");
             break;
         }

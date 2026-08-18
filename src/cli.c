@@ -148,11 +148,54 @@ static size_t current_token_start(const char *buffer) {
     return start;
 }
 
+static void add_history_item(struct command_history *history, const char *line) {
+    if(history == NULL || line == NULL || line[0] == '\0') {
+        return;
+    }
+
+    if(history->count > 0 &&
+       strcmp(history->items[history->count - 1], line) == 0) {
+        return;
+    }
+
+    if(history->count == MAX_HISTORY_ITEMS) {
+        memmove(
+            history->items[0],
+            history->items[1],
+            (MAX_HISTORY_ITEMS - 1) * sizeof(history->items[0])
+        );
+        history->count--;
+    }
+
+    strcpy_s(
+        history->items[history->count],
+        sizeof(history->items[history->count]),
+        line
+    );
+    history->count++;
+}
+
+static void recall_history_item(
+    char *buffer,
+    size_t buffer_size,
+    size_t *length,
+    size_t *cursor,
+    const char *line
+) {
+    if(strcpy_s(buffer, buffer_size, line) != 0) {
+        return;
+    }
+
+    *length = strlen(buffer);
+    *cursor = *length;
+}
+
 int read_interactive_line(
     const char *prompt,
     char *buffer,
     size_t buffer_size,
-    completion_fn complete
+    completion_fn complete,
+    struct command_history *history
 ) {
     if(prompt == NULL || buffer == NULL || buffer_size == 0) {
         return R_ERROR;
@@ -160,6 +203,8 @@ int read_interactive_line(
 
     size_t length = 0;
     size_t cursor = 0;
+    size_t history_position = history != NULL ? history->count : 0;
+    char draft[DEFAULT_BUFFER_SIZE] = "";
 
     buffer[0] = '\0';
 
@@ -273,6 +318,7 @@ int read_interactive_line(
                 break;
             }
             case KEY_ENTER:
+                add_history_item(history, buffer);
                 terminal_finish_input_line();
                 terminal_leave_interactive_mode();
                 return R_OK;
@@ -304,6 +350,39 @@ int read_interactive_line(
                         ((unsigned char)buffer[cursor] & 0xC0) == 0x80) {
                         cursor++;
                     }
+                }
+                break;
+
+            case KEY_UP:
+                if(history != NULL && history_position > 0) {
+                    if(history_position == history->count) {
+                        strcpy_s(draft, sizeof(draft), buffer);
+                    }
+
+                    history_position--;
+                    recall_history_item(
+                        buffer,
+                        buffer_size,
+                        &length,
+                        &cursor,
+                        history->items[history_position]
+                    );
+                }
+                break;
+
+            case KEY_DOWN:
+                if(history != NULL && history_position < history->count) {
+                    history_position++;
+
+                    recall_history_item(
+                        buffer,
+                        buffer_size,
+                        &length,
+                        &cursor,
+                        history_position == history->count
+                            ? draft
+                            : history->items[history_position]
+                    );
                 }
                 break;
 
