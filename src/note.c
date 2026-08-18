@@ -179,6 +179,10 @@ int read_notes(const char *filename, struct note_list *list) {
         return R_ERROR;
     }
 
+    if(md.version < NOTES_FORMAT_VERSION) {
+        log_warning("`%s` is an old version of the NOTES format. Please run `%s util migrate`.\n", filename, APP_NAME);
+    }
+
     FILE *file = open_base_dir_file(filename, "r");
     if(file == NULL) {
         log_critical("Failed opening %s.\n", filename);
@@ -316,7 +320,6 @@ int read_notes_metadata(const char *filename, struct notes_metadata* md) {
     }
 
     if(strcmp(trim(line), "---") != 0) {
-        log_warning("`%s` is an old version of the NOTES format. Please run `%s util migrate`.\n", filename, APP_NAME);
         fclose(file);
         return R_OK;
     }

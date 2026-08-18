@@ -16,6 +16,9 @@
 #define APP_NAME "shiori"
 #define APP_VERSION "0.2.0"
 
+#define TODO_FORMAT_VERSION  1
+#define NOTES_FORMAT_VERSION 1
+
 #define TODO_FILE "TODOS.md"
 
 #include <time.h>
