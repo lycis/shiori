@@ -205,6 +205,15 @@ static const struct command_definition note_commands[] = {
         true
     },
     {
+        "add",
+        "[--topic <topic>] <text>",
+        "Add a new note or thought to the day",
+        command_add,
+        NULL,
+        0,
+        true
+    },
+    {
         "show",
         "<id>",
         "Show the details of a note",

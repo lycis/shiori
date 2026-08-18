@@ -5,8 +5,6 @@
 #include "logging.h"
 #include "commands.h"
 #include "note.h"
-#include "cmd_shared.h"
-#include "platform.h"
 
 static int print_powershell_completion(void)
 {

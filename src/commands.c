@@ -44,7 +44,7 @@ static void init_commands() {
 
     commands[2] = (struct command_definition) {
         "add",
-        "<note>",
+        "[--topic <topic>] <note>",
         "Add a new note or thought to the day",
         command_add,
         NULL,
