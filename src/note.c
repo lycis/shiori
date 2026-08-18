@@ -342,7 +342,7 @@ int read_notes_metadata(const char *filename, struct notes_metadata* md) {
         char *colon = strchr(current, ':');
 
         if(colon == NULL) {
-            log_error("Invalid TODO metadata entry: %s\n", current);
+            log_error("Invalid NOTE metadata entry: %s\n", current);
             fclose(file);
             return R_ERROR;
         }
@@ -355,14 +355,42 @@ int read_notes_metadata(const char *filename, struct notes_metadata* md) {
         if(strcmp(key, "version") == 0) {
             md->version = atoi(value);
         } else {
-            log_debug("Ignoring unknown TODO metadata key: %s\n", key);
+            log_debug("Ignoring unknown NOTE metadata key: %s\n", key);
         }
     }
 
     fclose(file);
 
     if(!found_end) {
-        log_error("Unterminated TODO front matter in %s.\n", filename);
+        log_error("Unterminated NOTE front matter in %s.\n", filename);
+        return R_ERROR;
+    }
+
+    return R_OK;
+}
+
+int write_note(FILE *file, const struct note *note) {
+    if(file == NULL || note == NULL) {
+        return R_ERROR;
+    }
+
+    if(fprintf(file, "* %s", note->text) < 0) {
+        return R_ERROR;
+    }
+
+    if(note->topic[0] != '\0') {
+        if(fprintf(file, " #%s/topic/%s", APP_NAME, note->topic) < 0) {
+            return R_ERROR;
+        }
+    }
+
+    if(note->id[0] != '\0') {
+        if(fprintf(file, " <!-- %s:id=%s -->", APP_NAME, note->id) < 0) {
+            return R_ERROR;
+        }
+    }
+
+    if(fputc('\n', file) == EOF) {
         return R_ERROR;
     }
 

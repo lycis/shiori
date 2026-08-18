@@ -4,6 +4,9 @@
 #include "cli.h"
 #include "logging.h"
 #include "commands.h"
+#include "note.h"
+#include "cmd_shared.h"
+#include "platform.h"
 
 static int print_powershell_completion(void)
 {
@@ -156,11 +159,261 @@ int command_util(int argc, char *argv[]) {
     return R_ERROR;
 }
 
+static int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
+    if(notes == NULL || md == NULL) {
+        return R_ERROR;
+    }
+
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path("NOTES.md", file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    char temp_file[DEFAULT_BUFFER_SIZE];
+    int written = snprintf(temp_file, sizeof(temp_file), "%s.tmp", "NOTES.md");
+    if(written < 0 || (size_t)written >= sizeof(temp_file)) {
+        log_error("Temporary file path is too long.\n");
+        return R_ERROR;
+    }
+
+    char temp_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(temp_file, temp_path, sizeof(temp_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    char backup_path[DEFAULT_BUFFER_SIZE];
+    written = snprintf(backup_path, sizeof(backup_path), "%s.bak", file_path);
+    if(written < 0 || (size_t)written >= sizeof(backup_path)) {
+        log_error("Backup file path is too long.\n");
+        return R_ERROR;
+    }
+
+    FILE *temp = open_base_dir_file(temp_file, "w");
+    if(temp == NULL) {
+        log_error("Failed opening temporary notes file.\n");
+        return R_ERROR;
+    }
+
+    fprintf(temp,
+        "---\n"
+        "version: %d\n"
+        "---\n",
+        md->version
+    );
+
+    time_t last_date = 0;
+
+    for(size_t i = 0; i < notes->count; ++i) {
+        struct note *note = &notes->items[i];
+
+        if(i == 0 || !dates_equal(note->created, last_date)) {
+            char heading[DEFAULT_BUFFER_SIZE];
+
+            if(build_daily_heading(heading, sizeof(heading), note->created) != R_OK) {
+                fclose(temp);
+                remove(temp_path);
+                return R_ERROR;
+            }
+
+            fprintf(temp, "\n%s\n", heading);
+            last_date = note->created;
+        }
+
+        if(write_note(temp, note) != R_OK) {
+            fclose(temp);
+            remove(temp_path);
+            log_error("Failed writing note to temporary file.\n");
+            return R_ERROR;
+        }
+    }
+
+    if(fclose(temp) != 0) {
+        remove(temp_path);
+        log_error("Failed closing temporary notes file.\n");
+        return R_ERROR;
+    }
+
+    /*
+     * Remove an old backup if one is still around.
+     */
+    if(access(backup_path, F_OK) == 0) {
+        if(remove(backup_path) != 0) {
+            remove(temp_path);
+            log_error("Failed removing previous NOTES.md backup.\n");
+            return R_ERROR;
+        }
+    }
+
+    /*
+     * Move the existing file out of the way.
+     */
+    if(rename(file_path, backup_path) != 0) {
+        remove(temp_path);
+        log_error("Failed creating NOTES.md backup.\n");
+        return R_ERROR;
+    }
+
+    /*
+     * Put the newly written file in place.
+     */
+    if(rename(temp_path, file_path) != 0) {
+        log_error("Failed replacing NOTES.md.\n");
+
+        if(rename(backup_path, file_path) != 0) {
+            log_critical("Failed restoring NOTES.md from backup.\n");
+        }
+
+        remove(temp_path);
+        return R_ERROR;
+    }
+
+    /*
+     * New file is safely in place, backup is no longer needed.
+     */
+    if(remove(backup_path) != 0) {
+        log_warning("Failed removing NOTES.md backup.\n");
+    }
+
+    return R_OK;
+}
+
+static int migrate_notes_v0_to_v1(void) {
+    struct note_list all_notes;
+    note_list_init(&all_notes);
+
+    if(read_notes("NOTES.md", &all_notes) != R_OK) {
+        log_critical("Failed to read all notes.\n");
+        note_list_free(&all_notes);
+        return R_ERROR;
+    }
+
+    size_t migrated_count = 0;
+    time_t last_date = 0;
+    unsigned int seqnr = 0;
+
+    for(size_t i = 0; i < all_notes.count; ++i) {
+        struct note *n = &all_notes.items[i];
+
+        if(i == 0 || !dates_equal(n->created, last_date)) {
+            last_date = n->created;
+            seqnr = 1;
+        }
+
+        // preserve existing ID
+        if(n->id[0] != '\0') {
+            const char *dash = strrchr(n->id, '-');
+
+            if(dash != NULL) {
+                unsigned int existing_seq = 0;
+
+                if(sscanf_s(dash + 1, "%u", &existing_seq) == 1 &&
+                   existing_seq >= seqnr) {
+                    seqnr = existing_seq + 1;
+                }
+            }
+
+            continue;
+        }
+
+        char date_buffer[16];
+
+        if(format_date(n->created, date_buffer, sizeof(date_buffer)) != R_OK) {
+            note_list_free(&all_notes);
+            log_critical("Failed to format note date.\n");
+            return R_ERROR;
+        }
+
+        char id_date[9];
+        int written = snprintf(id_date, sizeof(id_date), "%.4s%.2s%.2s", date_buffer, date_buffer + 5, date_buffer + 8);
+        if(written < 0 || (size_t)written >= sizeof(id_date)) {
+            note_list_free(&all_notes);
+            log_critical("Failed to generate note id date.\n");
+            return R_ERROR;
+        }
+
+        written = snprintf(n->id, sizeof(n->id), "%s-%04u", id_date, seqnr++);
+        if(written < 0 || (size_t)written >= sizeof(n->id)) {
+            note_list_free(&all_notes);
+            log_error("Generated note ID is too long.\n");
+            return R_ERROR;
+        }
+
+        migrated_count++;
+    }
+
+    struct notes_metadata md;
+    md.version = 1;
+
+    if(rewrite_notes(&all_notes, &md) != R_OK) {
+        note_list_free(&all_notes);
+        log_critical("Failed to rewrite NOTES.md.\n");
+        return R_ERROR;
+    }
+
+    note_list_free(&all_notes);
+
+    log_success("Added IDs to %zu note%s.\n",
+        migrated_count,
+        migrated_count == 1 ? "" : "s");
+
+    log_success("Migrated NOTES.md from version 0 to 1.\n");
+
+    return R_OK;
+}
+
+static int migrate_notes() {
+    struct notes_metadata metadata;
+    if(read_notes_metadata("NOTES.md", &metadata) != R_OK) {
+        log_critical("Failed to read notes metadata.\n");
+        return R_ERROR;
+    }
+
+    while(metadata.version < NOTES_FORMAT_VERSION) {
+        switch(metadata.version) {
+            case 0:
+                if(migrate_notes_v0_to_v1() != R_OK) {
+                    return R_ERROR;
+                }
+
+                metadata.version = 1;
+                break;
+
+            default:
+                log_error(
+                    "No migration path for notes version %d.\n",
+                    metadata.version
+                );
+                return R_ERROR;
+        }
+    }
+
+    return R_OK;
+}
+
+static int command_util_migrate(int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
+
+    if(migrate_notes() != R_OK) {
+        log_critical("Migrating NOTES.md to current version failed. Your workspace may be broken!\n");
+        return R_ERROR;
+    }
+    return R_OK;
+}
+
 static const struct command_definition util_commands[] = {
     {
         "completion",
         "Generate shell completion definitions",
         command_util_completion,
+        NULL,
+        0,
+        false
+    },
+    {
+        "migrate",
+        "Run necessary migrations to bring your workspace to the latest version",
+        command_util_migrate,
         NULL,
         0,
         false
