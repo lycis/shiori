@@ -128,34 +128,12 @@ int command_util_completion(int argc, char *argv[]) {
     return R_ERROR;
 }
 
-static void print_util_help(void)
-{
-    printf(
-        "Usage:\n"
-        "  %s util <command> [options]\n"
-        "\n"
-        "Utility commands for Shiori maintenance and integrations.\n"
-        "\n"
-        "Commands:\n"
-        "  %-22s Generate shell completion definitions\n"
-        "\n"
-        "Run `%s util <command> --help` for more information about a command.\n"
-        "\n"
-        "Examples:\n"
-        "  %s util completion powershell\n",
-        APP_NAME,
-        "completion <shell>",
-        APP_NAME,
-        APP_NAME
-    );
-}
-
 int command_util(int argc, char *argv[]) {
-    if(argc == 0 || has_switch(argc, argv, "--help", true)) {
-        print_util_help();
-        return R_OK;
-    }
+    (void) argc;
+    (void) argv;
 
+    log_error("Please specify a util command. Refer to `util help` if required.");
+ 
     return R_ERROR;
 }
 
@@ -401,9 +379,21 @@ static int command_util_migrate(int argc, char* argv[]) {
     return R_OK;
 }
 
+static int command_util_help(int argc, char* argv[]);
+
 static const struct command_definition util_commands[] = {
     {
+        "help",
+        "",
+        "Display help about the available commands",
+        command_util_help,
+        NULL,
+        0,
+        false
+    },
+    {
         "completion",
+        "<shell>",
         "Generate shell completion definitions",
         command_util_completion,
         NULL,
@@ -412,6 +402,7 @@ static const struct command_definition util_commands[] = {
     },
     {
         "migrate",
+        "",
         "Run necessary migrations to bring your workspace to the latest version",
         command_util_migrate,
         NULL,
@@ -427,4 +418,13 @@ const struct command_definition* get_util_commands(size_t* count) {
     }
 
     return util_commands;
+}
+
+static int command_util_help(int argc, char* argv[]) {
+    (void)argc;
+    (void)argv;
+
+    size_t command_count = 0;
+    const struct command_definition *commands = get_util_commands(&command_count);
+    return print_subcommand_help("util", "povides utility and integration commands.", commands, command_count);
 }

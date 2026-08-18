@@ -1432,32 +1432,29 @@ static int command_todo_prune(int argc, char *argv[]) {
 }
 
 int command_todo(int argc, char* argv[]) {
-    if(argc < 1) {
-        log_error("Please specify a todo command. Refer to --help if required.");
-        return R_ERROR;
-    }
+    (void) argc;
+    (void) argv;
 
-    if(has_switch(argc, argv, "--help", true) || has_switch(argc, argv, "-h", true)) {
-        printf("`%s todo` allows you to manage your personal todo list.\n", APP_NAME);
-        printf("\n");
-        printf("Subcommands:\n");
-        printf("  %-16s %s\n", "add <text>",   "add a new todo item to the list");
-        printf("  %-16s %s\n", "list",  "get a list of your todos that can be filtered");
-        printf("  %-16s %s\n", "start <id>",  "move the item with the id in progress");
-        printf("  %-16s %s\n", "done <id>",  "mark the item with the id as done");
-        printf("  %-16s %s\n", "reopen <id>",  "move the item with the id back to open status");
-        printf("  %-16s %s\n", "rewrite <id> <new_text>", "change the text of the todo with the given id");
-        printf("  %-16s %s\n", "remove <id>", "permanently remove a todo item");
-    printf("  %-16s %s\n", "prune", "remove all completed todo items");
-        return R_OK;
-    }
-    
+    log_error("Please specify a todo command. Refer to `todo help` if required.");
+ 
     return R_ERROR;
 }
 
+static int command_todo_help(int argc, char* argv[]);
+
 static const struct command_definition todo_commands[] = {
     {
+        "help",
+        "",
+        "Display help and info for the `todo` commands",
+        command_todo_help,
+        NULL,
+        0,
+        true
+    },
+    {
         "add",
+        "<text>",
         "Add a new todo",
         command_todo_add,
         NULL,
@@ -1466,6 +1463,7 @@ static const struct command_definition todo_commands[] = {
     },
     {
         "list",
+        "",
         "List todos",
         command_todo_list,
         NULL,
@@ -1474,6 +1472,7 @@ static const struct command_definition todo_commands[] = {
     },
     {
         "start",
+        "<id>",
         "Mark a todo as in progress",
         command_todo_start,
         NULL,
@@ -1482,6 +1481,7 @@ static const struct command_definition todo_commands[] = {
     },
     {
         "done",
+        "<id>",
         "Mark a todo as completed",
         command_todo_done,
         NULL,
@@ -1490,6 +1490,7 @@ static const struct command_definition todo_commands[] = {
     },
     {
         "reopen",
+        "<id>",
         "Reopen a todo",
         command_todo_reopen,
         NULL,
@@ -1498,6 +1499,7 @@ static const struct command_definition todo_commands[] = {
     },
     {
         "rewrite",
+        "<id> <new_text> [--due <date>]",
         "Rewrite a todo",
         command_todo_rewrite,
         NULL,
@@ -1506,6 +1508,7 @@ static const struct command_definition todo_commands[] = {
     },
     {
         "remove",
+        "<id>",
         "Remove a todo",
         command_todo_remove,
         NULL,
@@ -1514,6 +1517,7 @@ static const struct command_definition todo_commands[] = {
     },
     {
         "prune",
+        "",
         "Remove completed todos",
         command_todo_prune,
         NULL,
@@ -1528,4 +1532,14 @@ const struct command_definition* get_todo_commands(size_t* count) {
     }
 
     return todo_commands;
+}
+
+int command_todo_help(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+
+    size_t command_count = 0;
+    const struct command_definition *commands = get_todo_commands(&command_count);
+
+    return print_subcommand_help("todo", "allows you to manage your personal todo list.", commands, command_count);
 }

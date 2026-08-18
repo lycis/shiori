@@ -5,6 +5,7 @@
 #include "logging.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define COMMAND_COUNT 13
 
@@ -23,6 +24,7 @@ static void init_commands() {
 
     commands[0] = (struct command_definition) {
         "init",
+        "",
         "Initialize a new configuration",
         command_init,
         NULL,
@@ -32,6 +34,7 @@ static void init_commands() {
 
     commands[1] = (struct command_definition) {
         "config",
+        "<command>",
         "Show or modify configuration",
         command_config,
         NULL,
@@ -41,6 +44,7 @@ static void init_commands() {
 
     commands[2] = (struct command_definition) {
         "add",
+        "<note>",
         "Add a new note or thought to the day",
         command_add,
         NULL,
@@ -50,6 +54,7 @@ static void init_commands() {
 
     commands[3] = (struct command_definition) {
         "capture",
+        "",
         "Interactively capture notes and todos",
         command_capture,
         NULL,
@@ -59,6 +64,7 @@ static void init_commands() {
 
     commands[4] = (struct command_definition) {
         "topic",
+        "<topic>",
         "Browse notes by topic",
         command_topic,
         NULL,
@@ -68,6 +74,7 @@ static void init_commands() {
 
     commands[5] = (struct command_definition) {
         "tag",
+        "<tag>",
         "Find notes and todos by tag",
         command_tag,
         NULL,
@@ -77,6 +84,7 @@ static void init_commands() {
 
     commands[6] = (struct command_definition) {
         "todo",
+        "<cmd>",
         "Manage your todos and tasks",
         command_todo,
         todo_commands,
@@ -86,6 +94,7 @@ static void init_commands() {
 
     commands[7] = (struct command_definition) {
         "today",
+        "",
         "Your overview for the current day",
         command_today,
         NULL,
@@ -95,6 +104,7 @@ static void init_commands() {
 
     commands[8] = (struct command_definition) {
         "console",
+        "",
         "Start the interactive console",
         command_console,
         NULL,
@@ -104,6 +114,7 @@ static void init_commands() {
 
     commands[9] = (struct command_definition) {
         "util",
+        "<cmd>",
         "Utility and integration commands",
         command_util,
         util_commands,
@@ -113,6 +124,7 @@ static void init_commands() {
 
     commands[10] = (struct command_definition) {
         "help",
+        "",
         "Show this help",
         command_help,
         NULL,
@@ -122,6 +134,7 @@ static void init_commands() {
 
     commands[11] = (struct command_definition) {
         "version",
+        "",
         "Display current version information",
         command_version,
         NULL,
@@ -131,6 +144,7 @@ static void init_commands() {
 
     commands[12] = (struct command_definition) {
         "note",
+        "<cmd>",
         "Access and display details around your notes",
         command_note,
         note_commands,
@@ -218,3 +232,50 @@ int run_command(char* command, int argc, char* argv[]) {
     
     return rc;
 } 
+
+int print_subcommand_help(const char *command_name, const char *description, const struct command_definition *commands, size_t command_count) {
+    if(command_name == NULL || description == NULL || commands == NULL) {
+        return R_ERROR;
+    }
+
+    printf("`%s %s` %s\n", APP_NAME, command_name, description);
+    printf("\n");
+    printf("Subcommands:\n");
+
+    for(size_t i = 0; i < command_count; ++i) {
+        char usage[DEFAULT_BUFFER_SIZE];
+
+        if(commands[i].args != NULL && commands[i].args[0] != '\0') {
+            int written = snprintf(
+                usage,
+                sizeof(usage),
+                "%s %s",
+                commands[i].name,
+                commands[i].args
+            );
+
+            if(written < 0 || (size_t)written >= sizeof(usage)) {
+                return R_ERROR;
+            }
+        } else {
+            int written = snprintf(
+                usage,
+                sizeof(usage),
+                "%s",
+                commands[i].name
+            );
+
+            if(written < 0 || (size_t)written >= sizeof(usage)) {
+                return R_ERROR;
+            }
+        }
+
+        printf(
+            "  %-24s %s\n",
+            usage,
+            commands[i].description
+        );
+    }
+
+    return R_OK;
+}

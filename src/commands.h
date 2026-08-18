@@ -7,6 +7,7 @@ typedef int (*command_handler_fn)(int argc, char *argv[]);
 
 struct command_definition {
     const char *name;
+    const char *args;
     const char *description;
     command_handler_fn handler;
 
@@ -50,5 +51,7 @@ const struct command_definition *find_command_definition(const struct command_de
 const struct command_definition *find_subcommand(const struct command_definition *parent, const char *name);
 
 int run_command(char* command, int argc, char* argv[]);
+
+int print_subcommand_help(const char *command_name, const char *description, const struct command_definition *commands, size_t command_count);
 
 #endif

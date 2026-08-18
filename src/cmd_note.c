@@ -8,20 +8,11 @@
 #include "cli.h"
 
 int command_note(int argc, char* argv[]) {
-    if(argc < 1) {
-        log_error("Please specify a todo command. Refer to --help if required.");
-        return R_ERROR;
-    }
+    (void) argc;
+    (void) argv;
 
-    if(has_switch(argc, argv, "--help", true) || has_switch(argc, argv, "-h", true)) {
-        printf("`%s note` allows you to see and manage details of existing notes.\n", APP_NAME);
-        printf("\n");
-        printf("Subcommands:\n");
-        printf("  %-16s %s\n", "add <text>", "add a new todo item to the list");
-        printf("  %-16s %s\n", "show <id>", "see the detail view of one specific note");
-        return R_OK;
-    }
-    
+    log_error("Please specify a todo command. Refer to `note help` if required.");
+
     return R_ERROR;
 }
 
@@ -155,9 +146,29 @@ int command_note_show(int argc, char* argv[]) {
     return R_ERROR;
 }
 
+int command_note_help(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+
+    size_t command_count = 0;
+    const struct command_definition *commands = get_note_commands(&command_count);
+
+    return print_subcommand_help("note", "allows you to inspect and manage stored notes.", commands, command_count);
+}
+
 static const struct command_definition note_commands[] = {
     {
+        "help",
+        "",
+        "display help to the `note` command",
+        command_note_help,
+        NULL,
+        0,
+        true
+    },
+    {
         "show",
+        "<id>",
         "Show the details of a note",
         command_note_show,
         NULL,
