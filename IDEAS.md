@@ -91,3 +91,8 @@ Ideas and possible improvements for future Shiori versions.
 * improve handling of very long interactive input lines
 * quoted arguments in console and capture mode
   * e.g. `todo add "something with spaces"`
+
+## Markdown Support
+
+* Recognize markdownlinks in text and highlight them
+* Interpret **bold** and *italic* in texts
