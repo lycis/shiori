@@ -62,8 +62,6 @@ Todo List Filters Status And Tags
     Should Not Contain    ${filtered.stdout}    Open #work
 
 Prune Requires Force And Preserves Id Counter
-    [Documentation]    Known defect: prune passes an absolute path through base_dir resolution twice.
-    [Tags]    robot:skip    known-issue
     ${completed}=    Run Shiori    todo    add    Completed
     Shiori Should Succeed    ${completed}
     ${done}=    Run Shiori    todo    done    0
@@ -95,7 +93,6 @@ Todo Mutations Honor Configured Base Directory
 
 New Todo File Uses Current Format Version
     [Documentation]    Known defect: an empty TODO file is treated as metadata version zero.
-    [Tags]    known-issue
     ${result}=    Run Shiori    todo    add    Versioned task
     Shiori Should Succeed    ${result}
     Data File Should Contain    TODOS.md    version: 1

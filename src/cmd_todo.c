@@ -1337,24 +1337,10 @@ static int command_todo_remove(int argc, char *argv[])
 }
 
 static int command_todo_prune(int argc, char *argv[]) {
-    char file_path[DEFAULT_BUFFER_SIZE];
-
-    if(get_base_dir_file_path(
-        TODO_FILE,
-        file_path,
-        sizeof(file_path)
-    ) != R_OK) {
-        return R_ERROR;
-    }
-
-    if(create_file_if_not_exists(file_path) != R_OK) {
-        return R_ERROR;
-    }
-
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(file_path, &todos) != R_OK) {
+    if(read_todos(TODO_FILE, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1426,12 +1412,12 @@ static int command_todo_prune(int argc, char *argv[]) {
      */
     struct todo_metadata md;
 
-    if(read_todo_metadata(file_path, &md) != R_OK) {
+    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    if(write_todo_list(file_path, &todos, &md) != R_OK) {
+    if(write_todo_list(TODO_FILE, &todos, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
