@@ -44,8 +44,6 @@ Ideas and possible improvements for future Shiori versions.
 
 ## Interactive Console & Capture
 
-* command history with Up/Down
-* proper cursor-aware insertion and deletion
 * horizontal scrolling for input longer than the terminal width
 * richer completion behavior
   * highlight selected completion
