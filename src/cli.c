@@ -52,10 +52,11 @@ void print_divider(size_t width) {
     printf(ANSI_RESET "\n");
 }
 
-static int append_codepoint_utf8(
+static int insert_codepoint_utf8(
     char *buffer,
     size_t buffer_size,
     size_t *length,
+    size_t *cursor,
     unsigned int codepoint
 ) {
     unsigned char encoded[4];
@@ -87,14 +88,19 @@ static int append_codepoint_utf8(
         return R_ERROR;
     }
 
-    if(*length + count >= buffer_size) {
+    if(*length + count >= buffer_size || *cursor > *length) {
         return R_ERROR;
     }
 
-    memcpy(buffer + *length, encoded, count);
+    memmove(
+        buffer + *cursor + count,
+        buffer + *cursor,
+        *length - *cursor + 1
+    );
+    memcpy(buffer + *cursor, encoded, count);
 
     *length += count;
-    buffer[*length] = '\0';
+    *cursor += count;
 
     return R_OK;
 }
@@ -230,30 +236,37 @@ int read_interactive_line(
 
         switch(event.type) {
             case KEY_CHARACTER:
-                if(append_codepoint_utf8(
+                insert_codepoint_utf8(
                     buffer,
                     buffer_size,
                     &length,
+                    &cursor,
                     event.codepoint
-                ) == R_OK) {
-                    cursor = length;
-                }
+                );
                 break;
 
             case KEY_BACKSPACE:
-                if(length > 0) {
+                if(cursor > 0) {
                     /*
-                     * Remove one complete UTF-8 codepoint.
+                     * Remove the complete UTF-8 codepoint before the cursor.
                      */
-                    length--;
+                    size_t character_start = cursor - 1;
 
-                    while(length > 0 &&
-                          ((unsigned char)buffer[length] & 0xC0) == 0x80) {
-                        length--;
+                    while(character_start > 0 &&
+                          ((unsigned char)buffer[character_start] & 0xC0) == 0x80) {
+                        character_start--;
                     }
 
-                    buffer[length] = '\0';
-                    cursor = length;
+                    size_t removed = cursor - character_start;
+
+                    memmove(
+                        buffer + character_start,
+                        buffer + cursor,
+                        length - cursor + 1
+                    );
+
+                    length -= removed;
+                    cursor = character_start;
                 }
                 break;
 
