@@ -13,11 +13,6 @@ Ideas and possible improvements for future Shiori versions.
 
 ## Notes
 
-* stable IDs for notes
-  * would enable reliable editing, removal, and direct lookup
-* `note show <id>` for a detailed view of a note
-* edit existing notes
-* remove existing notes
 * generated topic/tag views for Obsidian
   * derived from the master files, never a second source of truth
 
