@@ -143,7 +143,7 @@ int command_note_show(int argc, char* argv[]) {
 
     print_divider(60);
 
-    return R_ERROR;
+    return R_OK;
 }
 
 int command_note_help(int argc, char *argv[]) {

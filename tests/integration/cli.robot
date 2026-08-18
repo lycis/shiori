@@ -32,6 +32,11 @@ Command Requiring Missing Configuration Fails
     Shiori Should Fail    ${result}
     Combined Output Should Contain    ${result}    config file not found
 
+Note Command Requires Configuration
+    ${result}=    Run Shiori    note    help
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    config file not found
+
 Completion Script Can Be Generated Without Configuration
     Write Shiori Config
     ${result}=    Run Shiori    util    completion    powershell
