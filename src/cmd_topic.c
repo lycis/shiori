@@ -16,7 +16,7 @@ struct topic_count {
 static int command_topic_list() {
     struct note_list notes;
     note_list_init(&notes);
-    if(read_notes("NOTES.md", &notes) != R_OK) {
+    if(read_notes(NOTES_FILE, &notes) != R_OK) {
         note_list_free(&notes);
         return R_ERROR;
     }
@@ -146,7 +146,7 @@ int command_topic(int argc, char *argv[]) {
 
     struct note_list list;
     note_list_init(&list);
-    if(read_notes("NOTES.md", &list) != R_OK) {
+    if(read_notes(NOTES_FILE, &list) != R_OK) {
         return R_ERROR;
     }
 

@@ -109,7 +109,7 @@ int command_note_show(int argc, char* argv[]) {
     struct note_list list;
     note_list_init(&list);
 
-    if(read_notes("NOTES.md", &list) != R_OK) {
+    if(read_notes(NOTES_FILE, &list) != R_OK) {
         log_critical("Failed to read NOTES.md\n");
         note_list_free(&list);
         return R_ERROR;
@@ -165,7 +165,7 @@ int command_note_remove(int argc, char *argv[]) {
     struct note_list notes;
     note_list_init(&notes);
 
-    if(read_notes("NOTES.md", &notes) != R_OK) {
+    if(read_notes(NOTES_FILE, &notes) != R_OK) {
         note_list_free(&notes);
         return R_ERROR;
     }
@@ -177,7 +177,7 @@ int command_note_remove(int argc, char *argv[]) {
     }
 
     struct notes_metadata md;
-    if(read_notes_metadata("NOTES.md", &md) != R_OK) {
+    if(read_notes_metadata(NOTES_FILE, &md) != R_OK) {
         log_critical("Failed to read NOTES metadata.\n");
         note_list_free(&notes);
         return R_ERROR;

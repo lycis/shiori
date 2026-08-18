@@ -103,7 +103,7 @@ int command_today(int argc, char* argv[]) {
     printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD COLOR_NOTES, "🗒️ Notes", ANSI_RESET);
     struct note_list note_list;
     note_list_init(&note_list);
-    if(read_notes_for_date("NOTES.md", selected_date, &note_list) != R_OK) {
+    if(read_notes_for_date(NOTES_FILE, selected_date, &note_list) != R_OK) {
         note_list_free(&note_list);
         return R_ERROR;
     }

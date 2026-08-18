@@ -109,7 +109,7 @@ int command_tag(int argc, char* argv[]) {
     printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD COLOR_NOTES, "🗒️ Notes", ANSI_RESET);
     struct note_list list;
     note_list_init(&list);
-    if(read_notes("NOTES.md", &list) != R_OK) {
+    if(read_notes(NOTES_FILE, &list) != R_OK) {
         return R_ERROR;
     }
 

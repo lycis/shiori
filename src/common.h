@@ -19,7 +19,8 @@
 #define TODO_FORMAT_VERSION  1
 #define NOTES_FORMAT_VERSION 1
 
-#define TODO_FILE "TODOS.md"
+#define TODO_FILE  "TODOS.md"
+#define NOTES_FILE "NOTES.md"
 
 #include <time.h>
 #include <stdbool.h>

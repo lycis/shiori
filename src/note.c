@@ -463,12 +463,12 @@ int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
     }
 
     char file_path[DEFAULT_BUFFER_SIZE];
-    if(get_base_dir_file_path("NOTES.md", file_path, sizeof(file_path)) != R_OK) {
+    if(get_base_dir_file_path(NOTES_FILE, file_path, sizeof(file_path)) != R_OK) {
         return R_ERROR;
     }
 
     char temp_file[DEFAULT_BUFFER_SIZE];
-    int written = snprintf(temp_file, sizeof(temp_file), "%s.tmp", "NOTES.md");
+    int written = snprintf(temp_file, sizeof(temp_file), "%s.tmp", NOTES_FILE);
     if(written < 0 || (size_t)written >= sizeof(temp_file)) {
         log_error("Temporary file path is too long.\n");
         return R_ERROR;

@@ -152,7 +152,7 @@ static int assign_note_id(struct note *note) {
     struct note_list notes;
     note_list_init(&notes);
 
-    if(read_notes_for_date("NOTES.md", note->created, &notes) != R_OK) {
+    if(read_notes_for_date(NOTES_FILE, note->created, &notes) != R_OK) {
         log_critical("Failed reading notes for date.\n");
         note_list_free(&notes);
         return R_ERROR;
@@ -255,7 +255,7 @@ int command_add(int argc, char* argv[]) {
         return R_ERROR;
     }
     
-    if(add_note_to_markdown(&n, "NOTES.md", heading) != R_OK) {
+    if(add_note_to_markdown(&n, NOTES_FILE, heading) != R_OK) {
         return R_ERROR;
     }
 

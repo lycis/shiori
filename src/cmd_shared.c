@@ -67,7 +67,7 @@ FILE* open_base_dir_file(const char *filename, const char* mode) {
 }
 
 FILE* open_notes_file(const char* mode) {
-    return open_base_dir_file("NOTES.md", mode);
+    return open_base_dir_file(NOTES_FILE, mode);
 }
 
 int add_markdown_item(int argc, char *argv[], const char *filename, const char *prefix, const char *heading) {
