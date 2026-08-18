@@ -320,6 +320,10 @@ int read_notes_metadata(const char *filename, struct notes_metadata* md) {
     }
 
     if(strcmp(trim(line), "---") != 0) {
+<<<<<<< HEAD
+=======
+        log_warning("`%s` is an old version of the NOTES format. Please run `%s util migrate`.\n", filename, APP_NAME);
+>>>>>>> d3375ce822af6b42ebd7891ef70da3888b00b168
         fclose(file);
         return R_OK;
     }
