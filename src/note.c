@@ -6,6 +6,7 @@
 #include "common.h"
 #include "logging.h"
 #include "cmd_shared.h"
+#include "platform.h"
 
 void note_list_init(struct note_list *list)
 {
@@ -63,6 +64,27 @@ struct note* note_list_find_by_id(const struct note_list *list, const char *id) 
     }
 
     return NULL;
+}
+
+int note_list_remove_by_id(struct note_list *list, const char *id) {
+    if(list == NULL || id == NULL) {
+        return R_ERROR;
+    }
+
+    for(size_t i = 0; i < list->count; ++i) {
+        if(strcmp(list->items[i].id, id) != 0) {
+            continue;
+        }
+
+        if(i < list->count - 1) {
+            memmove(&list->items[i], &list->items[i + 1], (list->count - i - 1) * sizeof(struct note));
+        }
+
+        list->count--;
+        return R_OK;
+    }
+
+    return R_ERROR;
 }
 
 int create_note_from_markdown(const char *markdown, time_t created, struct note *item) {
@@ -404,6 +426,124 @@ int write_note(FILE *file, const struct note *note) {
 
     if(fputc('\n', file) == EOF) {
         return R_ERROR;
+    }
+
+    return R_OK;
+}
+
+int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
+    if(notes == NULL || md == NULL) {
+        return R_ERROR;
+    }
+
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path("NOTES.md", file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    char temp_file[DEFAULT_BUFFER_SIZE];
+    int written = snprintf(temp_file, sizeof(temp_file), "%s.tmp", "NOTES.md");
+    if(written < 0 || (size_t)written >= sizeof(temp_file)) {
+        log_error("Temporary file path is too long.\n");
+        return R_ERROR;
+    }
+
+    char temp_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(temp_file, temp_path, sizeof(temp_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    char backup_path[DEFAULT_BUFFER_SIZE];
+    written = snprintf(backup_path, sizeof(backup_path), "%s.bak", file_path);
+    if(written < 0 || (size_t)written >= sizeof(backup_path)) {
+        log_error("Backup file path is too long.\n");
+        return R_ERROR;
+    }
+
+    FILE *temp = open_base_dir_file(temp_file, "w");
+    if(temp == NULL) {
+        log_error("Failed opening temporary notes file.\n");
+        return R_ERROR;
+    }
+
+    fprintf(temp,
+        "---\n"
+        "version: %d\n"
+        "---\n",
+        md->version
+    );
+
+    time_t last_date = 0;
+
+    for(size_t i = 0; i < notes->count; ++i) {
+        struct note *note = &notes->items[i];
+
+        if(i == 0 || !dates_equal(note->created, last_date)) {
+            char heading[DEFAULT_BUFFER_SIZE];
+
+            if(build_daily_heading(heading, sizeof(heading), note->created) != R_OK) {
+                fclose(temp);
+                file_remove_utf8(temp_path);
+                return R_ERROR;
+            }
+
+            fprintf(temp, "\n%s\n", heading);
+            last_date = note->created;
+        }
+
+        if(write_note(temp, note) != R_OK) {
+            fclose(temp);
+            file_remove_utf8(temp_path);
+            log_error("Failed writing note to temporary file.\n");
+            return R_ERROR;
+        }
+    }
+
+    if(fclose(temp) != 0) {
+        file_remove_utf8(temp_path);
+        log_error("Failed closing temporary notes file.\n");
+        return R_ERROR;
+    }
+
+    /*
+     * Remove an old backup if one is still around.
+     */
+    if(file_access_utf8(backup_path, F_OK) == 0) {
+        if(file_remove_utf8(backup_path) != 0) {
+            file_remove_utf8(temp_path);
+            log_error("Failed removing previous NOTES.md backup.\n");
+            return R_ERROR;
+        }
+    }
+
+    /*
+     * Move the existing file out of the way.
+     */
+    if(file_rename_utf8(file_path, backup_path) != 0) {
+        file_remove_utf8(temp_path);
+        log_error("Failed creating NOTES.md backup.\n");
+        return R_ERROR;
+    }
+
+    /*
+     * Put the newly written file in place.
+     */
+    if(file_rename_utf8(temp_path, file_path) != 0) {
+        log_error("Failed replacing NOTES.md.\n");
+
+        if(file_rename_utf8(backup_path, file_path) != 0) {
+            log_critical("Failed restoring NOTES.md from backup.\n");
+        }
+
+        file_remove_utf8(temp_path);
+        return R_ERROR;
+    }
+
+    /*
+     * New file is safely in place, backup is no longer needed.
+     */
+    if(file_remove_utf8(backup_path) != 0) {
+        log_warning("Failed removing NOTES.md backup.\n");
     }
 
     return R_OK;

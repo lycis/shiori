@@ -156,6 +156,44 @@ int command_note_help(int argc, char *argv[]) {
     return print_subcommand_help("note", "allows you to inspect and manage stored notes.", commands, command_count);
 }
 
+int command_note_remove(int argc, char *argv[]) {
+    if(argc < 1) {
+        log_error("Missing note ID.\n");
+        return R_ERROR;
+    }
+
+    struct note_list notes;
+    note_list_init(&notes);
+
+    if(read_notes("NOTES.md", &notes) != R_OK) {
+        note_list_free(&notes);
+        return R_ERROR;
+    }
+
+    if(note_list_remove_by_id(&notes, argv[0]) != R_OK) {
+        log_error("Note '%s' not found.\n", argv[0]);
+        note_list_free(&notes);
+        return R_ERROR;
+    }
+
+    struct notes_metadata md;
+    if(read_notes_metadata("NOTES.md", &md) != R_OK) {
+        log_critical("Failed to read NOTES metadata.\n");
+        note_list_free(&notes);
+        return R_ERROR;
+    }
+
+    if(rewrite_notes(&notes, &md) != R_OK) {
+        note_list_free(&notes);
+        return R_ERROR;
+    }
+
+    note_list_free(&notes);
+
+    log_success("Removed note %s.\n", argv[0]);
+    return R_OK;
+}
+
 static const struct command_definition note_commands[] = {
     {
         "help",
@@ -171,6 +209,15 @@ static const struct command_definition note_commands[] = {
         "<id>",
         "Show the details of a note",
         command_note_show,
+        NULL,
+        0,
+        true
+    }, 
+    {
+        "remove",
+        "<id>",
+        "Remove note from the log",
+        command_note_remove,
         NULL,
         0,
         true
