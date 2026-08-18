@@ -114,8 +114,13 @@ int read_todo_metadata(char *filename, struct todo_metadata *md)
 
 int write_todo_metadata(const char *filename, const struct todo_metadata *md)
 {
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(filename, file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
     FILE *source = NULL;
-    errno_t err = fopen_s(&source, filename, "r");
+    errno_t err = fopen_s(&source, file_path, "r");
 
     if(err != 0 || source == NULL) {
         log_error("Failed opening %s.\n", filename);
@@ -131,7 +136,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
         temp_path,
         sizeof(temp_path),
         "%s.tmp",
-        filename
+        file_path
     );
 
     if(written < 0 || (size_t)written >= sizeof(temp_path)) {
@@ -301,7 +306,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
         backup_path,
         sizeof(backup_path),
         "%s.bak",
-        filename
+        file_path
     );
 
     if(written < 0 || (size_t)written >= sizeof(backup_path)) {
@@ -332,7 +337,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      */
     log_debug("Backing up %s.\n", filename);
 
-    if(rename(filename, backup_path) != 0) {
+    if(rename(file_path, backup_path) != 0) {
         log_error("Failed backing up %s.\n", filename);
         remove(temp_path);
         return R_ERROR;
@@ -343,7 +348,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      */
     log_debug("Replacing %s with updated metadata.\n", filename);
 
-    if(rename(temp_path, filename) != 0) {
+    if(rename(temp_path, file_path) != 0) {
         log_error("Failed replacing %s.\n", filename);
 
         /*
@@ -351,7 +356,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
          */
         log_debug("Restoring %s from backup.\n", filename);
 
-        if(rename(backup_path, filename) != 0) {
+        if(rename(backup_path, file_path) != 0) {
             log_critical(
                 "Failed restoring %s from backup. "
                 "The original file remains at %s.\n",
@@ -499,11 +504,16 @@ static int write_todo_markdown(FILE *file, const struct todo *item) {
 
 int write_todo(char *filename, struct todo *item)
 {
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(filename, file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
     FILE *file = NULL;
 
     errno_t err = fopen_s(
         &file,
-        filename,
+        file_path,
         "a"
     );
 
@@ -771,6 +781,11 @@ int write_todo_list(
     const struct todo_list *list,
     const struct todo_metadata *md
 ) {
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(filename, file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
     char temp_path[DEFAULT_BUFFER_SIZE];
     char backup_path[DEFAULT_BUFFER_SIZE];
 
@@ -778,7 +793,7 @@ int write_todo_list(
         temp_path,
         sizeof(temp_path),
         "%s.tmp",
-        filename
+        file_path
     );
 
     if(written < 0 || (size_t)written >= sizeof(temp_path)) {
@@ -790,7 +805,7 @@ int write_todo_list(
         backup_path,
         sizeof(backup_path),
         "%s.bak",
-        filename
+        file_path
     );
 
     if(written < 0 || (size_t)written >= sizeof(backup_path)) {
@@ -875,7 +890,7 @@ int write_todo_list(
     /*
      * Back up current file.
      */
-    if(rename(filename, backup_path) != 0) {
+    if(rename(file_path, backup_path) != 0) {
         log_error(
             "Failed backing up %s.\n",
             filename
@@ -888,13 +903,13 @@ int write_todo_list(
     /*
      * Replace original with new file.
      */
-    if(rename(temp_path, filename) != 0) {
+    if(rename(temp_path, file_path) != 0) {
         log_error(
             "Failed replacing %s.\n",
             filename
         );
 
-        if(rename(backup_path, filename) != 0) {
+        if(rename(backup_path, file_path) != 0) {
             log_critical(
                 "Failed restoring %s. Backup remains at %s.\n",
                 filename,
@@ -1262,24 +1277,10 @@ static int command_todo_remove(int argc, char *argv[])
         return R_ERROR;
     }
 
-    char file_path[DEFAULT_BUFFER_SIZE];
-
-    if(get_base_dir_file_path(
-        TODO_FILE,
-        file_path,
-        sizeof(file_path)
-    ) != R_OK) {
-        return R_ERROR;
-    }
-
-    if(create_file_if_not_exists(file_path) != R_OK) {
-        return R_ERROR;
-    }
-
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(file_path, &todos) != R_OK) {
+    if(read_todos(TODO_FILE, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1315,12 +1316,12 @@ static int command_todo_remove(int argc, char *argv[])
 
     struct todo_metadata md;
 
-    if(read_todo_metadata(file_path, &md) != R_OK) {
+    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    if(write_todo_list(file_path, &todos, &md) != R_OK) {
+    if(write_todo_list(TODO_FILE, &todos, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }

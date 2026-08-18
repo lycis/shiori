@@ -82,14 +82,30 @@ Prune Requires Force And Preserves Id Counter
     Data File Should Contain        TODOS.md    last_id: 2
 
 Todo Mutations Honor Configured Base Directory
-    [Documentation]    Known defect: several todo writers currently use cwd instead of base_dir.
-    [Tags]    robot:skip    known-issue
     Set Test Variable    ${TEST_DATA}    ${TEST_ROOT}${/}data
     Write Shiori Config
-    ${result}=    Run Shiori    todo    add    Stored outside cwd
-    Shiori Should Succeed    ${result}
+    ${add}=    Run Shiori    todo    add    Stored outside cwd
+    Shiori Should Succeed    ${add}
     File Should Exist        ${TEST_DATA}${/}TODOS.md
     File Should Not Exist    ${TEST_CWD}${/}TODOS.md
+
+    ${start}=    Run Shiori    todo    start    0
+    Shiori Should Succeed    ${start}
+    Data File Should Contain    TODOS.md    * [/] Stored outside cwd
+
+    ${rewrite}=    Run Shiori    todo    rewrite    0    Rewritten outside cwd
+    Shiori Should Succeed    ${rewrite}
+    Data File Should Contain    TODOS.md    Rewritten outside cwd
+
+    ${done}=    Run Shiori    todo    done    0
+    Shiori Should Succeed    ${done}
+    Data File Should Contain    TODOS.md    * [x] Rewritten outside cwd
+
+    ${remove}=    Run Shiori    todo    remove    0
+    Shiori Should Succeed    ${remove}
+    Data File Should Not Contain    TODOS.md    Rewritten outside cwd
+    File Should Not Exist    ${TEST_CWD}${/}TODOS.md
+    No Rewrite Artifacts Should Remain
 
 New Todo File Uses Current Format Version
     [Documentation]    Known defect: an empty TODO file is treated as metadata version zero.
