@@ -31,12 +31,12 @@ char *trim(char *str)
 int create_file_if_not_exists(char* fname) {
     log_debug("Checking if file '%s' exists.\n", fname);
 
-    if(access(fname, F_OK) == 0) return R_OK;
+    if(file_access_utf8(fname, F_OK) == 0) return R_OK;
 
     log_debug("File does not exist. Creating it now.\n");
     FILE *f = NULL;
     log_debug("Opening daily note at: %s\n", fname);
-    errno_t err = fopen_s(&f, fname, "w");
+    int err = file_open_utf8(&f, fname, "w");
     if(err != 0  || f == NULL) {
         log_error("Failed creating file: %s\n", fname);
         fclose(f);

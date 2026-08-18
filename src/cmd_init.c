@@ -7,7 +7,7 @@
 #include "common.h"
 
 int command_init(int argc, char* argv[]) {
-    bool config_exists = access(CONFIG_FILE_NAME, F_OK) == 0;
+    bool config_exists = file_access_utf8(CONFIG_FILE_NAME, F_OK) == 0;
 
     // check if there is already a config
     if(!has_switch(argc, argv, "--reinit", false)) {
@@ -23,7 +23,7 @@ int command_init(int argc, char* argv[]) {
     }
 
     FILE *config_file = NULL;
-    errno_t err = fopen_s(&config_file, CONFIG_FILE_NAME, "w");
+    int err = file_open_utf8(&config_file, CONFIG_FILE_NAME, "w");
     if(err != 0 || config_file == NULL) {
         log_error("Error creating config file in current directory\n");
         return R_ERROR;

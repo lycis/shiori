@@ -16,7 +16,7 @@ int read_config_file() {
 
     char config_path[DEFAULT_BUFFER_SIZE];
 
-    if(access(CONFIG_FILE_NAME, F_OK) == 0) {
+    if(file_access_utf8(CONFIG_FILE_NAME, F_OK) == 0) {
         strcpy_s(config_path, sizeof(config_path), CONFIG_FILE_NAME);
     } else {
         char user_home[DEFAULT_BUFFER_SIZE];
@@ -28,14 +28,14 @@ int read_config_file() {
 
         snprintf(config_path, sizeof(config_path),"%s%s%s", user_home, get_path_separator(), CONFIG_FILE_NAME);
 
-        if(access(config_path, F_OK) != 0) {
+        if(file_access_utf8(config_path, F_OK) != 0) {
             log_error("%s config file not found. Please run `%s init` first.\n", CONFIG_FILE_NAME, APP_NAME);
             return R_ERROR;
         }
     }
 
     FILE *config_file = NULL;
-    errno_t err = fopen_s(&config_file, config_path, "r");
+    int err = file_open_utf8(&config_file, config_path, "r");
     if(err != 0 || config_file == NULL) {
         log_error("Error opening %s file\n", CONFIG_FILE_NAME);
         return R_ERROR;

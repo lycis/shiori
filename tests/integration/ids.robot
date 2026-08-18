@@ -39,8 +39,6 @@ Note Id Continues After Sequence Gap
     Data File Should Contain    NOTES.md    Fourth note <!-- shiori:id=${id_date}-0004 -->
 
 Unicode Base Directory With Spaces Supports Notes And Todos
-    [Documentation]    Known defect on Windows: narrow C filesystem APIs cannot open UTF-8 paths.
-    [Tags]    robot:skip    known-issue
     ${unicode_data}=    Join Path    ${TEST_ROOT}    Daten mit Leerzeichen 東京
     Create Directory    ${unicode_data}
     Set Test Variable    ${TEST_DATA}    ${unicode_data}

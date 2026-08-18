@@ -1,10 +1,128 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include "common.h"
 #include "platform.h"
 #include "logging.h"
 #include "config.h"
 #include "color.h"
+
+#ifdef _WIN32
+static wchar_t *utf8_path_to_wide(const char *value) {
+    if(value == NULL) {
+        return NULL;
+    }
+
+    int required = MultiByteToWideChar(
+        CP_UTF8,
+        MB_ERR_INVALID_CHARS,
+        value,
+        -1,
+        NULL,
+        0
+    );
+
+    if(required <= 0) {
+        return NULL;
+    }
+
+    wchar_t *wide = malloc((size_t)required * sizeof(wchar_t));
+    if(wide == NULL) {
+        return NULL;
+    }
+
+    if(MultiByteToWideChar(
+        CP_UTF8,
+        MB_ERR_INVALID_CHARS,
+        value,
+        -1,
+        wide,
+        required
+    ) <= 0) {
+        free(wide);
+        return NULL;
+    }
+
+    return wide;
+}
+#endif
+
+int file_access_utf8(const char *path, int mode) {
+#ifdef _WIN32
+    wchar_t *wide_path = utf8_path_to_wide(path);
+    if(wide_path == NULL) {
+        return -1;
+    }
+
+    int result = _waccess(wide_path, mode);
+    free(wide_path);
+    return result;
+#else
+    return access(path, mode);
+#endif
+}
+
+int file_open_utf8(FILE **file, const char *path, const char *mode) {
+    if(file == NULL) {
+        return EINVAL;
+    }
+
+    *file = NULL;
+
+#ifdef _WIN32
+    wchar_t *wide_path = utf8_path_to_wide(path);
+    wchar_t *wide_mode = utf8_path_to_wide(mode);
+
+    if(wide_path == NULL || wide_mode == NULL) {
+        free(wide_path);
+        free(wide_mode);
+        return EINVAL;
+    }
+
+    errno_t result = _wfopen_s(file, wide_path, wide_mode);
+    free(wide_path);
+    free(wide_mode);
+    return result;
+#else
+    *file = fopen(path, mode);
+    return *file == NULL ? errno : 0;
+#endif
+}
+
+int file_remove_utf8(const char *path) {
+#ifdef _WIN32
+    wchar_t *wide_path = utf8_path_to_wide(path);
+    if(wide_path == NULL) {
+        return -1;
+    }
+
+    int result = _wremove(wide_path);
+    free(wide_path);
+    return result;
+#else
+    return remove(path);
+#endif
+}
+
+int file_rename_utf8(const char *old_path, const char *new_path) {
+#ifdef _WIN32
+    wchar_t *wide_old_path = utf8_path_to_wide(old_path);
+    wchar_t *wide_new_path = utf8_path_to_wide(new_path);
+
+    if(wide_old_path == NULL || wide_new_path == NULL) {
+        free(wide_old_path);
+        free(wide_new_path);
+        return -1;
+    }
+
+    int result = _wrename(wide_old_path, wide_new_path);
+    free(wide_old_path);
+    free(wide_new_path);
+    return result;
+#else
+    return rename(old_path, new_path);
+#endif
+}
 
 char* get_path_separator() {
     #ifdef _WIN32

@@ -211,7 +211,7 @@ static int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
 
             if(build_daily_heading(heading, sizeof(heading), note->created) != R_OK) {
                 fclose(temp);
-                remove(temp_path);
+                file_remove_utf8(temp_path);
                 return R_ERROR;
             }
 
@@ -221,14 +221,14 @@ static int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
 
         if(write_note(temp, note) != R_OK) {
             fclose(temp);
-            remove(temp_path);
+            file_remove_utf8(temp_path);
             log_error("Failed writing note to temporary file.\n");
             return R_ERROR;
         }
     }
 
     if(fclose(temp) != 0) {
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         log_error("Failed closing temporary notes file.\n");
         return R_ERROR;
     }
@@ -236,9 +236,9 @@ static int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
     /*
      * Remove an old backup if one is still around.
      */
-    if(access(backup_path, F_OK) == 0) {
-        if(remove(backup_path) != 0) {
-            remove(temp_path);
+    if(file_access_utf8(backup_path, F_OK) == 0) {
+        if(file_remove_utf8(backup_path) != 0) {
+            file_remove_utf8(temp_path);
             log_error("Failed removing previous NOTES.md backup.\n");
             return R_ERROR;
         }
@@ -247,8 +247,8 @@ static int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
     /*
      * Move the existing file out of the way.
      */
-    if(rename(file_path, backup_path) != 0) {
-        remove(temp_path);
+    if(file_rename_utf8(file_path, backup_path) != 0) {
+        file_remove_utf8(temp_path);
         log_error("Failed creating NOTES.md backup.\n");
         return R_ERROR;
     }
@@ -256,21 +256,21 @@ static int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
     /*
      * Put the newly written file in place.
      */
-    if(rename(temp_path, file_path) != 0) {
+    if(file_rename_utf8(temp_path, file_path) != 0) {
         log_error("Failed replacing NOTES.md.\n");
 
-        if(rename(backup_path, file_path) != 0) {
+        if(file_rename_utf8(backup_path, file_path) != 0) {
             log_critical("Failed restoring NOTES.md from backup.\n");
         }
 
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         return R_ERROR;
     }
 
     /*
      * New file is safely in place, backup is no longer needed.
      */
-    if(remove(backup_path) != 0) {
+    if(file_remove_utf8(backup_path) != 0) {
         log_warning("Failed removing NOTES.md backup.\n");
     }
 

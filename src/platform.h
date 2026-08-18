@@ -6,10 +6,6 @@
 #include <windows.h>
 #include <direct.h>
 
-#ifndef access
-#define access _access
-#endif
-
 #define F_OK 0
 #endif
 
@@ -19,10 +15,15 @@
 #include <langinfo.h>
 #endif
 
+#include <stdio.h>
 #include "cli.h"
 
 
 char* get_path_separator();
+int file_access_utf8(const char *path, int mode);
+int file_open_utf8(FILE **file, const char *path, const char *mode);
+int file_remove_utf8(const char *path);
+int file_rename_utf8(const char *old_path, const char *new_path);
 int terminal_enable_utf8(void);
 int get_user_home(char* buffer, size_t size);
 char* get_current_path(char *buffer, size_t size);

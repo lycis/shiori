@@ -57,7 +57,7 @@ FILE* open_base_dir_file(const char *filename, const char* mode) {
 
     FILE *source = NULL;
 
-    errno_t err = fopen_s(&source, file_path, mode);
+    int err = file_open_utf8(&source, file_path, mode);
     if(err != 0 || source == NULL) {
         log_error("Failed opening %s.\n", filename);
         return NULL;
@@ -165,8 +165,8 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
         return R_ERROR;
     }
 
-    if(access(backup_path, F_OK) == 0) {
-        if(remove(backup_path) != 0) {
+    if(file_access_utf8(backup_path, F_OK) == 0) {
+        if(file_remove_utf8(backup_path) != 0) {
             log_error(
                 "Could not remove previous backup: %s\n",
                 backup_path
@@ -175,7 +175,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
         }
     }
 
-    if(rename(file_path, backup_path) != 0) {
+    if(file_rename_utf8(file_path, backup_path) != 0) {
         log_error("Failed to create backup of %s.\n", filename);
         return R_ERROR;
     }
@@ -186,10 +186,10 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
         return R_ERROR;
     }
 
-    if(rename(temp_path_base_dir, file_path) != 0) {
+    if(file_rename_utf8(temp_path_base_dir, file_path) != 0) {
         log_error("Failed replacing %s.\n", filename);
 
-        if(rename(backup_path, file_path) != 0) {
+        if(file_rename_utf8(backup_path, file_path) != 0) {
             log_critical(
                 "Failed restoring %s from backup.\n",
                 filename
@@ -199,7 +199,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
         return R_ERROR;
     }
 
-    if(remove(backup_path) != 0) {
+    if(file_remove_utf8(backup_path) != 0) {
         log_warning("Failed to remove backup: %s\n", backup_path
         );
     }

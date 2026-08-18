@@ -120,7 +120,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
     }
 
     FILE *source = NULL;
-    errno_t err = fopen_s(&source, file_path, "r");
+    int err = file_open_utf8(&source, file_path, "r");
 
     if(err != 0 || source == NULL) {
         log_error("Failed opening %s.\n", filename);
@@ -150,7 +150,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      */
     FILE *temp = NULL;
 
-    err = fopen_s(&temp, temp_path, "w");
+    err = file_open_utf8(&temp, temp_path, "w");
 
     if(err != 0 || temp == NULL) {
         log_error("Failed opening temporary file %s.\n", temp_path);
@@ -173,7 +173,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
         log_error("Failed writing TODO metadata.\n");
         fclose(source);
         fclose(temp);
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         return R_ERROR;
     }
 
@@ -212,7 +212,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
 
             fclose(source);
             fclose(temp);
-            remove(temp_path);
+            file_remove_utf8(temp_path);
 
             return R_ERROR;
         }
@@ -242,7 +242,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
 
                     fclose(source);
                     fclose(temp);
-                    remove(temp_path);
+                    file_remove_utf8(temp_path);
 
                     return R_ERROR;
                 }
@@ -268,7 +268,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
 
             fclose(source);
             fclose(temp);
-            remove(temp_path);
+            file_remove_utf8(temp_path);
 
             return R_ERROR;
         }
@@ -282,7 +282,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
 
         fclose(source);
         fclose(temp);
-        remove(temp_path);
+        file_remove_utf8(temp_path);
 
         return R_ERROR;
     }
@@ -293,7 +293,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
 
     if(fclose(temp) != 0) {
         log_error("Failed closing temporary TODO file.\n");
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         return R_ERROR;
     }
 
@@ -311,23 +311,23 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
 
     if(written < 0 || (size_t)written >= sizeof(backup_path)) {
         log_error("Backup path too long.\n");
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         return R_ERROR;
     }
 
     /*
      * Remove a stale backup from an earlier operation.
      */
-    if(access(backup_path, F_OK) == 0) {
+    if(file_access_utf8(backup_path, F_OK) == 0) {
         log_debug("Removing existing TODO backup.\n");
 
-        if(remove(backup_path) != 0) {
+        if(file_remove_utf8(backup_path) != 0) {
             log_error(
                 "Could not remove old backup: %s\n",
                 backup_path
             );
 
-            remove(temp_path);
+            file_remove_utf8(temp_path);
             return R_ERROR;
         }
     }
@@ -337,9 +337,9 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      */
     log_debug("Backing up %s.\n", filename);
 
-    if(rename(file_path, backup_path) != 0) {
+    if(file_rename_utf8(file_path, backup_path) != 0) {
         log_error("Failed backing up %s.\n", filename);
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         return R_ERROR;
     }
 
@@ -348,7 +348,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      */
     log_debug("Replacing %s with updated metadata.\n", filename);
 
-    if(rename(temp_path, file_path) != 0) {
+    if(file_rename_utf8(temp_path, file_path) != 0) {
         log_error("Failed replacing %s.\n", filename);
 
         /*
@@ -356,7 +356,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
          */
         log_debug("Restoring %s from backup.\n", filename);
 
-        if(rename(backup_path, file_path) != 0) {
+        if(file_rename_utf8(backup_path, file_path) != 0) {
             log_critical(
                 "Failed restoring %s from backup. "
                 "The original file remains at %s.\n",
@@ -371,7 +371,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
     /*
      * New file is safely installed. Backup is no longer required.
      */
-    if(remove(backup_path) != 0) {
+    if(file_remove_utf8(backup_path) != 0) {
         log_warning(
             "Could not remove backup: %s\n",
             backup_path
@@ -511,7 +511,7 @@ int write_todo(char *filename, struct todo *item)
 
     FILE *file = NULL;
 
-    errno_t err = fopen_s(
+    int err = file_open_utf8(
         &file,
         file_path,
         "a"
@@ -815,7 +815,7 @@ int write_todo_list(
 
     FILE *temp = NULL;
 
-    errno_t err = fopen_s(
+    int err = file_open_utf8(
         &temp,
         temp_path,
         "w"
@@ -840,7 +840,7 @@ int write_todo_list(
     ) < 0) {
         log_error("Failed writing TODO metadata.\n");
         fclose(temp);
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         return R_ERROR;
     }
 
@@ -858,7 +858,7 @@ int write_todo_list(
             );
 
             fclose(temp);
-            remove(temp_path);
+            file_remove_utf8(temp_path);
             return R_ERROR;
         }
     }
@@ -868,21 +868,21 @@ int write_todo_list(
      */
     if(fclose(temp) != 0) {
         log_error("Failed closing temporary TODO file.\n");
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         return R_ERROR;
     }
 
     /*
      * Remove stale backup if one exists.
      */
-    if(access(backup_path, F_OK) == 0) {
-        if(remove(backup_path) != 0) {
+    if(file_access_utf8(backup_path, F_OK) == 0) {
+        if(file_remove_utf8(backup_path) != 0) {
             log_error(
                 "Could not remove old TODO backup: %s\n",
                 backup_path
             );
 
-            remove(temp_path);
+            file_remove_utf8(temp_path);
             return R_ERROR;
         }
     }
@@ -890,26 +890,26 @@ int write_todo_list(
     /*
      * Back up current file.
      */
-    if(rename(file_path, backup_path) != 0) {
+    if(file_rename_utf8(file_path, backup_path) != 0) {
         log_error(
             "Failed backing up %s.\n",
             filename
         );
 
-        remove(temp_path);
+        file_remove_utf8(temp_path);
         return R_ERROR;
     }
 
     /*
      * Replace original with new file.
      */
-    if(rename(temp_path, file_path) != 0) {
+    if(file_rename_utf8(temp_path, file_path) != 0) {
         log_error(
             "Failed replacing %s.\n",
             filename
         );
 
-        if(rename(backup_path, file_path) != 0) {
+        if(file_rename_utf8(backup_path, file_path) != 0) {
             log_critical(
                 "Failed restoring %s. Backup remains at %s.\n",
                 filename,
@@ -923,7 +923,7 @@ int write_todo_list(
     /*
      * Cleanup backup.
      */
-    if(remove(backup_path) != 0) {
+    if(file_remove_utf8(backup_path) != 0) {
         log_warning(
             "Could not remove TODO backup: %s\n",
             backup_path
