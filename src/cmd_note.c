@@ -194,6 +194,70 @@ int command_note_remove(int argc, char *argv[]) {
     return R_OK;
 }
 
+int command_note_retopic(int argc, char *argv[]) {
+    if(argc < 2) {
+        log_error("Usage: %s note retopic <id> <topic>\n", APP_NAME);
+        return R_ERROR;
+    }
+
+    struct note_list notes;
+    note_list_init(&notes);
+
+    if(read_notes("NOTES.md", &notes) != R_OK) {
+        note_list_free(&notes);
+        return R_ERROR;
+    }
+
+    struct note *note = note_list_find_by_id(&notes, argv[0]);
+
+    if(note == NULL) {
+        log_error("Note '%s' not found.\n", argv[0]);
+        note_list_free(&notes);
+        return R_ERROR;
+    }
+
+    if(strcmp(argv[1], "none") == 0) {
+        note->topic[0] = '\0';
+    } else {
+        if(strcpy_s(
+            note->topic,
+            sizeof(note->topic),
+            argv[1]
+        ) != 0) {
+            log_error("Topic name is too long.\n");
+            note_list_free(&notes);
+            return R_ERROR;
+        }
+    }
+
+    struct notes_metadata md;
+    if(read_notes_metadata(NOTES_FILE, &md) != R_OK) {
+        log_critical("Failed to read notes metadata.\n");
+        return R_ERROR;
+    }
+
+    if(rewrite_notes(&notes, &md) != R_OK) {
+        note_list_free(&notes);
+        return R_ERROR;
+    }
+
+    note_list_free(&notes);
+
+    if(strcmp(argv[1], "none") == 0) {
+        log_success("Removed topic from note %s.\n", argv[0]);
+    } else {
+        log_success(
+            "Changed topic of note %s to %s[%s]%s.\n",
+            argv[0],
+            COLOR_TOPIC,
+            argv[1],
+            ANSI_RESET
+        );
+    }
+
+    return R_OK;
+}
+
 static const struct command_definition note_commands[] = {
     {
         "help",
@@ -227,6 +291,15 @@ static const struct command_definition note_commands[] = {
         "<id>",
         "Remove note from the log",
         command_note_remove,
+        NULL,
+        0,
+        true
+    },
+    {
+        "retopic",
+        "<id> <topic>",
+        "Change the topic of an existing note",
+        command_note_retopic,
         NULL,
         0,
         true
