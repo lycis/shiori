@@ -149,7 +149,7 @@ static void init_commands() {
         command_note,
         note_commands,
         note_commands_count,
-        false
+        true
     };
 
     commands_initialized = true;
