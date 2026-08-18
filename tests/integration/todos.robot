@@ -108,14 +108,11 @@ Todo Mutations Honor Configured Base Directory
     No Rewrite Artifacts Should Remain
 
 New Todo File Uses Current Format Version
-    [Documentation]    Known defect: an empty TODO file is treated as metadata version zero.
     ${result}=    Run Shiori    todo    add    Versioned task
     Shiori Should Succeed    ${result}
     Data File Should Contain    TODOS.md    version: 1
 
 Status Change For Missing Todo Fails
-    [Documentation]    Known defect: status subcommands discard the result from set_todo_status.
-    [Tags]    robot:skip    known-issue
     ${seed}=    Run Shiori    todo    add    Existing task
     Shiori Should Succeed    ${seed}
     ${result}=    Run Shiori    todo    start    999

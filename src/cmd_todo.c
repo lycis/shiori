@@ -983,8 +983,7 @@ static int command_todo_start(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    set_todo_status(id, IN_PROGRESS);
-    return R_OK;
+    return set_todo_status(id, IN_PROGRESS);
 }
 
 static int command_todo_done(int argc, char* argv[]) {
@@ -1000,8 +999,7 @@ static int command_todo_done(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    set_todo_status(id, DONE);
-    return R_OK;
+    return set_todo_status(id, DONE);
 }
 
 static int command_todo_reopen(int argc, char* argv[]) {
@@ -1017,8 +1015,7 @@ static int command_todo_reopen(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    set_todo_status(id, OPEN);
-    return R_OK;
+    return set_todo_status(id, OPEN);
 }
 
 static int command_todo_rewrite(int argc, char *argv[])
