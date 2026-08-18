@@ -203,7 +203,7 @@ int command_note_retopic(int argc, char *argv[]) {
     struct note_list notes;
     note_list_init(&notes);
 
-    if(read_notes("NOTES.md", &notes) != R_OK) {
+    if(read_notes(NOTES_FILE, &notes) != R_OK) {
         note_list_free(&notes);
         return R_ERROR;
     }

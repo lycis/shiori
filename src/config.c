@@ -10,6 +10,7 @@
 struct configuration g_config;
 
 int read_config_file() {
+    log_debug("Reading config file.\n");
 
     // clear the whole config
     memset(&g_config, 0, sizeof(g_config));
