@@ -23,6 +23,7 @@ int command_config(int argc, char* argv[]);
 
 int command_todo(int argc, char* argv[]);
 const struct command_definition* get_todo_commands(size_t* count);
+int command_todo_add(int argc, char* argv[]); // used in cmd_capture
 
 int command_add(int argc, char* argv[]);
 

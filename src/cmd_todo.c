@@ -538,7 +538,7 @@ int write_todo(char *filename, struct todo *item)
     return result;
 }
 
-static int command_todo_add(int argc, char* argv[]) {
+int command_todo_add(int argc, char* argv[]) {
     log_debug("Adding a new todo.\n");
     
     struct todo item;

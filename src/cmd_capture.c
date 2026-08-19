@@ -135,15 +135,13 @@ int command_capture(int argc, char *argv[]) {
             char *todo_argv[32];
             int todo_argc = 0;
 
-            todo_argv[todo_argc++] = "add";
-
             todo_argc += split_args(
                 text,
                 &todo_argv[todo_argc],
                 32 - todo_argc
             );
 
-            if(command_todo(
+            if(command_todo_add(
                 todo_argc,
                 todo_argv
             ) != R_OK) {
