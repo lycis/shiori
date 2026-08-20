@@ -38,6 +38,8 @@ enum key_type {
     KEY_ESCAPE,
     KEY_LEFT,
     KEY_RIGHT,
+    KEY_HOME,
+    KEY_END,
     KEY_UP,
     KEY_DOWN
 };

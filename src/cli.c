@@ -366,6 +366,14 @@ int read_interactive_line(
                 }
                 break;
 
+            case KEY_HOME:
+                cursor = 0;
+                break;
+
+            case KEY_END:
+                cursor = length;
+                break;
+
             case KEY_UP:
                 if(history != NULL && history_position > 0) {
                     if(history_position == history->count) {

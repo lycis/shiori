@@ -621,6 +621,14 @@ int terminal_read_key(struct key_event *event)
                 event->type = KEY_RIGHT;
                 break;
 
+            case VK_HOME:
+                event->type = KEY_HOME;
+                break;
+
+            case VK_END:
+                event->type = KEY_END;
+                break;
+
             case VK_UP:
                 event->type = KEY_UP;
                 break;
