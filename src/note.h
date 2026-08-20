@@ -4,6 +4,7 @@
 #include <time.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include "common.h"
 
 struct note {
@@ -34,6 +35,7 @@ int read_notes(const char *filename, struct note_list *list);
 int create_note_from_markdown(const char *markdown, time_t created,struct note *item);
 int read_notes_metadata(const char *filename, struct notes_metadata* md);
 int write_note(FILE *file, const struct note *note);
-int rewrite_notes(struct note_list *notes, struct notes_metadata *md);
+int rewrite_notes(struct note_list *notes, struct notes_metadata *md, bool allow_note_removal);
+int restore_notes_backup(void);
 
 #endif

@@ -242,31 +242,43 @@ int read_notes(const char *filename, struct note_list *list) {
          // A heading starts a new daily section.
         if(strncmp(current, "# ", 2) == 0) {
             if(parse_daily_heading(current, &current_date) != R_OK) {
-                log_warning(
-                    "Ignoring invalid note heading on line %u.\n",
+                log_error(
+                    "Refusing to rewrite NOTES.md: invalid heading on line %u.\n",
                     line_number
                 );
-
-                have_date = false;
-                continue;
+                fclose(file);
+                return R_ERROR;
             }
 
             have_date = true;
             continue;
         }
 
-        // Ignore content outside a valid daily section.
+        // Only front matter is valid outside a daily section. Silently
+        // ignoring other content is unsafe because rewrite_notes() would
+        // then replace the file without it.
         if(!have_date) {
-            continue;
+            if(strcmp(current, "---") == 0 ||
+               strncmp(current, "version:", strlen("version:")) == 0) {
+                continue;
+            }
+
+            log_error(
+                "Refusing to rewrite NOTES.md: unexpected content on line %u.\n",
+                line_number
+            );
+            fclose(file);
+            return R_ERROR;
         }
 
         // Notes are Markdown bullet list items.
         if(strncmp(current, "* ", 2) != 0) {
-            log_warning(
-                "Ignoring unexpected line %u in note section.\n",
+            log_error(
+                "Refusing to rewrite NOTES.md: unexpected content on line %u.\n",
                 line_number
             );
-            continue;
+            fclose(file);
+            return R_ERROR;
         }
 
         current += 2;
@@ -347,7 +359,12 @@ static void write_note_metadata_to_file(FILE* f, struct notes_metadata* md) {
 }
 
 int read_notes_metadata(const char *filename, struct notes_metadata* md) {
-    if(file_access_utf8(filename, F_OK) != 0) {
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(filename, file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(file_access_utf8(file_path, F_OK) != 0) {
        FILE* file = open_base_dir_file(filename, "w");
        if(file == NULL) {
             log_error("Failed opening %s for write.\n", filename);
@@ -457,8 +474,54 @@ int write_note(FILE *file, const struct note *note) {
     return R_OK;
 }
 
-int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
+int restore_notes_backup(void) {
+    char file_path[DEFAULT_BUFFER_SIZE];
+    if(get_base_dir_file_path(NOTES_FILE, file_path, sizeof(file_path)) != R_OK) {
+        return R_ERROR;
+    }
+
+    char backup_path[DEFAULT_BUFFER_SIZE];
+    int written = snprintf(backup_path, sizeof(backup_path), "%s.bak", file_path);
+    if(written < 0 || (size_t)written >= sizeof(backup_path)) {
+        return R_ERROR;
+    }
+
+    if(file_access_utf8(backup_path, F_OK) != 0) {
+        log_critical("Cannot restore NOTES.md: recovery backup is missing.\n");
+        return R_ERROR;
+    }
+
+    if(file_remove_utf8(file_path) != 0 || file_rename_utf8(backup_path, file_path) != 0) {
+        log_critical("Failed restoring NOTES.md from recovery backup.\n");
+        return R_ERROR;
+    }
+
+    log_warning("Restored NOTES.md after post-write validation failed.\n");
+    return R_OK;
+}
+
+int rewrite_notes(struct note_list *notes, struct notes_metadata *md, bool allow_note_removal) {
     if(notes == NULL || md == NULL) {
+        return R_ERROR;
+    }
+
+    struct note_list existing_notes;
+    note_list_init(&existing_notes);
+
+    if(read_notes(NOTES_FILE, &existing_notes) != R_OK) {
+        note_list_free(&existing_notes);
+        return R_ERROR;
+    }
+
+    size_t previous_count = existing_notes.count;
+    note_list_free(&existing_notes);
+
+    if(!allow_note_removal && notes->count < previous_count) {
+        log_critical(
+            "Refusing to rewrite NOTES.md: note count would decrease from %zu to %zu.\n",
+            previous_count,
+            notes->count
+        );
         return R_ERROR;
     }
 
@@ -560,12 +623,23 @@ int rewrite_notes(struct note_list *notes, struct notes_metadata *md) {
         return R_ERROR;
     }
 
-    /*
-     * New file is safely in place, backup is no longer needed.
-     */
-    if(file_remove_utf8(backup_path) != 0) {
-        log_warning("Failed removing NOTES.md backup.\n");
+    struct note_list written_notes;
+    note_list_init(&written_notes);
+    int validation_result = read_notes(NOTES_FILE, &written_notes);
+    size_t written_count = written_notes.count;
+    note_list_free(&written_notes);
+
+    if(validation_result != R_OK || written_count != notes->count) {
+        log_critical(
+            "NOTES.md post-write validation failed: expected %zu notes, found %zu.\n",
+            notes->count,
+            written_count
+        );
+        restore_notes_backup();
+        return R_ERROR;
     }
+
+    /* Keep the previous complete file as NOTES.md.bak. */
 
     return R_OK;
 }

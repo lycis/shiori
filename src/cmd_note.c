@@ -183,7 +183,7 @@ int command_note_remove(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    if(rewrite_notes(&notes, &md) != R_OK) {
+    if(rewrite_notes(&notes, &md, true) != R_OK) {
         note_list_free(&notes);
         return R_ERROR;
     }
@@ -236,7 +236,7 @@ int command_note_retopic(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    if(rewrite_notes(&notes, &md) != R_OK) {
+    if(rewrite_notes(&notes, &md, false) != R_OK) {
         note_list_free(&notes);
         return R_ERROR;
     }

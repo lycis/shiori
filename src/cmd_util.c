@@ -289,7 +289,7 @@ static int migrate_notes_v0_to_v1(void) {
     struct notes_metadata md;
     md.version = 1;
 
-    if(rewrite_notes(&all_notes, &md) != R_OK) {
+    if(rewrite_notes(&all_notes, &md, false) != R_OK) {
         note_list_free(&all_notes);
         log_critical("Failed to rewrite NOTES.md.\n");
         return R_ERROR;

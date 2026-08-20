@@ -90,6 +90,5 @@ Data File Should Equal
 
 No Rewrite Artifacts Should Remain
     File Should Not Exist    ${TEST_DATA}${/}NOTES.md.tmp
-    File Should Not Exist    ${TEST_DATA}${/}NOTES.md.bak
     File Should Not Exist    ${TEST_DATA}${/}TODOS.md.tmp
     File Should Not Exist    ${TEST_DATA}${/}TODOS.md.bak

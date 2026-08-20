@@ -199,9 +199,8 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
         return R_ERROR;
     }
 
-    if(file_remove_utf8(backup_path) != 0) {
-        log_warning("Failed to remove backup: %s\n", backup_path
-        );
+    if(strcmp(filename, NOTES_FILE) != 0 && file_remove_utf8(backup_path) != 0) {
+        log_warning("Failed to remove backup: %s\n", backup_path);
     }
 
     return R_OK;

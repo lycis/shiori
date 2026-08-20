@@ -50,6 +50,17 @@ Notes Are Written To Configured Base Directory
     File Should Exist        ${TEST_DATA}${/}NOTES.md
     File Should Not Exist    ${TEST_CWD}${/}NOTES.md
 
+Repeated Adds To Configured Base Directory Preserve All Notes
+    Set Test Variable    ${TEST_DATA}    ${TEST_ROOT}${/}data
+    Write Shiori Config
+    ${first}=    Run Shiori    add    First external note
+    Shiori Should Succeed    ${first}
+    ${second}=    Run Shiori    add    Second external note
+    Shiori Should Succeed    ${second}
+    Data File Should Contain    NOTES.md    First external note
+    Data File Should Contain    NOTES.md    Second external note
+    File Should Not Exist    ${TEST_CWD}${/}NOTES.md
+
 Note Add Alias Creates A Note
     ${result}=    Run Shiori    note    add    Added through note command
     Shiori Should Succeed    ${result}
@@ -87,6 +98,33 @@ Note Retopic Missing Id Leaves Notes Unchanged
     Shiori Should Fail    ${result}
     Data File Should Equal    NOTES.md    ${before}
     No Rewrite Artifacts Should Remain
+
+Note Rewrite Refuses To Drop Unexpected Markdown
+    ${notes}=    Catenate    SEPARATOR=\n
+    ...    ---
+    ...    version: 1
+    ...    ---
+    ...
+    ...    # 2030-04-05
+    ...    * Managed note <!-- shiori:id=20300405-0001 -->
+    ...    This manually written paragraph must survive.
+    Create File    ${TEST_DATA}${/}NOTES.md    ${notes}${\n}    encoding=UTF-8
+    ${before}=    Get File    ${TEST_DATA}${/}NOTES.md    encoding=UTF-8
+
+    ${result}=    Run Shiori    note    retopic    20300405-0001    changed
+    Shiori Should Fail    ${result}
+    Data File Should Equal    NOTES.md    ${before}
+
+Successful Note Rewrite Keeps Recovery Backup
+    ${add}=    Run Shiori    note    add    --topic    original    Preserve complete file
+    Shiori Should Succeed    ${add}
+    ${before}=    Get File    ${TEST_DATA}${/}NOTES.md    encoding=UTF-8
+    ${today}=    Evaluate    datetime.date.today().strftime("%Y%m%d")    modules=datetime
+
+    ${result}=    Run Shiori    note    retopic    ${today}-0001    changed
+    Shiori Should Succeed    ${result}
+    ${backup}=    Get File    ${TEST_DATA}${/}NOTES.md.bak    encoding=UTF-8
+    Should Be Equal    ${backup}    ${before}
 
 Note Help Lists New Commands
     ${result}=    Run Shiori    note    help

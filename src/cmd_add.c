@@ -244,6 +244,15 @@ int command_add(int argc, char* argv[]) {
         return R_ERROR;
     }
 
+    struct note_list notes_before;
+    note_list_init(&notes_before);
+    if(read_notes(NOTES_FILE, &notes_before) != R_OK) {
+        note_list_free(&notes_before);
+        return R_ERROR;
+    }
+    size_t previous_count = notes_before.count;
+    note_list_free(&notes_before);
+
     if(assign_note_id(&n) != R_OK) {
         log_critical("Coult not assign note id.\n");
         return R_ERROR;
@@ -256,6 +265,22 @@ int command_add(int argc, char* argv[]) {
     }
     
     if(add_note_to_markdown(&n, NOTES_FILE, heading) != R_OK) {
+        return R_ERROR;
+    }
+
+    struct note_list notes_after;
+    note_list_init(&notes_after);
+    int validation_result = read_notes(NOTES_FILE, &notes_after);
+    size_t new_count = notes_after.count;
+    note_list_free(&notes_after);
+
+    if(validation_result != R_OK || new_count != previous_count + 1) {
+        log_critical(
+            "NOTES.md post-write validation failed: expected %zu notes, found %zu.\n",
+            previous_count + 1,
+            new_count
+        );
+        restore_notes_backup();
         return R_ERROR;
     }
 
