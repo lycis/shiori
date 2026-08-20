@@ -551,7 +551,7 @@ int command_todo_add(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    log_success("Task noted.\n");
+    log_success("Task noted. [%llu]\n", item.id);
     return R_OK;
 }
 
