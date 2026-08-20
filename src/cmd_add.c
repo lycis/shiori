@@ -284,7 +284,7 @@ int command_add(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    if(n.topic[0] == '\0') log_success("Added your note.\n");
-    else log_success("Added your note. %s[%s]%s\n", COLOR_SUCCESS, n.topic, ANSI_RESET);
+    if(n.topic[0] == '\0') log_success("Added note " COLOR_NOTE_ID "%s" ANSI_RESET ".\n", n.id);
+    else log_success("Added note " COLOR_NOTE_ID "%s" ANSI_RESET " %s[%s]%s\n", n.id, COLOR_SUCCESS, n.topic, ANSI_RESET);
     return R_OK;
 }
