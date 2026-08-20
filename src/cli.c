@@ -270,6 +270,28 @@ int read_interactive_line(
                 }
                 break;
 
+            case KEY_DELETE:
+                if(cursor < length) {
+                     // remove the complete UTF-8 codepoint under the cursor.
+                    size_t character_end = cursor + 1;
+
+                    while(character_end < length &&
+                          ((unsigned char)buffer[character_end] & 0xC0) == 0x80) {
+                        character_end++;
+                    }
+
+                    size_t removed = character_end - cursor;
+
+                    memmove(
+                        buffer + cursor,
+                        buffer + character_end,
+                        length - character_end + 1
+                    );
+
+                    length -= removed;
+                }
+                break;
+
             case KEY_TAB: {
                 if(completions.count == 0) {
                     break;

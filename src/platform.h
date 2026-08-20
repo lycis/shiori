@@ -34,6 +34,7 @@ enum key_type {
     KEY_CHARACTER,
     KEY_ENTER,
     KEY_BACKSPACE,
+    KEY_DELETE,
     KEY_TAB,
     KEY_ESCAPE,
     KEY_LEFT,

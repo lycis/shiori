@@ -605,6 +605,10 @@ int terminal_read_key(struct key_event *event)
                 event->type = KEY_BACKSPACE;
                 break;
 
+            case VK_DELETE:
+                event->type = KEY_DELETE;
+                break;
+
             case VK_TAB:
                 event->type = KEY_TAB;
                 break;
