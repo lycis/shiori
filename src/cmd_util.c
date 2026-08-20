@@ -123,20 +123,8 @@ static int print_powershell_completion() {
         "    }\n"
     );
 
-    for(size_t i = 0; i < command_count; ++i) {
-        if(commands[i].subcommands == NULL ||
-           commands[i].subcommand_count == 0) {
-            continue;
-        }
-
-        printf(
-            "    elseif ($elements[1].Extent.Text -eq '%s' "
-            "-and $elements.Count -le 3) {\n"
-            "        $candidates = $commands_root_%s\n"
-            "    }\n",
-            commands[i].name,
-            commands[i].name
-        );
+    if(print_powershell_routes("root", commands, command_count, 1) != R_OK) {
+        return R_ERROR;
     }
 
     /*
