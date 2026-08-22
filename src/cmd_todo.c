@@ -1,16 +1,17 @@
-#include <stdio.h>
-#include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
+#include "cli.h"
+#include "cmd_shared.h"
+#include "commands.h"
 #include "common.h"
 #include "logging.h"
 #include "platform.h"
-#include "cli.h"
-#include "cmd_shared.h"
 #include "todo.h"
 #include "todo_list.h"
-#include "commands.h"
 
 // Prototypes
 int write_todo_metadata(const char *filename, const struct todo_metadata *md);
@@ -30,8 +31,7 @@ int initialize_todo_front_matter(const char *filename) {
     return R_OK;
 }
 
-int read_todo_metadata(char *filename, struct todo_metadata *md)
-{
+int read_todo_metadata(char *filename, struct todo_metadata *md) {
     FILE *file = open_base_dir_file(filename, "r");
     if(file == NULL) {
         log_error("Failed opening %s.\n", filename);
@@ -92,12 +92,14 @@ int read_todo_metadata(char *filename, struct todo_metadata *md)
         char *value = trim(colon + 1);
 
         if(strcmp(key, "version") == 0) {
-            md->version = atoi(value);
-        }
-        else if(strcmp(key, "last_id") == 0) {
+            if(parse_int(value, &md->version) != R_OK) {
+                log_error("Invalid TODO metadata version: %s\n", value);
+                fclose(file);
+                return R_ERROR;
+            }
+        } else if(strcmp(key, "last_id") == 0) {
             md->last_id = strtoull(value, NULL, 10);
-        }
-        else {
+        } else {
             log_debug("Ignoring unknown TODO metadata key: %s\n", key);
         }
     }
@@ -112,8 +114,7 @@ int read_todo_metadata(char *filename, struct todo_metadata *md)
     return R_OK;
 }
 
-int write_todo_metadata(const char *filename, const struct todo_metadata *md)
-{
+int write_todo_metadata(const char *filename, const struct todo_metadata *md) {
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_file_path(filename, file_path, sizeof(file_path)) != R_OK) {
         return R_ERROR;
@@ -132,12 +133,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      */
     char temp_path[DEFAULT_BUFFER_SIZE];
 
-    int written = snprintf(
-        temp_path,
-        sizeof(temp_path),
-        "%s.tmp",
-        file_path
-    );
+    int written = snprintf(temp_path, sizeof(temp_path), "%s.tmp", file_path);
 
     if(written < 0 || (size_t)written >= sizeof(temp_path)) {
         log_error("Temporary file path too long.\n");
@@ -162,14 +158,14 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      * Write updated front matter.
      */
     if(fprintf(
-        temp,
-        "---\n"
-        "version: %d\n"
-        "last_id: %llu\n"
-        "---\n\n",
-        md->version,
-        md->last_id
-    ) < 0) {
+           temp,
+           "---\n"
+           "version: %d\n"
+           "last_id: %llu\n"
+           "---\n\n",
+           md->version,
+           md->last_id
+       ) < 0) {
         log_error("Failed writing TODO metadata.\n");
         fclose(source);
         fclose(temp);
@@ -205,10 +201,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
         }
 
         if(!found_end) {
-            log_error(
-                "Unterminated TODO front matter in %s.\n",
-                filename
-            );
+            log_error("Unterminated TODO front matter in %s.\n", filename);
 
             fclose(source);
             fclose(temp);
@@ -235,10 +228,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
                  * back before this line.
                  */
                 if(fseek(source, position, SEEK_SET) != 0) {
-                    log_error(
-                        "Failed repositioning %s while updating metadata.\n",
-                        filename
-                    );
+                    log_error("Failed repositioning %s while updating metadata.\n", filename);
 
                     fclose(source);
                     fclose(temp);
@@ -248,15 +238,20 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
                 }
             }
         }
-    }
-    else {
+    } else {
         /*
          * No front matter existed.
          *
          * We already consumed the first line while checking for it,
          * so rewind and preserve the entire original file.
          */
-        rewind(source);
+        if(fseek(source, 0, SEEK_SET) != 0) {
+            log_error("Failed repositioning %s while updating metadata.\n", filename);
+            fclose(source);
+            fclose(temp);
+            file_remove_utf8(temp_path);
+            return R_ERROR;
+        }
     }
 
     /*
@@ -302,12 +297,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      */
     char backup_path[DEFAULT_BUFFER_SIZE];
 
-    written = snprintf(
-        backup_path,
-        sizeof(backup_path),
-        "%s.bak",
-        file_path
-    );
+    written = snprintf(backup_path, sizeof(backup_path), "%s.bak", file_path);
 
     if(written < 0 || (size_t)written >= sizeof(backup_path)) {
         log_error("Backup path too long.\n");
@@ -322,10 +312,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
         log_debug("Removing existing TODO backup.\n");
 
         if(file_remove_utf8(backup_path) != 0) {
-            log_error(
-                "Could not remove old backup: %s\n",
-                backup_path
-            );
+            log_error("Could not remove old backup: %s\n", backup_path);
 
             file_remove_utf8(temp_path);
             return R_ERROR;
@@ -372,10 +359,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md)
      * New file is safely installed. Backup is no longer required.
      */
     if(file_remove_utf8(backup_path) != 0) {
-        log_warning(
-            "Could not remove backup: %s\n",
-            backup_path
-        );
+        log_warning("Could not remove backup: %s\n", backup_path);
     }
 
     return R_OK;
@@ -389,12 +373,12 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
 
     for(int i = 0; i < argc; ++i) {
         if(strcmp(argv[i], "--due") == 0 || strcmp(argv[i], "-d") == 0) {
-            if(i == argc-1) {
+            if(i == argc - 1) {
                 log_error("--due requires a due date.\n");
                 return R_ERROR;
             }
 
-            char* due_date = argv[i + 1];
+            char *due_date = argv[i + 1];
             if(parse_date_arg(argv[i + 1], &item->due) != R_OK) {
                 return R_ERROR;
             }
@@ -405,13 +389,7 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
             continue;
         }
 
-        int written = snprintf(
-            item->text + used,
-            sizeof(item->text) - used,
-            "%s%s",
-            used > 0 ? " " : "",
-            argv[i]
-        );
+        int written = snprintf(item->text + used, sizeof(item->text) - used, "%s%s", used > 0 ? " " : "", argv[i]);
         if(written < 0 || (size_t)written >= sizeof(item->text) - used) {
             log_error("Todo text is too long.\n");
             return R_ERROR;
@@ -441,69 +419,46 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
 static int write_todo_markdown(FILE *file, const struct todo *item) {
     char created_date[11];
 
-    if(format_date(
-        item->created,
-        created_date,
-        sizeof(created_date)
-    ) != R_OK) {
+    if(format_date(item->created, created_date, sizeof(created_date)) != R_OK) {
         return R_ERROR;
     }
 
     if(fprintf(
-        file,
-        "* [%s] %s #%s/id/%llu #%s/created/%s",
-        todo_status_mark(item->status),
-        item->text,
-        APP_NAME,
-        item->id,
-        APP_NAME,
-        created_date
-    ) < 0) {
-        log_error(
-            "Failed writing todo %llu.\n",
-            item->id
-        );
+           file,
+           "* [%s] %s #%s/id/%llu #%s/created/%s",
+           todo_status_mark(item->status),
+           item->text,
+           APP_NAME,
+           item->id,
+           APP_NAME,
+           created_date
+       ) < 0) {
+        log_error("Failed writing todo %llu.\n", item->id);
         return R_ERROR;
     }
 
     if(item->due != 0) {
         char due_date[11];
 
-        if(format_date(
-            item->due,
-            due_date,
-            sizeof(due_date)
-        ) != R_OK) {
+        if(format_date(item->due, due_date, sizeof(due_date)) != R_OK) {
             return R_ERROR;
         }
 
-        if(fprintf(
-            file,
-            " #%s/due/%s",
-            APP_NAME,
-            due_date
-        ) < 0) {
-            log_error(
-                "Failed writing due date for todo %llu.\n",
-                item->id
-            );
+        if(fprintf(file, " #%s/due/%s", APP_NAME, due_date) < 0) {
+            log_error("Failed writing due date for todo %llu.\n", item->id);
             return R_ERROR;
         }
     }
 
     if(fputc('\n', file) == EOF) {
-        log_error(
-            "Failed finishing todo %llu.\n",
-            item->id
-        );
+        log_error("Failed finishing todo %llu.\n", item->id);
         return R_ERROR;
     }
 
     return R_OK;
 }
 
-int write_todo(char *filename, struct todo *item)
-{
+int write_todo(char *filename, struct todo *item) {
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_file_path(filename, file_path, sizeof(file_path)) != R_OK) {
         return R_ERROR;
@@ -511,36 +466,26 @@ int write_todo(char *filename, struct todo *item)
 
     FILE *file = NULL;
 
-    int err = file_open_utf8(
-        &file,
-        file_path,
-        "a"
-    );
+    int err = file_open_utf8(&file, file_path, "a");
 
     if(err != 0 || file == NULL) {
-        log_error(
-            "Failed opening %s.\n",
-            filename
-        );
+        log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }
 
     int result = write_todo_markdown(file, item);
 
     if(fclose(file) != 0) {
-        log_error(
-            "Failed closing %s.\n",
-            filename
-        );
+        log_error("Failed closing %s.\n", filename);
         return R_ERROR;
     }
 
     return result;
 }
 
-int command_todo_add(int argc, char* argv[]) {
+int command_todo_add(int argc, char *argv[]) {
     log_debug("Adding a new todo.\n");
-    
+
     struct todo item;
 
     if(create_todo_from_args(argc, argv, &item) != R_OK) {
@@ -569,11 +514,7 @@ static bool todo_has_tag(const struct todo *item, const char *tag) {
 
     snprintf(needle, sizeof(needle), "#%s", tag);
 
-    log_debug(
-        "Checking tag: text='%s' needle='%s'\n",
-        item->text,
-        needle
-    );
+    log_debug("Checking tag: text='%s' needle='%s'\n", item->text, needle);
 
     return strstr(item->text, needle) != NULL;
 }
@@ -582,17 +523,17 @@ static bool todo_matches_filter(const struct todo *item, const struct todo_filte
     bool status_matches = false;
 
     switch(item->status) {
-        case OPEN:
-            status_matches = filter->show_open;
-            break;
+    case OPEN:
+        status_matches = filter->show_open;
+        break;
 
-        case IN_PROGRESS:
-            status_matches = filter->show_in_progress;
-            break;
+    case IN_PROGRESS:
+        status_matches = filter->show_in_progress;
+        break;
 
-        case DONE:
-            status_matches = filter->show_done;
-            break;
+    case DONE:
+        status_matches = filter->show_done;
+        break;
     }
 
     log_debug("Status filter: item %d (%d) -> %d\n", item->id, item->status, status_matches);
@@ -610,9 +551,9 @@ static bool todo_matches_filter(const struct todo *item, const struct todo_filte
     return true;
 }
 
-static int command_todo_list(int argc, char* argv[]) {
+static int command_todo_list(int argc, char *argv[]) {
     if(has_switch(argc, argv, "--help", true) || has_switch(argc, argv, "-h", true)) {
-         printf(
+        printf(
             "Usage:\n"
             "  %s todo list [options]\n"
             "\n"
@@ -665,17 +606,11 @@ static int command_todo_list(int argc, char* argv[]) {
     }
 
     // default filter is open and in progress
-    struct todo_filter filter = {
-        .show_open = true,
-        .show_in_progress = true,
-        .show_done = false
-    };
+    struct todo_filter filter = {.show_open = true, .show_in_progress = true, .show_done = false};
 
-    bool has_status_filter =
-        has_switch(argc, argv, "--open", false) ||
-        has_switch(argc, argv, "--in-progress", false) ||
-        has_switch(argc, argv, "--done", false) ||
-        has_switch(argc, argv, "--all", false);
+    bool has_status_filter = has_switch(argc, argv, "--open", false) ||
+                             has_switch(argc, argv, "--in-progress", false) ||
+                             has_switch(argc, argv, "--done", false) || has_switch(argc, argv, "--all", false);
 
     if(has_status_filter) {
         filter.show_open = false;
@@ -683,9 +618,15 @@ static int command_todo_list(int argc, char* argv[]) {
         filter.show_done = false;
     }
 
-    if(has_switch(argc, argv, "--open", false)) filter.show_open = true;
-    if(has_switch(argc, argv, "--in-progress", false)) filter.show_in_progress = true;
-    if(has_switch(argc, argv, "--done", false)) filter.show_done = true;
+    if(has_switch(argc, argv, "--open", false)) {
+        filter.show_open = true;
+    }
+    if(has_switch(argc, argv, "--in-progress", false)) {
+        filter.show_in_progress = true;
+    }
+    if(has_switch(argc, argv, "--done", false)) {
+        filter.show_done = true;
+    }
     if(has_switch(argc, argv, "--all", false)) {
         filter.show_open = true;
         filter.show_in_progress = true;
@@ -730,7 +671,7 @@ static int command_todo_list(int argc, char* argv[]) {
             strcpy_s(date, sizeof(date), "??????????");
         }
 
-        if(todo_matches_filter(item, & filter)) {
+        if(todo_matches_filter(item, &filter)) {
             char due_buffer[DEFAULT_BUFFER_SIZE];
             if(item->due != 0) {
                 char dbuffer[20];
@@ -745,14 +686,7 @@ static int command_todo_list(int argc, char* argv[]) {
                 sprintf(due_buffer, "");
             }
 
-            printf(
-                "%s %-4llu %-40s ➕ %s%s\n",
-                todo_status_icon(item->status),
-                item->id,
-                item->text,
-                date,
-                due_buffer
-            );
+            printf("%s %-4llu %-40s ➕ %s%s\n", todo_status_icon(item->status), item->id, item->text, date, due_buffer);
         }
     }
 
@@ -760,8 +694,7 @@ static int command_todo_list(int argc, char* argv[]) {
     return R_OK;
 }
 
-static int parse_todo_id(const char *value, unsigned long long *id)
-{
+static int parse_todo_id(const char *value, unsigned long long *id) {
     char *end = NULL;
 
     unsigned long long parsed = strtoull(value, &end, 10);
@@ -775,12 +708,7 @@ static int parse_todo_id(const char *value, unsigned long long *id)
     return R_OK;
 }
 
-
-int write_todo_list(
-    const char *filename,
-    const struct todo_list *list,
-    const struct todo_metadata *md
-) {
+int write_todo_list(const char *filename, const struct todo_list *list, const struct todo_metadata *md) {
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_file_path(filename, file_path, sizeof(file_path)) != R_OK) {
         return R_ERROR;
@@ -789,24 +717,14 @@ int write_todo_list(
     char temp_path[DEFAULT_BUFFER_SIZE];
     char backup_path[DEFAULT_BUFFER_SIZE];
 
-    int written = snprintf(
-        temp_path,
-        sizeof(temp_path),
-        "%s.tmp",
-        file_path
-    );
+    int written = snprintf(temp_path, sizeof(temp_path), "%s.tmp", file_path);
 
     if(written < 0 || (size_t)written >= sizeof(temp_path)) {
         log_error("Temporary file path too long.\n");
         return R_ERROR;
     }
 
-    written = snprintf(
-        backup_path,
-        sizeof(backup_path),
-        "%s.bak",
-        file_path
-    );
+    written = snprintf(backup_path, sizeof(backup_path), "%s.bak", file_path);
 
     if(written < 0 || (size_t)written >= sizeof(backup_path)) {
         log_error("Backup file path too long.\n");
@@ -815,11 +733,7 @@ int write_todo_list(
 
     FILE *temp = NULL;
 
-    int err = file_open_utf8(
-        &temp,
-        temp_path,
-        "w"
-    );
+    int err = file_open_utf8(&temp, temp_path, "w");
 
     if(err != 0 || temp == NULL) {
         log_error("Failed opening temporary TODO file.\n");
@@ -830,14 +744,14 @@ int write_todo_list(
      * Write front matter.
      */
     if(fprintf(
-        temp,
-        "---\n"
-        "version: %d\n"
-        "last_id: %llu\n"
-        "---\n\n",
-        md->version,
-        md->last_id
-    ) < 0) {
+           temp,
+           "---\n"
+           "version: %d\n"
+           "last_id: %llu\n"
+           "---\n\n",
+           md->version,
+           md->last_id
+       ) < 0) {
         log_error("Failed writing TODO metadata.\n");
         fclose(temp);
         file_remove_utf8(temp_path);
@@ -848,14 +762,8 @@ int write_todo_list(
      * Write all todos using the shared serializer.
      */
     for(size_t i = 0; i < list->count; ++i) {
-        if(write_todo_markdown(
-            temp,
-            &list->items[i]
-        ) != R_OK) {
-            log_error(
-                "Failed writing todo %llu.\n",
-                list->items[i].id
-            );
+        if(write_todo_markdown(temp, &list->items[i]) != R_OK) {
+            log_error("Failed writing todo %llu.\n", list->items[i].id);
 
             fclose(temp);
             file_remove_utf8(temp_path);
@@ -877,10 +785,7 @@ int write_todo_list(
      */
     if(file_access_utf8(backup_path, F_OK) == 0) {
         if(file_remove_utf8(backup_path) != 0) {
-            log_error(
-                "Could not remove old TODO backup: %s\n",
-                backup_path
-            );
+            log_error("Could not remove old TODO backup: %s\n", backup_path);
 
             file_remove_utf8(temp_path);
             return R_ERROR;
@@ -891,10 +796,7 @@ int write_todo_list(
      * Back up current file.
      */
     if(file_rename_utf8(file_path, backup_path) != 0) {
-        log_error(
-            "Failed backing up %s.\n",
-            filename
-        );
+        log_error("Failed backing up %s.\n", filename);
 
         file_remove_utf8(temp_path);
         return R_ERROR;
@@ -904,17 +806,10 @@ int write_todo_list(
      * Replace original with new file.
      */
     if(file_rename_utf8(temp_path, file_path) != 0) {
-        log_error(
-            "Failed replacing %s.\n",
-            filename
-        );
+        log_error("Failed replacing %s.\n", filename);
 
         if(file_rename_utf8(backup_path, file_path) != 0) {
-            log_critical(
-                "Failed restoring %s. Backup remains at %s.\n",
-                filename,
-                backup_path
-            );
+            log_critical("Failed restoring %s. Backup remains at %s.\n", filename, backup_path);
         }
 
         return R_ERROR;
@@ -924,10 +819,7 @@ int write_todo_list(
      * Cleanup backup.
      */
     if(file_remove_utf8(backup_path) != 0) {
-        log_warning(
-            "Could not remove TODO backup: %s\n",
-            backup_path
-        );
+        log_warning("Could not remove TODO backup: %s\n", backup_path);
     }
 
     return R_OK;
@@ -970,9 +862,9 @@ static int set_todo_status(unsigned long long id, todo_status status) {
     return R_OK;
 }
 
-static int command_todo_start(int argc, char* argv[]) {
+static int command_todo_start(int argc, char *argv[]) {
     log_debug("Moving item into progress\n");
-    
+
     if(argc < 1) {
         log_error("You must specify a task id to start.\n");
         return R_ERROR;
@@ -986,9 +878,9 @@ static int command_todo_start(int argc, char* argv[]) {
     return set_todo_status(id, IN_PROGRESS);
 }
 
-static int command_todo_done(int argc, char* argv[]) {
+static int command_todo_done(int argc, char *argv[]) {
     log_debug("Moving item into done\n");
-    
+
     if(argc < 1) {
         log_error("You must specify a task id to mark done.\n");
         return R_ERROR;
@@ -1002,9 +894,9 @@ static int command_todo_done(int argc, char* argv[]) {
     return set_todo_status(id, DONE);
 }
 
-static int command_todo_reopen(int argc, char* argv[]) {
+static int command_todo_reopen(int argc, char *argv[]) {
     log_debug("Moving item into open\n");
-    
+
     if(argc < 1) {
         log_error("You must specify a task id to reopen.\n");
         return R_ERROR;
@@ -1018,12 +910,9 @@ static int command_todo_reopen(int argc, char* argv[]) {
     return set_todo_status(id, OPEN);
 }
 
-static int command_todo_rewrite(int argc, char *argv[])
-{
+static int command_todo_rewrite(int argc, char *argv[]) {
     if(argc < 2) {
-        log_error(
-            "You must specify a task id and something to change.\n"
-        );
+        log_error("You must specify a task id and something to change.\n");
         return R_ERROR;
     }
 
@@ -1046,14 +935,10 @@ static int command_todo_rewrite(int argc, char *argv[])
     int text_argc = 0;
 
     for(int i = 1; i < argc; ++i) {
-        if(strcmp(argv[i], "--due") == 0 ||
-           strcmp(argv[i], "-d") == 0) {
+        if(strcmp(argv[i], "--due") == 0 || strcmp(argv[i], "-d") == 0) {
 
             if(i + 1 >= argc) {
-                log_error(
-                    "%s requires a due date.\n",
-                    argv[i]
-                );
+                log_error("%s requires a due date.\n", argv[i]);
                 return R_ERROR;
             }
 
@@ -1061,20 +946,13 @@ static int command_todo_rewrite(int argc, char *argv[])
 
             if(strcmp(due_arg, "none") == 0) {
                 new_due = 0;
-            }
-            else if(parse_date_arg(
-                due_arg,
-                &new_due
-            ) != R_OK) {
+            } else if(parse_date_arg(due_arg, &new_due) != R_OK) {
                 return R_ERROR;
             }
 
             due_changed = true;
 
-            log_debug(
-                "New due date detected: %s\n",
-                due_arg
-            );
+            log_debug("New due date detected: %s\n", due_arg);
 
             i++; // skip value
             continue;
@@ -1107,14 +985,10 @@ static int command_todo_rewrite(int argc, char *argv[])
     /*
      * Find target.
      */
-    struct todo *item =
-        todo_list_find_by_id(&todos, id);
+    struct todo *item = todo_list_find_by_id(&todos, id);
 
     if(item == NULL) {
-        log_error(
-            "Todo %llu not found.\n",
-            id
-        );
+        log_error("Todo %llu not found.\n", id);
 
         todo_list_free(&todos);
         return R_ERROR;
@@ -1125,14 +999,8 @@ static int command_todo_rewrite(int argc, char *argv[])
      */
     char old_text[sizeof(item->text)];
 
-    if(strcpy_s(
-        old_text,
-        sizeof(old_text),
-        item->text
-    ) != 0) {
-        log_critical(
-            "Failed to preserve old todo text.\n"
-        );
+    if(strcpy_s(old_text, sizeof(old_text), item->text) != 0) {
+        log_critical("Failed to preserve old todo text.\n");
 
         todo_list_free(&todos);
         return R_ERROR;
@@ -1144,22 +1012,12 @@ static int command_todo_rewrite(int argc, char *argv[])
      * Update text, if provided.
      */
     if(text_argc > 0) {
-        if(build_text_from_args(
-            text_argc,
-            text_argv,
-            item->text,
-            sizeof(item->text)
-        ) != R_OK) {
+        if(build_text_from_args(text_argc, text_argv, item->text, sizeof(item->text)) != R_OK) {
             todo_list_free(&todos);
             return R_ERROR;
         }
 
-        log_debug(
-            "Rewriting todo %llu text: '%s' -> '%s'\n",
-            id,
-            old_text,
-            item->text
-        );
+        log_debug("Rewriting todo %llu text: '%s' -> '%s'\n", id, old_text, item->text);
     }
 
     /*
@@ -1169,28 +1027,16 @@ static int command_todo_rewrite(int argc, char *argv[])
         item->due = new_due;
 
         if(new_due == 0) {
-            log_debug(
-                "Removing due date from todo %llu.\n",
-                id
-            );
-        }
-        else {
+            log_debug("Removing due date from todo %llu.\n", id);
+        } else {
             char due_date[11];
 
-            if(format_date(
-                new_due,
-                due_date,
-                sizeof(due_date)
-            ) != R_OK) {
+            if(format_date(new_due, due_date, sizeof(due_date)) != R_OK) {
                 todo_list_free(&todos);
                 return R_ERROR;
             }
 
-            log_debug(
-                "Setting due date of todo %llu to %s.\n",
-                id,
-                due_date
-            );
+            log_debug("Setting due date of todo %llu to %s.\n", id, due_date);
         }
     }
 
@@ -1216,42 +1062,20 @@ static int command_todo_rewrite(int argc, char *argv[])
      * Success output depending on what changed.
      */
     if(text_argc > 0 && due_changed) {
-        log_success(
-            "Updated todo %llu text and due date.\n",
-            id
-        );
-    }
-    else if(text_argc > 0) {
-        log_success(
-            "Rewrote todo %llu: \"%s\" -> \"%s\"\n",
-            id,
-            old_text,
-            item->text
-        );
-    }
-    else if(new_due == 0) {
-        log_success(
-            "Removed due date from todo %llu.\n",
-            id
-        );
-    }
-    else {
+        log_success("Updated todo %llu text and due date.\n", id);
+    } else if(text_argc > 0) {
+        log_success("Rewrote todo %llu: \"%s\" -> \"%s\"\n", id, old_text, item->text);
+    } else if(new_due == 0) {
+        log_success("Removed due date from todo %llu.\n", id);
+    } else {
         char due_date[11];
 
-        if(format_date(
-            new_due,
-            due_date,
-            sizeof(due_date)
-        ) != R_OK) {
+        if(format_date(new_due, due_date, sizeof(due_date)) != R_OK) {
             todo_list_free(&todos);
             return R_ERROR;
         }
 
-        log_success(
-            "Set due date of todo %llu to %s.\n",
-            id,
-            due_date
-        );
+        log_success("Set due date of todo %llu to %s.\n", id, due_date);
     }
 
     (void)old_due; // useful later if you want old -> new due logging
@@ -1261,8 +1085,7 @@ static int command_todo_rewrite(int argc, char *argv[])
     return R_OK;
 }
 
-static int command_todo_remove(int argc, char *argv[])
-{
+static int command_todo_remove(int argc, char *argv[]) {
     if(argc < 1) {
         log_error("You must specify a todo ID to remove.\n");
         return R_ERROR;
@@ -1295,11 +1118,7 @@ static int command_todo_remove(int argc, char *argv[])
      */
     char removed_text[sizeof(item->text)];
 
-    if(strcpy_s(
-        removed_text,
-        sizeof(removed_text),
-        item->text
-    ) != 0) {
+    if(strcpy_s(removed_text, sizeof(removed_text), item->text) != 0) {
         log_critical("Failed preserving todo text before removal.\n");
         todo_list_free(&todos);
         return R_ERROR;
@@ -1323,11 +1142,7 @@ static int command_todo_remove(int argc, char *argv[])
         return R_ERROR;
     }
 
-    log_success(
-        "Removed todo %llu: \"%s\"\n",
-        id,
-        removed_text
-    );
+    log_success("Removed todo %llu: \"%s\"\n", id, removed_text);
 
     todo_list_free(&todos);
 
@@ -1364,16 +1179,9 @@ static int command_todo_prune(int argc, char *argv[]) {
      * Do not modify anything unless explicitly confirmed.
      */
     if(!has_switch(argc, argv, "--force", false)) {
-        log_warning(
-            "Prune would permanently remove %zu completed todo%s.\n",
-            prune_count,
-            prune_count == 1 ? "" : "s"
-        );
+        log_warning("Prune would permanently remove %zu completed todo%s.\n", prune_count, prune_count == 1 ? "" : "s");
 
-        log_info(
-            "Run `%s todo prune --force` to continue.\n",
-            APP_NAME
-        );
+        log_info("Run `%s todo prune --force` to continue.\n", APP_NAME);
 
         todo_list_free(&todos);
         return R_OK;
@@ -1387,17 +1195,14 @@ static int command_todo_prune(int argc, char *argv[]) {
      */
     size_t write_index = 0;
 
-    for(size_t read_index = 0;
-        read_index < todos.count;
-        ++read_index) {
+    for(size_t read_index = 0; read_index < todos.count; ++read_index) {
 
         if(todos.items[read_index].status == DONE) {
             continue;
         }
 
         if(write_index != read_index) {
-            todos.items[write_index] =
-                todos.items[read_index];
+            todos.items[write_index] = todos.items[read_index];
         }
 
         write_index++;
@@ -1420,113 +1225,37 @@ static int command_todo_prune(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    log_success(
-        "Pruned %zu completed todo%s.\n",
-        prune_count,
-        prune_count == 1 ? "" : "s"
-    );
+    log_success("Pruned %zu completed todo%s.\n", prune_count, prune_count == 1 ? "" : "s");
 
     todo_list_free(&todos);
 
     return R_OK;
 }
 
-int command_todo(int argc, char* argv[]) {
-    (void) argc;
-    (void) argv;
+int command_todo(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
 
     log_error("Please specify a todo command. Refer to `todo help` if required.");
- 
+
     return R_ERROR;
 }
 
-static int command_todo_help(int argc, char* argv[]);
+static int command_todo_help(int argc, char *argv[]);
 
 static const struct command_definition todo_commands[] = {
-    {
-        "help",
-        "",
-        "Display help and info for the `todo` commands",
-        command_todo_help,
-        NULL,
-        0,
-        true
-    },
-    {
-        "add",
-        "<text>",
-        "Add a new todo",
-        command_todo_add,
-        NULL,
-        0,
-        true
-    },
-    {
-        "list",
-        "",
-        "List todos",
-        command_todo_list,
-        NULL,
-        0,
-        true
-    },
-    {
-        "start",
-        "<id>",
-        "Mark a todo as in progress",
-        command_todo_start,
-        NULL,
-        0,
-        true
-    },
-    {
-        "done",
-        "<id>",
-        "Mark a todo as completed",
-        command_todo_done,
-        NULL,
-        0,
-        true
-    },
-    {
-        "reopen",
-        "<id>",
-        "Reopen a todo",
-        command_todo_reopen,
-        NULL,
-        0,
-        true
-    },
-    {
-        "rewrite",
-        "<id> <new_text> [--due <date>]",
-        "Rewrite a todo",
-        command_todo_rewrite,
-        NULL,
-        0,
-        true
-    },
-    {
-        "remove",
-        "<id>",
-        "Remove a todo",
-        command_todo_remove,
-        NULL,
-        0,
-        true
-    },
-    {
-        "prune",
-        "",
-        "Remove completed todos",
-        command_todo_prune,
-        NULL,
-        0,
-        true
-    }
+    {"help", "", "Display help and info for the `todo` commands", command_todo_help, NULL, 0, true},
+    {"add", "<text>", "Add a new todo", command_todo_add, NULL, 0, true},
+    {"list", "", "List todos", command_todo_list, NULL, 0, true},
+    {"start", "<id>", "Mark a todo as in progress", command_todo_start, NULL, 0, true},
+    {"done", "<id>", "Mark a todo as completed", command_todo_done, NULL, 0, true},
+    {"reopen", "<id>", "Reopen a todo", command_todo_reopen, NULL, 0, true},
+    {"rewrite", "<id> <new_text> [--due <date>]", "Rewrite a todo", command_todo_rewrite, NULL, 0, true},
+    {"remove", "<id>", "Remove a todo", command_todo_remove, NULL, 0, true},
+    {"prune", "", "Remove completed todos", command_todo_prune, NULL, 0, true}
 };
 
-const struct command_definition* get_todo_commands(size_t* count) {
+const struct command_definition *get_todo_commands(size_t *count) {
     if(count != NULL) {
         *count = sizeof(todo_commands) / sizeof(todo_commands[0]);
     }

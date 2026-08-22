@@ -1,29 +1,24 @@
+#include <ctype.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+
+#include "cli.h"
 #include "cmd_shared.h"
 #include "common.h"
-#include "note.h"
 #include "logging.h"
-#include "cli.h"
-#include <string.h>
-#include <stdbool.h>
-#include <ctype.h>
+#include "note.h"
 #include "todo.h"
 #include "todo_list.h"
 
-bool text_has_tag(const char *text, const char *tag)
-{
+bool text_has_tag(const char *text, const char *tag) {
     if(text == NULL || tag == NULL || *tag == '\0') {
         return false;
     }
 
     char needle[DEFAULT_BUFFER_SIZE];
 
-    int written = snprintf(
-        needle,
-        sizeof(needle),
-        "#%s",
-        tag
-    );
+    int written = snprintf(needle, sizeof(needle), "#%s", tag);
 
     if(written < 0 || (size_t)written >= sizeof(needle)) {
         return false;
@@ -37,19 +32,14 @@ bool text_has_tag(const char *text, const char *tag)
          * A tag must start at the beginning of the text
          * or after whitespace.
          */
-        bool valid_before =
-            current == text ||
-            isspace((unsigned char)current[-1]);
+        bool valid_before = current == text || isspace((unsigned char)current[-1]);
 
         char after = current[needle_len];
 
         /*
          * Prevent #work from matching #workshop.
          */
-        bool valid_after =
-            after == '\0' ||
-            isspace((unsigned char)after) ||
-            ispunct((unsigned char)after);
+        bool valid_after = after == '\0' || isspace((unsigned char)after) || ispunct((unsigned char)after);
 
         if(valid_before && valid_after) {
             return true;
@@ -61,19 +51,16 @@ bool text_has_tag(const char *text, const char *tag)
     return false;
 }
 
-bool note_has_tag(const struct note *item, const char *tag)
-{
+bool note_has_tag(const struct note *item, const char *tag) {
     return text_has_tag(item->text, tag);
 }
 
-bool todo_has_tag(const struct todo *item, const char *tag)
-{
+bool todo_has_tag(const struct todo *item, const char *tag) {
     return text_has_tag(item->text, tag);
 }
 
-int command_tag(int argc, char* argv[]) {
-    if(has_switch(argc, argv, "--help", false) ||
-       has_switch(argc, argv, "-h", false)) {
+int command_tag(int argc, char *argv[]) {
+    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
         printf(
             "Usage:\n"
             "  %s tag <tag> [tag...]\n"
@@ -161,7 +148,7 @@ int command_tag(int argc, char* argv[]) {
     printf("\n");
 
     printf("  %s%s%s\n", COLOR_TODOS, "📌 Todos", ANSI_RESET);
-    
+
     struct todo_list todos;
     todo_list_init(&todos);
 
@@ -195,21 +182,12 @@ int command_tag(int argc, char* argv[]) {
         if(todos.items[i].due != 0) {
             char due_date[11];
 
-            if(format_date(
-                todos.items[i].due,
-                due_date,
-                sizeof(due_date)
-            ) != R_OK) {
+            if(format_date(todos.items[i].due, due_date, sizeof(due_date)) != R_OK) {
                 todo_list_free(&todos);
                 return R_ERROR;
             }
 
-            printf(
-                "  %s📅 %s%s",
-                COLOR_DUE_DATE,
-                due_date,
-                ANSI_RESET
-            );
+            printf("  %s📅 %s%s", COLOR_DUE_DATE, due_date, ANSI_RESET);
         }
 
         printf("\n");

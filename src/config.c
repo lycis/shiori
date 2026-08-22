@@ -1,11 +1,12 @@
 
+#include "config.h"
+
 #include <stdio.h>
 #include <string.h>
 
-#include "platform.h"
 #include "common.h"
 #include "logging.h"
-#include "config.h"
+#include "platform.h"
 
 struct configuration g_config;
 
@@ -27,7 +28,7 @@ int read_config_file() {
             return R_ERROR;
         }
 
-        snprintf(config_path, sizeof(config_path),"%s%s%s", user_home, get_path_separator(), CONFIG_FILE_NAME);
+        snprintf(config_path, sizeof(config_path), "%s%s%s", user_home, get_path_separator(), CONFIG_FILE_NAME);
 
         if(file_access_utf8(config_path, F_OK) != 0) {
             log_error("%s config file not found. Please run `%s init` first.\n", CONFIG_FILE_NAME, APP_NAME);
@@ -46,8 +47,12 @@ int read_config_file() {
     int lnr = 0;
     while(fgets(line, sizeof(line), config_file) != NULL) {
         lnr++;
-        if(line[0] == '#') continue; // comment
-        if(strlen(line) == 0 || line[0] == '\n') continue; // empty line
+        if(line[0] == '#') {
+            continue; // comment
+        }
+        if(strlen(line) == 0 || line[0] == '\n') {
+            continue; // empty line
+        }
 
         if(strstr(line, ":") == NULL) {
             log_error("Invalid config entry at line %d\n", lnr);
@@ -68,8 +73,7 @@ int read_config_file() {
         char *value = trim(colon + 1);
 
         if(strcmp(key, "version") == 0) {
-            g_config.version = atoi(value);
-            if(g_config.version == 0) {
+            if(parse_int(value, &g_config.version) != R_OK || g_config.version == 0) {
                 log_error("Invalid config version at line %d\n", lnr);
                 fclose(config_file);
                 return R_ERROR;
@@ -77,8 +81,10 @@ int read_config_file() {
         } else if(strcmp(key, "base_dir") == 0) {
             size_t len = strlen(value);
             if(len > 0) {
-                char lc = value[strlen(value)-1];
-                if(lc == '\\' || lc == '/') value[strlen(value)-1] = '\0';
+                char lc = value[strlen(value) - 1];
+                if(lc == '\\' || lc == '/') {
+                    value[strlen(value) - 1] = '\0';
+                }
                 strcpy_s(g_config.base_dir, sizeof(g_config.base_dir), value);
             } else {
                 log_error("invalid configuration (line %d): Empty base directory is not permitted.\n", lnr);
@@ -95,6 +101,6 @@ int read_config_file() {
     }
 
     fclose(config_file);
-    
+
     return R_OK;
 }

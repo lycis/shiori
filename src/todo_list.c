@@ -1,7 +1,9 @@
-#include <stdlib.h>
-#include "todo.h"
-#include "logging.h"
 #include "todo_list.h"
+
+#include <stdlib.h>
+
+#include "logging.h"
+#include "todo.h"
 
 void todo_list_init(struct todo_list *list) {
     list->items = NULL;
@@ -21,10 +23,7 @@ int todo_list_add(struct todo_list *list, const struct todo *item) {
     if(list->count == list->capacity) {
         size_t new_capacity = list->capacity == 0 ? 8 : list->capacity * 2;
 
-        struct todo *new_items = realloc(
-            list->items,
-            new_capacity * sizeof(struct todo)
-        );
+        struct todo *new_items = realloc(list->items, new_capacity * sizeof(struct todo));
 
         if(new_items == NULL) {
             log_error("Failed allocating TODO list.\n");

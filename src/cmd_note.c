@@ -1,15 +1,16 @@
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include "common.h"
+
+#include "cli.h"
 #include "commands.h"
+#include "common.h"
 #include "logging.h"
 #include "note.h"
-#include "cli.h"
 
-int command_note(int argc, char* argv[]) {
-    (void) argc;
-    (void) argv;
+int command_note(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
 
     log_error("Please specify a todo command. Refer to `note help` if required.");
 
@@ -47,17 +48,9 @@ int extract_note_tags(const struct note *note, struct tag_list *tags) {
 
         size_t len = 0;
 
-        while(start[len] != '\0' &&
-              !isspace((unsigned char)start[len]) &&
-              start[len] != ',' &&
-              start[len] != '.' &&
-              start[len] != ';' &&
-              start[len] != ':' &&
-              start[len] != '!' &&
-              start[len] != '?' &&
-              start[len] != ')' &&
-              start[len] != ']' &&
-              start[len] != '}') {
+        while(start[len] != '\0' && !isspace((unsigned char)start[len]) && start[len] != ',' && start[len] != '.' &&
+              start[len] != ';' && start[len] != ':' && start[len] != '!' && start[len] != '?' && start[len] != ')' &&
+              start[len] != ']' && start[len] != '}') {
             len++;
         }
 
@@ -85,11 +78,7 @@ int extract_note_tags(const struct note *note, struct tag_list *tags) {
             break;
         }
 
-        memcpy(
-            tags->items[tags->count],
-            start,
-            len
-        );
+        memcpy(tags->items[tags->count], start, len);
 
         tags->items[tags->count][len] = '\0';
         tags->count++;
@@ -100,7 +89,7 @@ int extract_note_tags(const struct note *note, struct tag_list *tags) {
     return R_OK;
 }
 
-int command_note_show(int argc, char* argv[]) {
+int command_note_show(int argc, char *argv[]) {
     if(argc < 1) {
         log_error("Missing note ID.\n");
         return R_ERROR;
@@ -127,7 +116,7 @@ int command_note_show(int argc, char* argv[]) {
 
     char date_buffer[DEFAULT_BUFFER_SIZE];
     format_date(note->created, date_buffer, sizeof(date_buffer));
-    printf(COLOR_METADATA"%-15s: %s\n" ANSI_RESET, "Created:", date_buffer);
+    printf(COLOR_METADATA "%-15s: %s\n" ANSI_RESET, "Created:", date_buffer);
 
     printf(COLOR_METADATA "%-15s: %s\n" ANSI_RESET, "Topic:", note->topic);
 
@@ -219,11 +208,7 @@ int command_note_retopic(int argc, char *argv[]) {
     if(strcmp(argv[1], "none") == 0) {
         note->topic[0] = '\0';
     } else {
-        if(strcpy_s(
-            note->topic,
-            sizeof(note->topic),
-            argv[1]
-        ) != 0) {
+        if(strcpy_s(note->topic, sizeof(note->topic), argv[1]) != 0) {
             log_error("Topic name is too long.\n");
             note_list_free(&notes);
             return R_ERROR;
@@ -246,67 +231,21 @@ int command_note_retopic(int argc, char *argv[]) {
     if(strcmp(argv[1], "none") == 0) {
         log_success("Removed topic from note %s.\n", argv[0]);
     } else {
-        log_success(
-            "Changed topic of note %s to %s[%s]%s.\n",
-            argv[0],
-            COLOR_TOPIC,
-            argv[1],
-            ANSI_RESET
-        );
+        log_success("Changed topic of note %s to %s[%s]%s.\n", argv[0], COLOR_TOPIC, argv[1], ANSI_RESET);
     }
 
     return R_OK;
 }
 
 static const struct command_definition note_commands[] = {
-    {
-        "help",
-        "",
-        "display help to the `note` command",
-        command_note_help,
-        NULL,
-        0,
-        true
-    },
-    {
-        "add",
-        "[--topic <topic>] <text>",
-        "Add a new note or thought to the day",
-        command_add,
-        NULL,
-        0,
-        true
-    },
-    {
-        "show",
-        "<id>",
-        "Show the details of a note",
-        command_note_show,
-        NULL,
-        0,
-        true
-    }, 
-    {
-        "remove",
-        "<id>",
-        "Remove note from the log",
-        command_note_remove,
-        NULL,
-        0,
-        true
-    },
-    {
-        "retopic",
-        "<id> <topic>",
-        "Change the topic of an existing note",
-        command_note_retopic,
-        NULL,
-        0,
-        true
-    }
+    {"help", "", "display help to the `note` command", command_note_help, NULL, 0, true},
+    {"add", "[--topic <topic>] <text>", "Add a new note or thought to the day", command_add, NULL, 0, true},
+    {"show", "<id>", "Show the details of a note", command_note_show, NULL, 0, true},
+    {"remove", "<id>", "Remove note from the log", command_note_remove, NULL, 0, true},
+    {"retopic", "<id> <topic>", "Change the topic of an existing note", command_note_retopic, NULL, 0, true}
 };
 
-const struct command_definition* get_note_commands(size_t* count) {
+const struct command_definition *get_note_commands(size_t *count) {
     if(count != NULL) {
         *count = sizeof(note_commands) / sizeof(note_commands[0]);
     }

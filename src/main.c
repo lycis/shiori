@@ -1,38 +1,38 @@
 #define __STDC_WANT_LIB_EXT1__ 1
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
-#include <stdarg.h>
 
 #if defined(_WIN32)
-    #define HAVE_FOPEN_S 1
+#define HAVE_FOPEN_S 1
 #elif defined(__STDC_LIB_EXT1__)
-    #define HAVE_FOPEN_S 1
+#define HAVE_FOPEN_S 1
 #else
-    #define HAVE_FOPEN_S 0
+#define HAVE_FOPEN_S 0
 #endif
 
 #if !HAVE_FOPEN_S
-    #error "fopen_s is not available on this platform"
-#endif 
-
-#ifdef _WIN32
-#include <windows.h>
-#include <wchar.h>
+#error "fopen_s is not available on this platform"
 #endif
 
-#include "common.h"
-#include "logging.h"
-#include "platform.h"
-#include "config.h"
+#ifdef _WIN32
+#include <wchar.h>
+#include <windows.h>
+#endif
+
 #include "cli.h"
 #include "commands.h"
+#include "common.h"
+#include "config.h"
 #include "hooks.h"
+#include "logging.h"
+#include "platform.h"
 #include "utf8.h"
 
 // --------------------- Prototypes
-int run_command(char* command, int argc, char* argv[]);
+int run_command(char *command, int argc, char *argv[]);
 // --------------------- Prototypes
 
 // --------------------- GLobals
@@ -97,10 +97,8 @@ int wmain(int argc, wchar_t *wargv[]) {
 
 #else
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     return shiori_main(argc, argv);
 }
 
 #endif
-

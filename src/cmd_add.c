@@ -1,10 +1,11 @@
-#include <time.h>
 #include <string.h>
+#include <time.h>
+
 #include "cli.h"
+#include "cmd_shared.h"
 #include "color.h"
 #include "common.h"
 #include "logging.h"
-#include "cmd_shared.h"
 #include "note.h"
 
 static int build_note_from_args(int argc, char *argv[], struct note *note) {
@@ -72,7 +73,7 @@ static int add_note_to_markdown(struct note *note, const char *filename, const c
 
     if(note->topic[0] != '\0') {
         int written = snprintf(topic_buffer, sizeof(topic_buffer), "#%s/topic/%s", APP_NAME, note->topic);
-        if(written < 0 ||  (size_t)written >= sizeof(topic_buffer)) {
+        if(written < 0 || (size_t)written >= sizeof(topic_buffer)) {
             log_error("Topic title is too long.\n");
             return R_ERROR;
         }
@@ -93,10 +94,7 @@ static int add_note_to_markdown(struct note *note, const char *filename, const c
     return add_markdown_item(argc, argv, filename, "* ", heading);
 }
 
-static int next_note_id_sequence_for(
-    const struct note_list *notes,
-    unsigned int *result
-) {
+static int next_note_id_sequence_for(const struct note_list *notes, unsigned int *result) {
     if(notes == NULL || result == NULL) {
         return R_ERROR;
     }
@@ -115,22 +113,12 @@ static int next_note_id_sequence_for(
         const char *dash = strrchr(id, '-');
 
         if(dash == NULL) {
-            log_warning(
-                "Ignoring note with invalid id '%s'.\n",
-                id
-            );
+            log_warning("Ignoring note with invalid id '%s'.\n", id);
             continue;
         }
 
-        if(sscanf_s(
-            dash + 1,
-            "%u",
-            &sequence
-        ) != 1) {
-            log_warning(
-                "Ignoring note with invalid id '%s'.\n",
-                id
-            );
+        if(sscanf_s(dash + 1, "%u", &sequence) != 1) {
+            log_warning("Ignoring note with invalid id '%s'.\n", id);
             continue;
         }
 
@@ -160,25 +148,14 @@ static int assign_note_id(struct note *note) {
 
     char date_buffer[16];
 
-    if(format_date(
-        note->created,
-        date_buffer,
-        sizeof(date_buffer)
-    ) != R_OK) {
+    if(format_date(note->created, date_buffer, sizeof(date_buffer)) != R_OK) {
         note_list_free(&notes);
         return R_ERROR;
     }
 
     char id_date[9];
 
-    int written = snprintf(
-        id_date,
-        sizeof(id_date),
-        "%.4s%.2s%.2s",
-        date_buffer,
-        date_buffer + 5,
-        date_buffer + 8
-    );
+    int written = snprintf(id_date, sizeof(id_date), "%.4s%.2s%.2s", date_buffer, date_buffer + 5, date_buffer + 8);
 
     if(written < 0 || (size_t)written >= sizeof(id_date)) {
         note_list_free(&notes);
@@ -194,16 +171,9 @@ static int assign_note_id(struct note *note) {
 
     note_list_free(&notes);
 
-    written = snprintf(
-        note->id,
-        sizeof(note->id),
-        "%s-%04u",
-        id_date,
-        sequence
-    );
+    written = snprintf(note->id, sizeof(note->id), "%s-%04u", id_date, sequence);
 
-    if(written < 0 ||
-       (size_t)written >= sizeof(note->id)) {
+    if(written < 0 || (size_t)written >= sizeof(note->id)) {
         log_error("Generated note ID is too long.\n");
         return R_ERROR;
     }
@@ -211,29 +181,29 @@ static int assign_note_id(struct note *note) {
     return R_OK;
 }
 
-int command_add(int argc, char* argv[]) {
+int command_add(int argc, char *argv[]) {
     if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
         printf(
-        "Usage:\n"
-        "  %s add [options] <text...>\n"
-        "\n"
-        "Adds a note to today's daily section.\n"
-        "\n"
-        "Options:\n"
-        "  %-22s Assign a topic to the note\n"
-        "  %-22s Show this help\n"
-        "\n"
-        "Examples:\n"
-        "  %s add Remember to review the proposal\n"
-        "  %s add -t Rail4Climate Discuss pilot scope\n",
-        APP_NAME,
-        "-t, --topic <topic>",
-        "-h, --help",
-        APP_NAME,
-        APP_NAME
-    );
+            "Usage:\n"
+            "  %s add [options] <text...>\n"
+            "\n"
+            "Adds a note to today's daily section.\n"
+            "\n"
+            "Options:\n"
+            "  %-22s Assign a topic to the note\n"
+            "  %-22s Show this help\n"
+            "\n"
+            "Examples:\n"
+            "  %s add Remember to review the proposal\n"
+            "  %s add -t Rail4Climate Discuss pilot scope\n",
+            APP_NAME,
+            "-t, --topic <topic>",
+            "-h, --help",
+            APP_NAME,
+            APP_NAME
+        );
 
-    return R_OK;
+        return R_OK;
     }
 
     log_debug("Adding new note.\n");
@@ -263,7 +233,7 @@ int command_add(int argc, char* argv[]) {
     if(build_daily_heading(heading, sizeof(heading), n.created) != R_OK) {
         return R_ERROR;
     }
-    
+
     if(add_note_to_markdown(&n, NOTES_FILE, heading) != R_OK) {
         return R_ERROR;
     }
@@ -284,7 +254,16 @@ int command_add(int argc, char* argv[]) {
         return R_ERROR;
     }
 
-    if(n.topic[0] == '\0') log_success("Added note " COLOR_NOTE_ID "%s" ANSI_RESET ".\n", n.id);
-    else log_success("Added note " COLOR_NOTE_ID "%s" ANSI_RESET " %s[%s]%s\n", n.id, COLOR_SUCCESS, n.topic, ANSI_RESET);
+    if(n.topic[0] == '\0') {
+        log_success("Added note " COLOR_NOTE_ID "%s" ANSI_RESET ".\n", n.id);
+    } else {
+        log_success(
+            "Added note " COLOR_NOTE_ID "%s" ANSI_RESET " %s[%s]%s\n",
+            n.id,
+            COLOR_SUCCESS,
+            n.topic,
+            ANSI_RESET
+        );
+    }
     return R_OK;
 }

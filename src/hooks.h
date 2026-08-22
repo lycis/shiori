@@ -1,6 +1,6 @@
-#ifndef _SHIORI_HOOKS_H
-#define _SHIORI_HOOKS_H
+#ifndef SHIORI_HOOKS_H
+#define SHIORI_HOOKS_H
 
-int hook_after_command(const char* command, int argc, char* argv[]) ;
+int hook_after_command(const char *command, int argc, char *argv[]);
 
 #endif

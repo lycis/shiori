@@ -1,7 +1,8 @@
-#ifndef _SHIORI_CLI_H
-#define _SHIORI_CLI_H
+#ifndef SHIORI_CLI_H
+#define SHIORI_CLI_H
 
 #include <stdbool.h>
+
 #include "color.h"
 #include "common.h"
 
@@ -24,7 +25,13 @@ struct command_history {
     size_t count;
 };
 
-int read_interactive_line(const char *prompt, char *buffer, size_t buffer_size, completion_fn complete, struct command_history *history);
+int read_interactive_line(
+    const char *prompt,
+    char *buffer,
+    size_t buffer_size,
+    completion_fn complete,
+    struct command_history *history
+);
 struct completion_result find_completions(const char *input, const char *options[], size_t option_count);
 
 #endif

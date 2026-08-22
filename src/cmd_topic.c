@@ -1,12 +1,13 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <time.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
+
+#include "cli.h"
 #include "color.h"
 #include "common.h"
-#include "note.h"
 #include "logging.h"
-#include "cli.h"
+#include "note.h"
 
 struct topic_count {
     char name[DEFAULT_BUFFER_SIZE];
@@ -27,7 +28,9 @@ static int command_topic_list() {
 
     for(size_t i = 0; i < notes.count; ++i) {
         const char *topic = notes.items[i].topic;
-        if(topic[0] == '\0') continue; // ignore notes witout topic for now
+        if(topic[0] == '\0') {
+            continue; // ignore notes witout topic for now
+        }
 
         bool found = false;
         for(size_t j = 0; j < topic_count; ++j) {
@@ -44,15 +47,9 @@ static int command_topic_list() {
 
         // new topic to register
         if(topic_count == topic_capacity) {
-            size_t new_capacity =
-                topic_capacity == 0
-                    ? 8
-                    : topic_capacity * 2;
+            size_t new_capacity = topic_capacity == 0 ? 8 : topic_capacity * 2;
 
-            struct topic_count *new_topics = realloc(
-                topics,
-                new_capacity * sizeof(struct topic_count)
-            );
+            struct topic_count *new_topics = realloc(topics, new_capacity * sizeof(struct topic_count));
 
             if(new_topics == NULL) {
                 log_error("Failed allocating topic list.\n");
@@ -67,11 +64,7 @@ static int command_topic_list() {
 
         struct topic_count *entry = &topics[topic_count];
 
-        if(strcpy_s(
-            entry->name,
-            sizeof(entry->name),
-            topic
-        ) != 0) {
+        if(strcpy_s(entry->name, sizeof(entry->name), topic) != 0) {
             log_error("Topic name is too long.\n");
             free(topics);
             note_list_free(&notes);
@@ -89,11 +82,11 @@ static int command_topic_list() {
         return R_OK;
     }
 
-     printf("%s%s🏷️ Topics%s\n", COLOR_TOPIC, ANSI_BOLD,ANSI_RESET);
+    printf("%s%s🏷️ Topics%s\n", COLOR_TOPIC, ANSI_BOLD, ANSI_RESET);
     print_divider(60);
 
     for(size_t i = 0; i < topic_count; ++i) {
-        printf("  %-45s %zu note%s\n", topics[i].name, topics[i].count,topics[i].count == 1 ? "" : "s");
+        printf("  %-45s %zu note%s\n", topics[i].name, topics[i].count, topics[i].count == 1 ? "" : "s");
     }
 
     free(topics);
@@ -102,8 +95,7 @@ static int command_topic_list() {
 }
 
 int command_topic(int argc, char *argv[]) {
-    if(has_switch(argc, argv, "--help", false) ||
-       has_switch(argc, argv, "-h", false)) {
+    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
 
         printf(
             "Usage:\n"
@@ -123,9 +115,7 @@ int command_topic(int argc, char *argv[]) {
         return R_OK;
     }
 
-    bool list_topics =
-    has_switch(argc, argv, "--list", false) ||
-    has_switch(argc, argv, "-l", false);
+    bool list_topics = has_switch(argc, argv, "--list", false) || has_switch(argc, argv, "-l", false);
 
     if(list_topics) {
         return command_topic_list();
@@ -159,7 +149,9 @@ int command_topic(int argc, char *argv[]) {
     time_t last_date = 0;
     bool have_last_date = false;
     for(size_t i = 0; i < list.count; ++i) {
-        if(strcmp(list.items[i].topic, topic) != 0) continue; // not a note of this topic
+        if(strcmp(list.items[i].topic, topic) != 0) {
+            continue; // not a note of this topic
+        }
 
         if(!have_last_date || !dates_equal(last_date, list.items[i].created)) {
             char date_heading[32];
@@ -177,7 +169,7 @@ int command_topic(int argc, char *argv[]) {
             have_last_date = true;
         }
 
-        printf(COLOR_NOTE_ID "   %s " ANSI_RESET" %s\n", list.items[i].id, list.items[i].text);
+        printf(COLOR_NOTE_ID "   %s " ANSI_RESET " %s\n", list.items[i].id, list.items[i].text);
     }
 
     printf("\n");

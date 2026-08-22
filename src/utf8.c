@@ -1,9 +1,10 @@
 #ifdef _WIN32
 
-#include <windows.h>
+#include "utf8.h"
+
 #include <stdlib.h>
 #include <wchar.h>
-#include "utf8.h"
+#include <windows.h>
 
 char **convert_wargv_to_utf8(int argc, wchar_t *wargv[]) {
     if(argc <= 0 || wargv == NULL) {
@@ -16,16 +17,7 @@ char **convert_wargv_to_utf8(int argc, wchar_t *wargv[]) {
     }
 
     for(int i = 0; i < argc; ++i) {
-        int required = WideCharToMultiByte(
-            CP_UTF8,
-            0,
-            wargv[i],
-            -1,
-            NULL,
-            0,
-            NULL,
-            NULL
-        );
+        int required = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, NULL, 0, NULL, NULL);
 
         if(required <= 0) {
             free_utf8_argv(argc, argv);
@@ -38,16 +30,7 @@ char **convert_wargv_to_utf8(int argc, wchar_t *wargv[]) {
             return NULL;
         }
 
-        int written = WideCharToMultiByte(
-            CP_UTF8,
-            0,
-            wargv[i],
-            -1,
-            argv[i],
-            required,
-            NULL,
-            NULL
-        );
+        int written = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, argv[i], required, NULL, NULL);
 
         if(written <= 0) {
             free_utf8_argv(argc, argv);
@@ -60,9 +43,7 @@ char **convert_wargv_to_utf8(int argc, wchar_t *wargv[]) {
     return argv;
 }
 
-
-void free_utf8_argv(int argc, char *argv[])
-{
+void free_utf8_argv(int argc, char *argv[]) {
     if(argv == NULL) {
         return;
     }

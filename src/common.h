@@ -1,5 +1,5 @@
-#ifndef _SHIORI_COMMON_H
-#define _SHIORI_COMMON_H
+#ifndef SHIORI_COMMON_H
+#define SHIORI_COMMON_H
 
 #define R_OK 0
 #define R_ERROR 1
@@ -16,24 +16,25 @@
 #define APP_NAME "shiori"
 #define APP_VERSION "0.2.0"
 
-#define TODO_FORMAT_VERSION  1
+#define TODO_FORMAT_VERSION 1
 #define NOTES_FORMAT_VERSION 1
 
-#define TODO_FILE  "TODOS.md"
+#define TODO_FILE "TODOS.md"
 #define NOTES_FILE "NOTES.md"
 
-#include <time.h>
 #include <stdbool.h>
+#include <time.h>
 
 char *trim(char *str);
-int create_file_if_not_exists(char* fname);
+int create_file_if_not_exists(char *fname);
 int get_base_dir_file_path(const char *filename, char *buffer, size_t buffer_size);
 int build_text_from_args(int argc, char *argv[], char *buffer, size_t buffer_size);
-int build_daily_heading(char* buffer, size_t size, time_t date);
+int build_daily_heading(char *buffer, size_t size, time_t date);
 bool str_ends_with(const char *str, const char *suffix);
 bool dates_equal(time_t a, time_t b);
 int format_date(time_t date, char *buffer, size_t buffer_size);
 int compare_dates(time_t a, time_t b);
+int parse_int(const char *text, int *result);
 int join_array(int argc, char *argv[], char *buffer, size_t buffer_size);
 bool ends_with_whitespace(const char *text);
 

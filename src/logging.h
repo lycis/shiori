@@ -1,5 +1,5 @@
-#ifndef _SHIORI_LOGGING_H
-#define _SHIORI_LOGGING_H
+#ifndef SHIORI_LOGGING_H
+#define SHIORI_LOGGING_H
 
 void log_error(const char *fmt, ...);
 void log_critical(const char *fmt, ...);

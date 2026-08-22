@@ -1,6 +1,7 @@
 #include <stdio.h>
-#include "common.h"
+
 #include "commands.h"
+#include "common.h"
 
 int command_help(int argc, char *argv[]) {
     (void)argc;
@@ -15,25 +16,17 @@ int command_help(int argc, char *argv[]) {
         APP_NAME
     );
 
-    printf(
-        "usage: %s [options] <command> [options] [subcommand] ...\n",
-        APP_NAME
-    );
+    printf("usage: %s [options] <command> [options] [subcommand] ...\n", APP_NAME);
 
     printf("\n");
     printf("Options:\n");
-    printf(
-        "  %-16s %s\n",
-        "--debug",
-        "Show debug and plumbing output."
-    );
+    printf("  %-16s %s\n", "--debug", "Show debug and plumbing output.");
 
     printf("\n");
     printf("Available commands:\n");
 
     for(size_t i = 0; i < command_count; ++i) {
-        printf("  %-16s %s\n", commands[i].name, commands[i].description
-        );
+        printf("  %-16s %s\n", commands[i].name, commands[i].description);
     }
 
     return R_OK;

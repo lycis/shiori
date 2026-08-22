@@ -1,16 +1,17 @@
-#include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
+
+#include "cli.h"
+#include "cmd_shared.h"
 #include "color.h"
 #include "common.h"
 #include "logging.h"
-#include "cli.h"
 #include "note.h"
-#include "cmd_shared.h"
 #include "todo.h"
 #include "todo_list.h"
 
-static int build_dashboard_heading(char* buffer, size_t size, time_t* date) {
+static int build_dashboard_heading(char *buffer, size_t size, time_t *date) {
     struct tm local_time;
     if(localtime_s(&local_time, date) != 0) {
         log_error("Failed to get local time.");
@@ -19,7 +20,7 @@ static int build_dashboard_heading(char* buffer, size_t size, time_t* date) {
 
     char date_str[50];
     if(strftime(date_str, sizeof(date_str), "%A, %Y-%m-%d", &local_time) == 0) {
-        log_critical("Failed to format local date.");        
+        log_critical("Failed to format local date.");
         return R_ERROR;
     }
 
@@ -32,7 +33,7 @@ static int build_dashboard_heading(char* buffer, size_t size, time_t* date) {
     return R_OK;
 }
 
-int command_today(int argc, char* argv[]) {
+int command_today(int argc, char *argv[]) {
     if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
 
         printf(
@@ -82,10 +83,9 @@ int command_today(int argc, char* argv[]) {
     char date_str[11];
 
     if(localtime_s(&local_time, &selected_date) == 0 &&
-    strftime(date_str, sizeof(date_str), "%Y-%m-%d", &local_time) > 0) {
+       strftime(date_str, sizeof(date_str), "%Y-%m-%d", &local_time) > 0) {
         log_debug("Creating daily dashboard for %s.\n", date_str);
-    }
-    else {
+    } else {
         log_debug("Creating daily dashboard.\n");
     }
 
@@ -132,7 +132,7 @@ int command_today(int argc, char* argv[]) {
     // sort todos into in_progress and open buckets
     struct todo_list in_progress_todos;
     todo_list_init(&in_progress_todos);
-    
+
     struct todo_list open_todos;
     todo_list_init(&open_todos);
 
@@ -142,8 +142,12 @@ int command_today(int argc, char* argv[]) {
     struct todo_list today_todos;
     todo_list_init(&today_todos);
 
-    for(size_t i = 0; i < todo_list.count; ++i) {        
-        log_debug("Found todo (%llu) with status %s.\n", todo_list.items[i].id, todo_status_string(todo_list.items[i].status));
+    for(size_t i = 0; i < todo_list.count; ++i) {
+        log_debug(
+            "Found todo (%llu) with status %s.\n",
+            todo_list.items[i].id,
+            todo_status_string(todo_list.items[i].status)
+        );
 
         struct todo *item = &todo_list.items[i];
 
@@ -165,8 +169,11 @@ int command_today(int argc, char* argv[]) {
             }
         }
 
-        if(item->status == IN_PROGRESS) todo_list_add(&in_progress_todos, item);
-        else if(item->status == OPEN) todo_list_add(&open_todos, item);
+        if(item->status == IN_PROGRESS) {
+            todo_list_add(&in_progress_todos, item);
+        } else if(item->status == OPEN) {
+            todo_list_add(&open_todos, item);
+        }
     }
 
     printf("\n");
@@ -176,7 +183,14 @@ int command_today(int argc, char* argv[]) {
         printf("  %s%s%s\n", COLOR_OVERDUE, "⚠️ Overdue", ANSI_RESET);
         for(size_t i = 0; i < overdue_todos.count; ++i) {
             struct todo *item = &overdue_todos.items[i];
-            printf("    %s%s %4llu%s  %s\n", COLOR_OVERDUE, todo_status_simple_icon(item->status), item->id, ANSI_RESET, item->text);
+            printf(
+                "    %s%s %4llu%s  %s\n",
+                COLOR_OVERDUE,
+                todo_status_simple_icon(item->status),
+                item->id,
+                ANSI_RESET,
+                item->text
+            );
         }
         printf("\n");
     }
@@ -187,7 +201,14 @@ int command_today(int argc, char* argv[]) {
     if(today_todos.count > 0) {
         for(size_t i = 0; i < today_todos.count; ++i) {
             struct todo *item = &today_todos.items[i];
-            printf("    %s%s %4llu%s  %s\n", COLOR_TODOS, todo_status_simple_icon(item->status), item->id, ANSI_RESET, item->text);
+            printf(
+                "    %s%s %4llu%s  %s\n",
+                COLOR_TODOS,
+                todo_status_simple_icon(item->status),
+                item->id,
+                ANSI_RESET,
+                item->text
+            );
         }
     } else {
         printf(COLOR_SUCCESS "    All clear 👍\n" ANSI_RESET);

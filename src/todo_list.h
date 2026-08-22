@@ -1,5 +1,5 @@
-#ifndef _SHIORI_TODOLIST_H
-#define _SHIORI_TODOLIST_H
+#ifndef SHIORI_TODOLIST_H
+#define SHIORI_TODOLIST_H
 struct todo_list {
     struct todo *items;
     size_t count;

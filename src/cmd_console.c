@@ -1,13 +1,14 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include "logging.h"
-#include "common.h"
+
 #include "cli.h"
 #include "commands.h"
+#include "common.h"
+#include "logging.h"
 
-
-struct completion_result complete_command_definitions(const char *input, const struct command_definition *commands, size_t command_count) {
+struct completion_result
+complete_command_definitions(const char *input, const struct command_definition *commands, size_t command_count) {
     struct completion_result result = {0};
 
     if(commands == NULL) {
@@ -21,8 +22,7 @@ struct completion_result complete_command_definitions(const char *input, const s
     }
 
     for(size_t i = 0; i < command_count; ++i) {
-        if(input_length == 0 ||
-           strncmp(commands[i].name, input, input_length) == 0) {
+        if(input_length == 0 || strncmp(commands[i].name, input, input_length) == 0) {
 
             if(result.count >= MAX_COMPLETIONS) {
                 break;
@@ -36,10 +36,7 @@ struct completion_result complete_command_definitions(const char *input, const s
 }
 
 static void add_console_special_completions(struct completion_result *result, const char *input) {
-    static const char *console_commands[] = {
-        "exit",
-        "quit"
-    };
+    static const char *console_commands[] = {"exit", "quit"};
 
     size_t input_length = 0;
 
@@ -48,8 +45,7 @@ static void add_console_special_completions(struct completion_result *result, co
     }
 
     for(size_t i = 0; i < sizeof(console_commands) / sizeof(console_commands[0]); ++i) {
-        if(input_length == 0 ||
-           strncmp(console_commands[i], input, input_length) == 0) {
+        if(input_length == 0 || strncmp(console_commands[i], input, input_length) == 0) {
 
             if(result->count >= MAX_COMPLETIONS) {
                 return;
@@ -64,8 +60,7 @@ static struct completion_result console_completion(const char *input) {
     struct completion_result result = {0};
 
     size_t command_count = 0;
-    const struct command_definition *current_commands =
-        get_commands(&command_count);
+    const struct command_definition *current_commands = get_commands(&command_count);
 
     if(input == NULL) {
         return result;
@@ -114,11 +109,7 @@ static struct completion_result console_completion(const char *input) {
     if(trailing_space) {
         for(int i = 0; i < argc; ++i) {
             const struct command_definition *definition =
-                find_command_definition(
-                    current_commands,
-                    command_count,
-                    argv[i]
-                );
+                find_command_definition(current_commands, command_count, argv[i]);
 
             if(definition == NULL) {
                 return result;
@@ -128,11 +119,7 @@ static struct completion_result console_completion(const char *input) {
             command_count = definition->subcommand_count;
         }
 
-        return complete_command_definitions(
-            "",
-            current_commands,
-            command_count
-        );
+        return complete_command_definitions("", current_commands, command_count);
     }
 
     /*
@@ -144,16 +131,9 @@ static struct completion_result console_completion(const char *input) {
      * Resolve "todo", then complete "l" within its subcommands.
      */
     for(int i = 0; i < argc - 1; ++i) {
-        const struct command_definition *definition =
-            find_command_definition(
-                current_commands,
-                command_count,
-                argv[i]
-            );
+        const struct command_definition *definition = find_command_definition(current_commands, command_count, argv[i]);
 
-        if(definition == NULL ||
-           definition->subcommands == NULL ||
-           definition->subcommand_count == 0) {
+        if(definition == NULL || definition->subcommands == NULL || definition->subcommand_count == 0) {
             return result;
         }
 
@@ -161,11 +141,7 @@ static struct completion_result console_completion(const char *input) {
         command_count = definition->subcommand_count;
     }
 
-    result = complete_command_definitions(
-        argv[argc - 1],
-        current_commands,
-        command_count
-    );
+    result = complete_command_definitions(argv[argc - 1], current_commands, command_count);
 
     /*
      * Only add console-local commands at the top level.
@@ -178,8 +154,7 @@ static struct completion_result console_completion(const char *input) {
 }
 
 int command_console(int argc, char *argv[]) {
-    if(has_switch(argc, argv, "--help", false) ||
-       has_switch(argc, argv, "-h", false)) {
+    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
         printf("Starts an interactive console mode.\n");
         printf("\n");
         printf(

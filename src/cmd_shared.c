@@ -1,13 +1,14 @@
-#include <stdio.h>
-#include <stdbool.h>
-#include "common.h"
-#include "logging.h"
-#include "platform.h"
-#include "config.h"
-#include "todo.h"
-#include "todo_list.h"
 #include "cmd_shared.h"
 
+#include <stdbool.h>
+#include <stdio.h>
+
+#include "common.h"
+#include "config.h"
+#include "logging.h"
+#include "platform.h"
+#include "todo.h"
+#include "todo_list.h"
 
 bool is_heading(const char *line) {
     return line[0] == '#' && line[1] == ' ';
@@ -27,16 +28,13 @@ void write_item_to_file(int argc, char *argv[], FILE *file, const char *prefix) 
     fprintf(file, "\n");
 }
 
-bool heading_matches(const char *line, const char *heading){
+bool heading_matches(const char *line, const char *heading) {
     size_t len = strlen(heading);
 
-    return strncmp(line, heading, len) == 0 &&
-           (line[len] == '\n' ||
-            line[len] == '\r' ||
-            line[len] == '\0');
+    return strncmp(line, heading, len) == 0 && (line[len] == '\n' || line[len] == '\r' || line[len] == '\0');
 }
 
-int get_base_dir_filepath(const char *filename, char* buffer, size_t bufferSize) {
+int get_base_dir_filepath(const char *filename, char *buffer, size_t bufferSize) {
     int written = snprintf(buffer, bufferSize, "%s%s%s", g_config.base_dir, get_path_separator(), filename);
     if(written < 0 || written >= (int)bufferSize) {
         log_error("File path too long.\n");
@@ -45,7 +43,7 @@ int get_base_dir_filepath(const char *filename, char* buffer, size_t bufferSize)
     return R_OK;
 }
 
-FILE* open_base_dir_file(const char *filename, const char* mode) {
+FILE *open_base_dir_file(const char *filename, const char *mode) {
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_filepath(filename, file_path, sizeof(file_path)) != R_OK) {
         return NULL;
@@ -66,13 +64,13 @@ FILE* open_base_dir_file(const char *filename, const char* mode) {
     return source;
 }
 
-FILE* open_notes_file(const char* mode) {
+FILE *open_notes_file(const char *mode) {
     return open_base_dir_file(NOTES_FILE, mode);
 }
 
 int add_markdown_item(int argc, char *argv[], const char *filename, const char *prefix, const char *heading) {
     log_debug("Writing markdown item (c=%d)\n", argc);
-    FILE* source = open_base_dir_file(filename, "r");
+    FILE *source = open_base_dir_file(filename, "r");
     if(source == NULL) {
         log_critical("failed to open base dir file %s\n", filename);
         return R_ERROR;
@@ -93,7 +91,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
     /*
      * With a heading we need to potentially insert into an
      * existing block, so use the temp-file strategy.
-     */  
+     */
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_filepath(filename, file_path, sizeof(file_path)) != R_OK) {
         fclose(source);
@@ -126,8 +124,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
                 log_debug("Found heading: %s\n", heading);
                 found_heading = true;
             }
-        }
-        else if(!item_written && is_heading(line)) {
+        } else if(!item_written && is_heading(line)) {
             write_item_to_file(argc, argv, temp, prefix);
             item_written = true;
         }
@@ -153,12 +150,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
 
     char backup_path[DEFAULT_BUFFER_SIZE];
 
-    written = snprintf(
-        backup_path,
-        sizeof(backup_path),
-        "%s.bak",
-        file_path
-    );
+    written = snprintf(backup_path, sizeof(backup_path), "%s.bak", file_path);
 
     if(written < 0 || written >= (int)sizeof(backup_path)) {
         log_error("Backup file path too long.\n");
@@ -167,10 +159,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
 
     if(file_access_utf8(backup_path, F_OK) == 0) {
         if(file_remove_utf8(backup_path) != 0) {
-            log_error(
-                "Could not remove previous backup: %s\n",
-                backup_path
-            );
+            log_error("Could not remove previous backup: %s\n", backup_path);
             return R_ERROR;
         }
     }
@@ -190,10 +179,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
         log_error("Failed replacing %s.\n", filename);
 
         if(file_rename_utf8(backup_path, file_path) != 0) {
-            log_critical(
-                "Failed restoring %s from backup.\n",
-                filename
-            );
+            log_critical("Failed restoring %s from backup.\n", filename);
         }
 
         return R_ERROR;
@@ -216,14 +202,11 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
 
     if(markdown[0] == ' ') {
         item->status = OPEN;
-    }
-    else if(markdown[0] == 'X' || markdown[0] == 'x') {
+    } else if(markdown[0] == 'X' || markdown[0] == 'x') {
         item->status = DONE;
-    }
-    else if(markdown[0] == '/') {
+    } else if(markdown[0] == '/') {
         item->status = IN_PROGRESS;
-    }
-    else {
+    } else {
         log_error("Invalid TODO status '%c'.\n", markdown[0]);
         return R_ERROR;
     }
@@ -239,9 +222,9 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
         markdown++;
     }
 
-    const char *id_tag      = strstr(markdown, "#shiori/id/");
+    const char *id_tag = strstr(markdown, "#shiori/id/");
     const char *created_tag = strstr(markdown, "#shiori/created/");
-    const char *due_tag     = strstr(markdown, "#shiori/due/");
+    const char *due_tag = strstr(markdown, "#shiori/due/");
 
     if(id_tag == NULL || created_tag == NULL) {
         log_error("Missing TODO metadata (id or creation date).\n");
@@ -258,8 +241,7 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
      */
     size_t text_len = (size_t)(id_tag - markdown);
 
-    while(text_len > 0 &&
-          isspace((unsigned char)markdown[text_len - 1])) {
+    while(text_len > 0 && isspace((unsigned char)markdown[text_len - 1])) {
         text_len--;
     }
 
@@ -285,8 +267,7 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
         return R_ERROR;
     }
 
-    if(*id_end != '\0' &&
-       !isspace((unsigned char)*id_end)) {
+    if(*id_end != '\0' && !isspace((unsigned char)*id_end)) {
         log_error("Invalid TODO ID.\n");
         return R_ERROR;
     }
@@ -340,7 +321,6 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
     return R_OK;
 }
 
-
 int read_todos(const char *filename, struct todo_list *list) {
     FILE *file = open_base_dir_file(filename, "r");
     if(file == NULL) {
@@ -372,7 +352,9 @@ int read_todos(const char *filename, struct todo_list *list) {
             continue;
         }
 
-        if(in_metadata) continue;
+        if(in_metadata) {
+            continue;
+        }
         if(strlen(trim(line)) == 0) {
             continue;
         }
@@ -406,10 +388,7 @@ static bool is_leap_year(int year) {
 }
 
 static int days_in_month(int year, int month) {
-    static const int days[] = {
-        31, 28, 31, 30, 31, 30,
-        31, 31, 30, 31, 30, 31
-    };
+    static const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
     if(month == 2 && is_leap_year(year)) {
         return 29;
@@ -433,15 +412,11 @@ static bool parse_absolute_date(const char *value, struct tm *parsed) {
         }
     }
 
-    int year = (value[0] - '0') * 1000 +
-               (value[1] - '0') * 100 +
-               (value[2] - '0') * 10 +
-               (value[3] - '0');
+    int year = (value[0] - '0') * 1000 + (value[1] - '0') * 100 + (value[2] - '0') * 10 + (value[3] - '0');
     int month = (value[5] - '0') * 10 + (value[6] - '0');
     int day = (value[8] - '0') * 10 + (value[9] - '0');
 
-    if(month < 1 || month > 12 ||
-       day < 1 || day > days_in_month(year, month)) {
+    if(month < 1 || month > 12 || day < 1 || day > days_in_month(year, month)) {
         return false;
     }
 
@@ -473,23 +448,17 @@ int parse_date_arg(const char *value, time_t *result) {
 
     if(strcmp(value, "today") == 0) {
         *result = mktime(&date);
-    }
-    else if(strcmp(value, "yesterday") == 0) {
+    } else if(strcmp(value, "yesterday") == 0) {
         date.tm_mday -= 1;
         *result = mktime(&date);
-    }
-    else if(strcmp(value, "tomorrow") == 0) {
+    } else if(strcmp(value, "tomorrow") == 0) {
         date.tm_mday += 1;
         *result = mktime(&date);
-    }
-    else {
+    } else {
         struct tm parsed;
 
         if(!parse_absolute_date(value, &parsed)) {
-            log_error(
-                "Invalid date '%s'. Use YYYY-MM-DD, today, yesterday or tomorrow.\n",
-                value
-            );
+            log_error("Invalid date '%s'. Use YYYY-MM-DD, today, yesterday or tomorrow.\n", value);
             return R_ERROR;
         }
 

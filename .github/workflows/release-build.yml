@@ -24,7 +24,7 @@ jobs:
         shell: pwsh
         run: |
           $sources = Get-ChildItem src -Filter *.c | ForEach-Object FullName
-          clang -std=c23 -Wall -Wextra -Wpedantic -O2 -fms-runtime-lib=static $sources -o shiori.exe
+          clang -std=c23 -Wall -Wextra -Wpedantic -Werror -O2 -fms-runtime-lib=static $sources -o shiori.exe
 
       - name: Verify self-contained runtime
         shell: pwsh

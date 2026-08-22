@@ -1,12 +1,17 @@
-#ifndef _SHIORI_TODO_H
-#define _SHIORI_TODO_H
+#ifndef SHIORI_TODO_H
+#define SHIORI_TODO_H
 
 #include <time.h>
+
 #include "common.h"
 
 // Datatypes
 
-typedef enum {OPEN, IN_PROGRESS, DONE} todo_status;
+typedef enum {
+    OPEN,
+    IN_PROGRESS,
+    DONE
+} todo_status;
 
 struct todo {
     char text[DEFAULT_BUFFER_SIZE * 2];

@@ -1,20 +1,18 @@
-#include <string.h>
 #include <stdio.h>
-#include "common.h"
+#include <string.h>
+
 #include "cli.h"
-#include "logging.h"
 #include "commands.h"
+#include "common.h"
+#include "logging.h"
 #include "note.h"
 
-static int print_powershell_command_array(const char *name, const struct command_definition *commands, size_t command_count) {
+static int
+print_powershell_command_array(const char *name, const struct command_definition *commands, size_t command_count) {
     printf("    $commands_%s = @(\n", name);
 
     for(size_t i = 0; i < command_count; ++i) {
-        printf(
-            "        '%s'%s\n",
-            commands[i].name,
-            i + 1 < command_count ? "," : ""
-        );
+        printf("        '%s'%s\n", commands[i].name, i + 1 < command_count ? "," : "");
     }
 
     printf("    )\n\n");
@@ -22,14 +20,14 @@ static int print_powershell_command_array(const char *name, const struct command
     return R_OK;
 }
 
-static int print_powershell_command_arrays(const char *path, const struct command_definition *commands, size_t command_count) {
-    if(print_powershell_command_array( path, commands, command_count) != R_OK) {
+static int
+print_powershell_command_arrays(const char *path, const struct command_definition *commands, size_t command_count) {
+    if(print_powershell_command_array(path, commands, command_count) != R_OK) {
         return R_ERROR;
     }
 
     for(size_t i = 0; i < command_count; ++i) {
-        if(commands[i].subcommands == NULL ||
-           commands[i].subcommand_count == 0) {
+        if(commands[i].subcommands == NULL || commands[i].subcommand_count == 0) {
             continue;
         }
 
@@ -48,10 +46,14 @@ static int print_powershell_command_arrays(const char *path, const struct comman
     return R_OK;
 }
 
-static int print_powershell_routes(const char *parent_path, const struct command_definition *commands, size_t command_count, size_t depth) {
+static int print_powershell_routes(
+    const char *parent_path,
+    const struct command_definition *commands,
+    size_t command_count,
+    size_t depth
+) {
     for(size_t i = 0; i < command_count; ++i) {
-        if(commands[i].subcommands == NULL ||
-           commands[i].subcommand_count == 0) {
+        if(commands[i].subcommands == NULL || commands[i].subcommand_count == 0) {
             continue;
         }
 
@@ -70,19 +72,12 @@ static int print_powershell_routes(const char *parent_path, const struct command
             depth + 2
         );
 
-        printf(
-            "        $candidates = $commands_%s\n",
-            child_path
-        );
+        printf("        $candidates = $commands_%s\n", child_path);
 
         printf("    }\n");
 
-        if(print_powershell_routes(
-            child_path,
-            commands[i].subcommands,
-            commands[i].subcommand_count,
-            depth + 1
-        ) != R_OK) {
+        if(print_powershell_routes(child_path, commands[i].subcommands, commands[i].subcommand_count, depth + 1) !=
+           R_OK) {
             return R_ERROR;
         }
     }
@@ -95,10 +90,7 @@ static int print_powershell_completion() {
 
     const struct command_definition *commands = get_commands(&command_count);
 
-    printf(
-        "Register-ArgumentCompleter -Native -CommandName %s -ScriptBlock {\n",
-        APP_NAME
-    );
+    printf("Register-ArgumentCompleter -Native -CommandName %s -ScriptBlock {\n", APP_NAME);
 
     printf(
         "    param($wordToComplete, $commandAst, $cursorPosition)\n"
@@ -174,7 +166,7 @@ int command_util_completion(int argc, char *argv[]) {
             APP_NAME,
             "powershell",
             APP_NAME,
-            APP_NAME, 
+            APP_NAME,
             APP_NAME
         );
         return R_OK;
@@ -189,24 +181,24 @@ int command_util_completion(int argc, char *argv[]) {
         return print_powershell_completion();
     }
 
-   /* if(strcmp(argv[0], "bash") == 0 || strcmp(argv[0], "sh") == 0) {
-        return print_bash_completion();
-    }
+    /* if(strcmp(argv[0], "bash") == 0 || strcmp(argv[0], "sh") == 0) {
+         return print_bash_completion();
+     }
 
-    if(strcmp(argv[0], "zsh") == 0) {
-        return print_zsh_completion();
-    } */
+     if(strcmp(argv[0], "zsh") == 0) {
+         return print_zsh_completion();
+     } */
 
     log_error("Unsupported shell: %s\n", argv[0]);
     return R_ERROR;
 }
 
 int command_util(int argc, char *argv[]) {
-    (void) argc;
-    (void) argv;
+    (void)argc;
+    (void)argv;
 
     log_error("Please specify a util command. Refer to `util help` if required.");
- 
+
     return R_ERROR;
 }
 
@@ -239,8 +231,7 @@ static int migrate_notes_v0_to_v1(void) {
             if(dash != NULL) {
                 unsigned int existing_seq = 0;
 
-                if(sscanf_s(dash + 1, "%u", &existing_seq) == 1 &&
-                   existing_seq >= seqnr) {
+                if(sscanf_s(dash + 1, "%u", &existing_seq) == 1 && existing_seq >= seqnr) {
                     seqnr = existing_seq + 1;
                 }
             }
@@ -285,9 +276,7 @@ static int migrate_notes_v0_to_v1(void) {
 
     note_list_free(&all_notes);
 
-    log_success("Added IDs to %zu note%s.\n",
-        migrated_count,
-        migrated_count == 1 ? "" : "s");
+    log_success("Added IDs to %zu note%s.\n", migrated_count, migrated_count == 1 ? "" : "s");
 
     log_success("Migrated NOTES.md from version 0 to 1.\n");
 
@@ -303,27 +292,24 @@ static int migrate_notes() {
 
     while(metadata.version < NOTES_FORMAT_VERSION) {
         switch(metadata.version) {
-            case 0:
-                if(migrate_notes_v0_to_v1() != R_OK) {
-                    return R_ERROR;
-                }
-
-                metadata.version = 1;
-                break;
-
-            default:
-                log_error(
-                    "No migration path for notes version %d.\n",
-                    metadata.version
-                );
+        case 0:
+            if(migrate_notes_v0_to_v1() != R_OK) {
                 return R_ERROR;
+            }
+
+            metadata.version = 1;
+            break;
+
+        default:
+            log_error("No migration path for notes version %d.\n", metadata.version);
+            return R_ERROR;
         }
     }
 
     return R_OK;
 }
 
-static int command_util_migrate(int argc, char* argv[]) {
+static int command_util_migrate(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
 
@@ -334,40 +320,21 @@ static int command_util_migrate(int argc, char* argv[]) {
     return R_OK;
 }
 
-static int command_util_help(int argc, char* argv[]);
+static int command_util_help(int argc, char *argv[]);
 
 static const struct command_definition util_commands[] = {
-    {
-        "help",
-        "",
-        "Display help about the available commands",
-        command_util_help,
-        NULL,
-        0,
-        false
-    },
-    {
-        "completion",
-        "<shell>",
-        "Generate shell completion definitions",
-        command_util_completion,
-        NULL,
-        0,
-        false
-    },
-    {
-        "migrate",
-        "",
-        "Run necessary migrations to bring your workspace to the latest version",
-        command_util_migrate,
-        NULL,
-        0,
-        false
-    }
+    {"help", "", "Display help about the available commands", command_util_help, NULL, 0, false},
+    {"completion", "<shell>", "Generate shell completion definitions", command_util_completion, NULL, 0, false},
+    {"migrate",
+     "",
+     "Run necessary migrations to bring your workspace to the latest version",
+     command_util_migrate,
+     NULL,
+     0,
+     false}
 };
 
-
-const struct command_definition* get_util_commands(size_t* count) {
+const struct command_definition *get_util_commands(size_t *count) {
     if(count != NULL) {
         *count = sizeof(util_commands) / sizeof(util_commands[0]);
     }
@@ -375,7 +342,7 @@ const struct command_definition* get_util_commands(size_t* count) {
     return util_commands;
 }
 
-static int command_util_help(int argc, char* argv[]) {
+static int command_util_help(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
 

@@ -1,5 +1,5 @@
-#ifndef _SHIORI_CONFIG_H
-#define _SHIORI_CONFIG_H
+#ifndef SHIORI_CONFIG_H
+#define SHIORI_CONFIG_H
 
 #include "common.h"
 struct config_hooks {

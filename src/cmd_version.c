@@ -1,18 +1,13 @@
 #include <stdio.h>
+
 #include "common.h"
 
 static void print_compiler(void) {
 #if defined(__clang__)
-    printf("compiler: clang %d.%d.%d\n",
-           __clang_major__,
-           __clang_minor__,
-           __clang_patchlevel__);
+    printf("compiler: clang %d.%d.%d\n", __clang_major__, __clang_minor__, __clang_patchlevel__);
 
 #elif defined(__GNUC__)
-    printf("compiler: gcc %d.%d.%d\n",
-           __GNUC__,
-           __GNUC_MINOR__,
-           __GNUC_PATCHLEVEL__);
+    printf("compiler: gcc %d.%d.%d\n", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 
 #elif defined(_MSC_VER)
     printf("compiler: msvc %d\n", _MSC_VER);
@@ -22,8 +17,7 @@ static void print_compiler(void) {
 #endif
 }
 
-static void print_platform(void)
-{
+static void print_platform(void) {
 #if defined(_WIN32)
     printf("platform: windows");
 #elif defined(__linux__)
@@ -49,29 +43,28 @@ static void print_architecture(void) {
     printf("\n");
 }
 
-static void print_c_standard(void)
-{
+static void print_c_standard(void) {
 #if defined(__STDC_VERSION__)
-    #if __STDC_VERSION__ >= 202311L
-        printf("c standard: C23\n");
-    #elif __STDC_VERSION__ >= 201710L
-        printf("c standard: C17\n");
-    #elif __STDC_VERSION__ >= 201112L
-        printf("c standard: C11\n");
-    #elif __STDC_VERSION__ >= 199901L
-        printf("c standard: C99\n");
-    #else
-        printf("c standard: pre-C99\n");
-    #endif
+#if __STDC_VERSION__ >= 202311L
+    printf("c standard: C23\n");
+#elif __STDC_VERSION__ >= 201710L
+    printf("c standard: C17\n");
+#elif __STDC_VERSION__ >= 201112L
+    printf("c standard: C11\n");
+#elif __STDC_VERSION__ >= 199901L
+    printf("c standard: C99\n");
+#else
+    printf("c standard: pre-C99\n");
+#endif
 #else
     printf("c standard: C90\n");
 #endif
 }
 
-int command_version(int argc, char * argv[]) {
-    (void) argc;
-    (void) argv;
-    
+int command_version(int argc, char *argv[]) {
+    (void)argc;
+    (void)argv;
+
     printf("%s %s\n", APP_NAME, APP_VERSION);
     print_compiler();
     print_platform();

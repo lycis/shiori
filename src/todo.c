@@ -2,17 +2,17 @@
 
 const char *todo_status_icon(todo_status status) {
     switch(status) {
-        case OPEN:
-            return "📌";
+    case OPEN:
+        return "📌";
 
-        case IN_PROGRESS:
-            return "🚧";
+    case IN_PROGRESS:
+        return "🚧";
 
-        case DONE:
-            return "✅";
+    case DONE:
+        return "✅";
 
-        default:
-            return "❓";
+    default:
+        return "❓";
     }
 }
 
@@ -32,48 +32,48 @@ int format_todo_date(time_t timestamp, char *buffer, size_t size) {
 
 const char *todo_status_mark(todo_status status) {
     switch(status) {
-        case OPEN:
-            return " ";
+    case OPEN:
+        return " ";
 
-        case IN_PROGRESS:
-            return "/";
+    case IN_PROGRESS:
+        return "/";
 
-        case DONE:
-            return "x";
+    case DONE:
+        return "x";
 
-        default:
-            return "?";
+    default:
+        return "?";
     }
 }
 
 const char *todo_status_string(todo_status status) {
-     switch(status) {
-        case OPEN:
-            return "OPEN";
+    switch(status) {
+    case OPEN:
+        return "OPEN";
 
-        case IN_PROGRESS:
-            return "IN PROGRESS";
+    case IN_PROGRESS:
+        return "IN PROGRESS";
 
-        case DONE:
-            return "DONE";
+    case DONE:
+        return "DONE";
 
-        default:
-            return "????";
+    default:
+        return "????";
     }
 }
 
 const char *todo_status_simple_icon(todo_status status) {
-     switch(status) {
-        case OPEN:
-            return "·";
+    switch(status) {
+    case OPEN:
+        return "·";
 
-        case IN_PROGRESS:
-            return "›";
+    case IN_PROGRESS:
+        return "›";
 
-        case DONE:
-            return "✓";
+    case DONE:
+        return "✓";
 
-        default:
-            return "????";
+    default:
+        return "????";
     }
 }

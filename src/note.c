@@ -1,23 +1,22 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <string.h>
 #include "note.h"
+
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "cmd_shared.h"
 #include "common.h"
 #include "logging.h"
-#include "cmd_shared.h"
 #include "platform.h"
-#include "common.h"
 
-void note_list_init(struct note_list *list)
-{
+void note_list_init(struct note_list *list) {
     list->items = NULL;
     list->count = 0;
     list->capacity = 0;
 }
 
-void note_list_free(struct note_list *list)
-{
+void note_list_free(struct note_list *list) {
     free(list->items);
 
     list->items = NULL;
@@ -25,20 +24,11 @@ void note_list_free(struct note_list *list)
     list->capacity = 0;
 }
 
-int note_list_add(
-    struct note_list *list,
-    const struct note *item
-) {
+int note_list_add(struct note_list *list, const struct note *item) {
     if(list->count == list->capacity) {
-        size_t new_capacity =
-            list->capacity == 0
-            ? 8
-            : list->capacity * 2;
+        size_t new_capacity = list->capacity == 0 ? 8 : list->capacity * 2;
 
-        struct note *new_items = realloc(
-            list->items,
-            new_capacity * sizeof(struct note)
-        );
+        struct note *new_items = realloc(list->items, new_capacity * sizeof(struct note));
 
         if(new_items == NULL) {
             log_error("Failed allocating note list.\n");
@@ -55,8 +45,10 @@ int note_list_add(
     return R_OK;
 }
 
-struct note* note_list_find_by_id(const struct note_list *list, const char *id) {
-    if(list == NULL || id == NULL)  return NULL;
+struct note *note_list_find_by_id(const struct note_list *list, const char *id) {
+    if(list == NULL || id == NULL) {
+        return NULL;
+    }
 
     for(size_t i = 0; i < list->count; ++i) {
         if(strcmp(list->items[i].id, id) == 0) {
@@ -110,13 +102,9 @@ int create_note_from_markdown(const char *markdown, time_t created, struct note 
         metadata_start = id_tag;
     }
 
-    size_t text_len = metadata_start != NULL
-        ? (size_t)(metadata_start - markdown)
-        : strlen(markdown);
+    size_t text_len = metadata_start != NULL ? (size_t)(metadata_start - markdown) : strlen(markdown);
 
-    while(text_len > 0 &&
-          (markdown[text_len - 1] == ' ' ||
-           markdown[text_len - 1] == '\t')) {
+    while(text_len > 0 && (markdown[text_len - 1] == ' ' || markdown[text_len - 1] == '\t')) {
         text_len--;
     }
 
@@ -132,11 +120,8 @@ int create_note_from_markdown(const char *markdown, time_t created, struct note 
         const char *topic = topic_tag + strlen("#shiori/topic/");
         size_t topic_len = 0;
 
-        while(topic[topic_len] != '\0' &&
-              topic[topic_len] != ' ' &&
-              topic[topic_len] != '\t' &&
-              topic[topic_len] != '\r' &&
-              topic[topic_len] != '\n') {
+        while(topic[topic_len] != '\0' && topic[topic_len] != ' ' && topic[topic_len] != '\t' &&
+              topic[topic_len] != '\r' && topic[topic_len] != '\n') {
             topic_len++;
         }
 
@@ -153,12 +138,8 @@ int create_note_from_markdown(const char *markdown, time_t created, struct note 
         const char *id = id_tag + strlen("<!-- shiori:id=");
         size_t id_len = 0;
 
-        while(id[id_len] != '\0' &&
-              id[id_len] != ' ' &&
-              id[id_len] != '\t' &&
-              id[id_len] != '\r' &&
-              id[id_len] != '\n' &&
-              id[id_len] != '>') {
+        while(id[id_len] != '\0' && id[id_len] != ' ' && id[id_len] != '\t' && id[id_len] != '\r' &&
+              id[id_len] != '\n' && id[id_len] != '>') {
             id_len++;
         }
 
@@ -206,7 +187,7 @@ static int parse_daily_heading(const char *heading, time_t *date) {
     *date = result;
     return R_OK;
 }
- 
+
 int read_notes(const char *filename, struct note_list *list) {
     struct notes_metadata md;
     if(read_notes_metadata(filename, &md) != R_OK) {
@@ -239,13 +220,10 @@ int read_notes(const char *filename, struct note_list *list) {
             continue;
         }
 
-         // A heading starts a new daily section.
+        // A heading starts a new daily section.
         if(strncmp(current, "# ", 2) == 0) {
             if(parse_daily_heading(current, &current_date) != R_OK) {
-                log_error(
-                    "Refusing to rewrite NOTES.md: invalid heading on line %u.\n",
-                    line_number
-                );
+                log_error("Refusing to rewrite NOTES.md: invalid heading on line %u.\n", line_number);
                 fclose(file);
                 return R_ERROR;
             }
@@ -258,25 +236,18 @@ int read_notes(const char *filename, struct note_list *list) {
         // ignoring other content is unsafe because rewrite_notes() would
         // then replace the file without it.
         if(!have_date) {
-            if(strcmp(current, "---") == 0 ||
-               strncmp(current, "version:", strlen("version:")) == 0) {
+            if(strcmp(current, "---") == 0 || strncmp(current, "version:", strlen("version:")) == 0) {
                 continue;
             }
 
-            log_error(
-                "Refusing to rewrite NOTES.md: unexpected content on line %u.\n",
-                line_number
-            );
+            log_error("Refusing to rewrite NOTES.md: unexpected content on line %u.\n", line_number);
             fclose(file);
             return R_ERROR;
         }
 
         // Notes are Markdown bullet list items.
         if(strncmp(current, "* ", 2) != 0) {
-            log_error(
-                "Refusing to rewrite NOTES.md: unexpected content on line %u.\n",
-                line_number
-            );
+            log_error("Refusing to rewrite NOTES.md: unexpected content on line %u.\n", line_number);
             fclose(file);
             return R_ERROR;
         }
@@ -285,15 +256,8 @@ int read_notes(const char *filename, struct note_list *list) {
 
         struct note item = {0};
 
-        if(create_note_from_markdown(
-            current,
-            current_date,
-            &item
-        ) != R_OK) {
-            log_error(
-                "Failed parsing note on line %u.\n",
-                line_number
-            );
+        if(create_note_from_markdown(current, current_date, &item) != R_OK) {
+            log_error("Failed parsing note on line %u.\n", line_number);
 
             fclose(file);
             return R_ERROR;
@@ -313,11 +277,7 @@ int read_notes(const char *filename, struct note_list *list) {
 
     fclose(file);
 
-    log_debug(
-        "Loaded %zu note%s.\n",
-        list->count,
-        list->count == 1 ? "" : "s"
-    );
+    log_debug("Loaded %zu note%s.\n", list->count, list->count == 1 ? "" : "s");
 
     return R_OK;
 }
@@ -349,8 +309,9 @@ int read_notes_for_date(const char *filename, const time_t date, struct note_lis
     return R_OK;
 }
 
-static void write_note_metadata_to_file(FILE* f, struct notes_metadata* md) {
-    fprintf(f,
+static void write_note_metadata_to_file(FILE *f, struct notes_metadata *md) {
+    fprintf(
+        f,
         "---\n"
         "version: %d\n"
         "---\n",
@@ -358,26 +319,24 @@ static void write_note_metadata_to_file(FILE* f, struct notes_metadata* md) {
     );
 }
 
-int read_notes_metadata(const char *filename, struct notes_metadata* md) {
+int read_notes_metadata(const char *filename, struct notes_metadata *md) {
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_file_path(filename, file_path, sizeof(file_path)) != R_OK) {
         return R_ERROR;
     }
 
     if(file_access_utf8(file_path, F_OK) != 0) {
-       FILE* file = open_base_dir_file(filename, "w");
-       if(file == NULL) {
+        FILE *file = open_base_dir_file(filename, "w");
+        if(file == NULL) {
             log_error("Failed opening %s for write.\n", filename);
             return R_ERROR;
-       }
+        }
 
-       // initialize metadata
-       struct notes_metadata init_md = {
-        NOTES_FORMAT_VERSION
-       };
+        // initialize metadata
+        struct notes_metadata init_md = {NOTES_FORMAT_VERSION};
 
-       write_note_metadata_to_file(file, &init_md);
-       fclose(file);
+        write_note_metadata_to_file(file, &init_md);
+        fclose(file);
     }
 
     FILE *file = open_base_dir_file(filename, "r");
@@ -430,7 +389,13 @@ int read_notes_metadata(const char *filename, struct notes_metadata* md) {
         char *value = trim(colon + 1);
 
         if(strcmp(key, "version") == 0) {
-            md->version = atoi(value);
+            int version = 0;
+            if(parse_int(value, &version) != R_OK || version < 0) {
+                log_error("Invalid NOTE metadata version: %s\n", value);
+                fclose(file);
+                return R_ERROR;
+            }
+            md->version = (unsigned int)version;
         } else {
             log_debug("Ignoring unknown NOTE metadata key: %s\n", key);
         }
