@@ -86,6 +86,8 @@ make
 
 This creates `shiori.exe`. Use `make release` for an optimized, statically linked executable or `make clean` to remove build output.
 
+See **[Building Shiori](BUILD.md)** for toolchain requirements, all build and test targets, output locations, and the CI/release process.
+
 ---
 
 ## Commands at a glance
@@ -117,6 +119,7 @@ Use the global `--debug` option for diagnostic output.
 ## Documentation
 
 - **[User Guide](docs/USER_GUIDE.md)** — installation, configuration, commands, workflows, storage formats, and troubleshooting
+- **[Build Guide](BUILD.md)** — toolchain setup, local build targets, tests, CI, and release packaging
 - **[Hooks Guide](docs/HOOKS.md)** — hook lifecycle, environment variables, examples, security, and limitations
 - **[Contributing](CONTRIBUTING.md)** — development setup and project conventions
 - **[Security](SECURITY.md)** — supported versions and private vulnerability reporting
