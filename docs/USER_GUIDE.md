@@ -10,15 +10,17 @@ This guide covers installation, configuration, every current workflow, and the o
 - [Initialization and configuration](#initialization-and-configuration)
 - [Hooks and automation](#hooks-and-automation)
 - [Command overview](#command-overview)
-- [Adding notes](#adding-notes)
+- [Managing notes](#managing-notes)
 - [Capture sessions](#capture-sessions)
 - [Organizing notes with topics](#organizing-notes-with-topics)
 - [Finding notes and todos by tag](#finding-notes-and-todos-by-tag)
 - [Managing todos](#managing-todos)
 - [Daily dashboard](#daily-dashboard)
+- [PowerShell completion](#powershell-completion)
 - [Interactive console](#interactive-console)
 - [Debugging](#debugging)
 - [Version information](#version-information)
+- [Migrating an existing notes file](#migrating-an-existing-notes-file)
 - [Data storage and safety](#data-storage-and-safety)
 - [Using Shiori with Obsidian](#using-shiori-with-obsidian)
 
@@ -146,7 +148,8 @@ shiori [options] <command> [options] [subcommand] ...
 | Command | Description |
 |---|---|
 | `init` | Initialize a new `.shiori` configuration. |
-| `add` | Add a note or thought to today's section. |
+| `add` | Add a note to today's section (short form of `note add`). |
+| `note` | Add, inspect, retopic, and remove notes by ID. |
 | `capture` | Start an interactive session for capturing notes and todos. |
 | `topic` | Show notes for a topic or list topic statistics. |
 | `tag` | Find notes and todos containing all specified tags. |
@@ -154,10 +157,15 @@ shiori [options] <command> [options] [subcommand] ...
 | `today` | Show notes and active todos in a daily dashboard. |
 | `config` | Show the loaded configuration. |
 | `console` | Start interactive console mode. |
+| `util` | Run workspace migrations and generate shell completion. |
 | `help` | Show command help. |
 | `version` | Display version and build information. |
 
-## Adding notes
+## Managing notes
+
+Every new note receives a stable ID in `YYYYMMDD-NNNN` form. Shiori prints this ID after capture and displays it in the daily dashboard, topic views, and tag results. Use it with the note-management commands described below.
+
+### Adding notes
 
 Add a thought without opening an editor:
 
@@ -165,20 +173,58 @@ Add a thought without opening an editor:
 shiori add remember to review the architecture diagram
 ```
 
+`note add` is an equivalent, more explicit form:
+
+```console
+shiori note add remember to review the architecture diagram
+```
+
 If today's section already exists in `NOTES.md`, Shiori adds the note to that block. Otherwise it creates the section:
 
 ```markdown
-# 2026-08-13
-* remember to review the architecture diagram
-* investigate SQLite later, but probably do not need it
+# 2026-08-22
+* remember to review the architecture diagram <!-- shiori:id=20260822-0001 -->
+* investigate SQLite later, but probably do not need it <!-- shiori:id=20260822-0002 -->
 
-# 2026-08-12
-* rename the project
+# 2026-08-21
+* rename the project <!-- shiori:id=20260821-0001 -->
 ```
 
-Notes are stored as Markdown bullet points using `*`.
+Notes are stored as Markdown bullet points using `*`; the HTML comment holds Shiori's stable ID without affecting normal Markdown rendering.
 
 Use `shiori add --help` for the built-in reference.
+
+### Inspecting a note
+
+Show a note's creation date, topic, tags, and text:
+
+```console
+shiori note show 20260822-0001
+```
+
+### Changing a note's topic
+
+Assign a different topic while preserving the note's ID, text, tags, and date:
+
+```console
+shiori note retopic 20260822-0001 architecture
+```
+
+Remove its topic with the special value `none`:
+
+```console
+shiori note retopic 20260822-0001 none
+```
+
+### Removing a note
+
+Remove a note from the active log by ID:
+
+```console
+shiori note remove 20260822-0001
+```
+
+Run `shiori note help` for the complete built-in note reference.
 
 ## Capture sessions
 
@@ -248,9 +294,9 @@ shiori add -t Rail4Climate review the proposal
 Shiori keeps the topic in the note as a metadata tag while showing the readable topic name in terminal views:
 
 ```markdown
-# 2026-08-13
-* discuss pilot scope #shiori/topic/Rail4Climate
-* review the proposal #shiori/topic/Rail4Climate
+# 2026-08-22
+* discuss pilot scope #shiori/topic/Rail4Climate <!-- shiori:id=20260822-0001 -->
+* review the proposal #shiori/topic/Rail4Climate <!-- shiori:id=20260822-0002 -->
 ```
 
 Show all notes assigned to a topic, grouped under their daily headings:
@@ -307,7 +353,7 @@ Todos live in `TODOS.md`. Add one with:
 shiori todo add prepare release notes "#work"
 ```
 
-Each todo receives a stable numeric ID, a creation date, and an initial status of open.
+Each todo receives a stable numeric ID, a creation date, and an initial status of open. Shiori prints the assigned ID after creation; use it for status changes, rewrites, and removal.
 
 Quote tags when using PowerShell because an unquoted `#` starts a comment.
 
@@ -423,6 +469,25 @@ Completed todos are not shown in the dashboard.
 
 Use `shiori today --help` for the built-in reference.
 
+## PowerShell completion
+
+Shiori can generate native PowerShell completion from its command registry, including nested `note`, `todo`, and `util` subcommands.
+
+Load completion for the current PowerShell session:
+
+```powershell
+shiori util completion powershell | Out-String | Invoke-Expression
+```
+
+Or write the generated script to a file that you can load from your PowerShell profile:
+
+```powershell
+shiori util completion powershell > shiori-completion.ps1
+. .\shiori-completion.ps1
+```
+
+The alias `pwsh` is also accepted as the shell argument. The generated script is written to standard output.
+
 ## Interactive console
 
 Keep Shiori open while capturing several thoughts:
@@ -443,7 +508,7 @@ Enter `exit` or `quit` to leave console mode.
 
 As you type a command, Shiori displays matching suggestions in color. Press Tab to accept a single match; when several commands match, Tab expands the input to their longest shared prefix. Console completion includes Shiori commands plus `exit` and `quit`.
 
-Capture mode uses the same UTF-8-aware input renderer and suggests its slash commands (`/done`, `/exit`, and `/quit`). Backspace removes a complete UTF-8 character rather than an individual encoded byte.
+Capture mode uses the same UTF-8-aware input renderer and suggests its slash commands (`/done`, `/exit`, and `/quit`).
 
 ## Debugging
 
@@ -464,11 +529,25 @@ shiori version
 The output includes Shiori's version, compiler, platform, architecture, and detected C standard:
 
 ```text
-shiori 0.1.0
+shiori 0.2.0
 compiler: clang 22.1.8
 platform: windows x86_64
 c standard: C23
 ```
+
+## Migrating an existing notes file
+
+The current `NOTES.md` format is version 1. Older files without front matter or stable note IDs are treated as version 0 and produce a warning when read.
+
+Upgrade the configured workspace with:
+
+```console
+shiori util migrate
+```
+
+Migration adds version front matter and assigns IDs to notes that do not already have one. Existing IDs, topics, text, dates, and ordering are preserved. The migration is idempotent, so running it again on an up-to-date file makes no further changes.
+
+Review the retained `NOTES.md.bak` recovery copy after migration before removing it.
 
 ## Data storage and safety
 
@@ -476,25 +555,31 @@ Shiori avoids proprietary storage. Markdown remains the source of truth.
 
 ### Notes
 
-`NOTES.md` is a chronological stream of daily sections:
+`NOTES.md` uses versioned front matter followed by chronological daily sections:
 
 ```markdown
-# YYYY-MM-DD
-* note
-* another note #shiori/topic/example
+---
+version: 1
+---
+
+# 2026-08-22
+* note <!-- shiori:id=20260822-0001 -->
+* another note #shiori/topic/example <!-- shiori:id=20260822-0002 -->
 ```
 
-When adding to an existing day, Shiori:
+The note ID combines the creation date with a per-day sequence. Topic metadata and IDs remain ordinary Markdown text, while the ID comment stays hidden in rendered output.
+
+When changing `NOTES.md`, Shiori:
 
 1. opens `NOTES.md`
 2. writes a modified copy to `NOTES.md.tmp`
-3. locates today's Markdown heading
-4. inserts the new note
-5. backs up the original file
-6. replaces it with the updated file
-7. removes the backup after a successful replacement
+3. creates `NOTES.md.bak` from the previous complete file
+4. replaces the source with the updated file
+5. reads the result back and validates the expected note count
 
-If replacement fails, Shiori attempts to restore the original from its backup.
+If replacement or validation fails, Shiori attempts to restore the original. After a successful change, `NOTES.md.bak` is deliberately retained as a recovery copy and replaced by the previous complete file on the next change.
+
+Shiori-managed note files accept front matter, `# YYYY-MM-DD` headings, and `* ` note items. Operations that rewrite the complete file, such as `note retopic`, `note remove`, and migration, refuse unexpected content rather than silently discarding manually added Markdown.
 
 ### Todos
 
@@ -511,7 +596,7 @@ last_id: 4
 * [x] update screenshots #shiori/id/3 #shiori/created/2026-08-11
 ```
 
-Checkbox markers represent open (`[ ]`), in progress (`[/]`), and done (`[x]`). The optional `#shiori/due/YYYY-MM-DD` tag stores a due date. The front matter maintains the next stable ID. Status changes and other todo rewrites use the same temporary-file, backup, replacement, and restore strategy as notes.
+Checkbox markers represent open (`[ ]`), in progress (`[/]`), and done (`[x]`). The optional `#shiori/due/YYYY-MM-DD` tag stores a due date. The front matter maintains the next stable ID. Todo rewrites also use temporary and backup files, but unlike note rewrites they remove the backup after a successful replacement.
 
 ## Using Shiori with Obsidian
 

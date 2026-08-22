@@ -89,18 +89,22 @@ Current command examples include:
 - `capture`
 - `config`
 - `console`
+- `note`
 - `tag`
 - `today`
 - `todo`
 - `topic`
+- `util`
 
 Before starting the hook, Shiori exports the command name, arguments, and Shiori version as environment variables.
+
+`util completion` writes generated shell code to standard output. If an `after_command` hook also writes to standard output, that hook output is appended to redirected completion output. Keep such hooks quiet or temporarily disable them when generating a reusable completion script.
 
 ## Environment variables
 
 | Variable | Meaning | Example |
 |---|---|---|
-| `SHIORI_VERSION` | Shiori application version. | `0.1.0` |
+| `SHIORI_VERSION` | Shiori application version. | `0.2.0` |
 | `SHIORI_COMMAND` | Top-level command name. | `todo` |
 | `SHIORI_COMMAND_ARGS` | Command arguments joined with single spaces. | `add --due tomorrow prepare release notes` |
 

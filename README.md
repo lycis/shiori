@@ -51,7 +51,8 @@ Shiori keeps the result in ordinary `NOTES.md` and `TODOS.md` files that work wi
 
 - 🦊 **Fast capture** — add one thought or collect many in an interactive session.
 - 📝 **Plain Markdown** — daily notes and task lists remain readable without Shiori.
-- 🪧 **Topics and tags** — organize notes and search related notes and todos together.
+- 🪧 **Managed notes** — use stable IDs to inspect, remove, or retopic captured notes.
+- 🏷️ **Topics and tags** — organize notes and search related notes and todos together.
 - ✅ **Todo workflows** — track status, due dates, tags, and overdue work.
 - 🌅 **Daily dashboard** — review a selected day's notes and active tasks.
 - ✨ **Friendly terminal UI** — colored output, UTF-8 input, suggestions, and Tab completion.
@@ -96,7 +97,8 @@ shiori [options] <command> [options] [subcommand] ...
 | Command | Description |
 |---|---|
 | `init` | Initialize a `.shiori` configuration. |
-| `add` | Add a note to today's section. |
+| `add` | Add a note to today's section (short form of `note add`). |
+| `note` | Add, inspect, retopic, and remove notes by ID. |
 | `capture` | Start an interactive session for rapidly capturing notes and todos. |
 | `topic` | Browse notes by topic or list topic statistics. |
 | `tag` | Find notes and todos containing all specified tags. |
@@ -104,6 +106,7 @@ shiori [options] <command> [options] [subcommand] ...
 | `today` | Show notes and active todos in a daily dashboard. |
 | `config` | View the loaded configuration. |
 | `console` | Start interactive console mode. |
+| `util` | Run migrations and generate shell completion. |
 | `help` | Show command help. |
 | `version` | Display version and build information. |
 
@@ -116,6 +119,7 @@ Use the global `--debug` option for diagnostic output.
 - **[User Guide](docs/USER_GUIDE.md)** — installation, configuration, commands, workflows, storage formats, and troubleshooting
 - **[Hooks Guide](docs/HOOKS.md)** — hook lifecycle, environment variables, examples, security, and limitations
 - **[Contributing](CONTRIBUTING.md)** — development setup and project conventions
+- **[Security](SECURITY.md)** — supported versions and private vulnerability reporting
 
 ---
 
