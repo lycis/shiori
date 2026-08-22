@@ -2,6 +2,7 @@
 #define SHIORI_COLOR_H
 
 #include <stdbool.h>
+#include <stdio.h>
 
 enum color_style {
     COLOR_STYLE_RESET,
@@ -23,8 +24,10 @@ enum color_style {
 };
 
 void color_set_enabled(bool enabled);
+void color_set_stream_enabled(FILE *stream, bool enabled);
 bool color_is_enabled(void);
 const char *color_style_sequence(enum color_style style);
+const char *color_style_sequence_for(FILE *stream, enum color_style style);
 
 #define ANSI_BOLD "\x1b[1m"
 #define ANSI_RESET "\x1b[0m"

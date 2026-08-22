@@ -190,6 +190,14 @@ bool environment_variable_nonempty(const char *name) {
 #endif
 }
 
+bool stream_is_terminal(FILE *stream) {
+#ifdef _WIN32
+    return _isatty(_fileno(stream)) != 0;
+#else
+    return isatty(fileno(stream)) != 0;
+#endif
+}
+
 int run_process(const char *path, const char *working_dir) {
 #ifdef _WIN32
     STARTUPINFOA startup_info = {0};

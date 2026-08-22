@@ -8,9 +8,9 @@ extern bool g_debug_enabled;
 
 static void log_v(FILE *stream, const char *prefix, enum color_style style, const char *fmt, va_list args) {
     fputs(prefix, stream);
-    fputs(color_style_sequence(style), stream);
+    fputs(color_style_sequence_for(stream, style), stream);
     vfprintf(stream, fmt, args);
-    fputs(color_style_sequence(COLOR_STYLE_RESET), stream);
+    fputs(color_style_sequence_for(stream, COLOR_STYLE_RESET), stream);
 }
 
 void log_error(const char *fmt, ...) {

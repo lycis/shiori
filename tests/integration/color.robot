@@ -4,16 +4,16 @@ Test Setup       Create Isolated Test Workspace
 Test Teardown    Remove Isolated Test Workspace
 
 *** Test Cases ***
-Interactive Output Is Colored By Default
+Redirected Standard Output Does Not Contain Color
     Write Shiori Config
     ${result}=    Run Shiori    today
     Shiori Should Succeed    ${result}
-    Output Should Contain ANSI Sequence    ${result.stdout}
+    Output Should Not Contain ANSI Sequence    ${result.stdout}
 
-Error Diagnostics Are Colored By Default
+Redirected Error Output Does Not Contain Color
     ${result}=    Run Shiori    unknown-command
     Shiori Should Fail    ${result}
-    Output Should Contain ANSI Sequence    ${result.stderr}
+    Output Should Not Contain ANSI Sequence    ${result.stderr}
 
 Configuration Can Disable Color
     Write Shiori Config    color=false
@@ -38,8 +38,8 @@ NO_COLOR Overrides Configuration
     Shiori Should Succeed    ${result}
     Output Should Not Contain ANSI Sequence    ${result.stdout}
 
-Empty NO_COLOR Preserves Configured Color
+Empty NO_COLOR Does Not Override Configuration
     Write Shiori Config    color=true
     ${result}=    Run Shiori With NO_COLOR    ${EMPTY}    today
     Shiori Should Succeed    ${result}
-    Output Should Contain ANSI Sequence    ${result.stdout}
+    Output Should Not Contain ANSI Sequence    ${result.stdout}

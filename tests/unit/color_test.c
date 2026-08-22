@@ -35,5 +35,19 @@ int main(void) {
         return 1;
     }
 
+    color_set_stream_enabled(stdout, false);
+    if(strcmp(color_style_sequence(COLOR_STYLE_SUCCESS), "") != 0) {
+        fprintf(stderr, "disabled stdout should not emit styles\n");
+        return 1;
+    }
+
+    color_set_stream_enabled(stdout, true);
+    color_set_stream_enabled(stderr, false);
+    if(strcmp(color_style_sequence_for(stderr, COLOR_STYLE_ERROR), "") != 0 ||
+       strcmp(color_style_sequence(COLOR_STYLE_SUCCESS), COLOR_SUCCESS) != 0) {
+        fprintf(stderr, "stream color policies should be independent\n");
+        return 1;
+    }
+
     return 0;
 }

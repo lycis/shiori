@@ -29,6 +29,7 @@ int get_user_home(char *buffer, size_t size);
 char *get_current_path(char *buffer, size_t size);
 int set_environment_variable(const char *name, const char *value);
 bool environment_variable_nonempty(const char *name);
+bool stream_is_terminal(FILE *stream);
 int run_script_basedir(const char *path);
 
 enum key_type {

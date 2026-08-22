@@ -1,9 +1,19 @@
 #include "color.h"
 
 static bool g_color_enabled = true;
+static bool g_stdout_color_enabled = true;
+static bool g_stderr_color_enabled = true;
 
 void color_set_enabled(bool enabled) {
     g_color_enabled = enabled;
+}
+
+void color_set_stream_enabled(FILE *stream, bool enabled) {
+    if(stream == stderr) {
+        g_stderr_color_enabled = enabled;
+    } else {
+        g_stdout_color_enabled = enabled;
+    }
 }
 
 bool color_is_enabled(void) {
@@ -11,7 +21,13 @@ bool color_is_enabled(void) {
 }
 
 const char *color_style_sequence(enum color_style style) {
-    if(!g_color_enabled) {
+    return color_style_sequence_for(stdout, style);
+}
+
+const char *color_style_sequence_for(FILE *stream, enum color_style style) {
+    bool stream_enabled = stream == stderr ? g_stderr_color_enabled : g_stdout_color_enabled;
+
+    if(!g_color_enabled || !stream_enabled) {
         return "";
     }
 

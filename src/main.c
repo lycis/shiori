@@ -42,6 +42,8 @@ bool g_debug_enabled = false;
 
 int shiori_main(int argc, char *argv[]) {
     terminal_enable_utf8();
+    color_set_stream_enabled(stdout, stream_is_terminal(stdout));
+    color_set_stream_enabled(stderr, stream_is_terminal(stderr));
 
     if(argc > 1) {
 
