@@ -252,7 +252,7 @@ int run_script_basedir(const char *path) {
 static DWORD g_original_console_input_mode = 0;
 static DWORD g_original_console_output_mode = 0;
 
-static bool g_interactive_mode_active = false;
+static size_t g_interactive_mode_depth = 0;
 
 static HANDLE g_console_input = NULL;
 static HANDLE g_console_output = NULL;
@@ -260,6 +260,11 @@ static HANDLE g_console_output = NULL;
 static size_t g_previous_suggestion_lines = 0;
 
 int terminal_enter_interactive_mode(void) {
+    if(g_interactive_mode_depth > 0) {
+        g_interactive_mode_depth++;
+        return R_OK;
+    }
+
     g_console_input = GetStdHandle(STD_INPUT_HANDLE);
     g_console_output = GetStdHandle(STD_OUTPUT_HANDLE);
 
@@ -318,13 +323,19 @@ int terminal_enter_interactive_mode(void) {
         return R_ERROR;
     }
 
-    g_interactive_mode_active = true;
+    g_interactive_mode_depth = 1;
 
     return R_OK;
 }
 
 void terminal_leave_interactive_mode(void) {
-    if(!g_interactive_mode_active) {
+    if(g_interactive_mode_depth == 0) {
+        return;
+    }
+
+    g_interactive_mode_depth--;
+
+    if(g_interactive_mode_depth > 0) {
         return;
     }
 
@@ -336,7 +347,6 @@ void terminal_leave_interactive_mode(void) {
         log_warning("Failed restoring console output mode (error %lu).\n", GetLastError());
     }
 
-    g_interactive_mode_active = false;
 }
 
 void terminal_finish_input_line(void) {

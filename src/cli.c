@@ -185,10 +185,6 @@ int read_interactive_line(
 
     buffer[0] = '\0';
 
-    if(terminal_enter_interactive_mode() != R_OK) {
-        return R_ERROR;
-    }
-
     while(true) {
         struct completion_result completions = {0};
 
@@ -201,7 +197,6 @@ int read_interactive_line(
         struct key_event event;
 
         if(terminal_read_key(&event) != R_OK) {
-            terminal_leave_interactive_mode();
             return R_ERROR;
         }
 
@@ -298,14 +293,12 @@ int read_interactive_line(
         case KEY_ENTER:
             add_history_item(history, buffer);
             terminal_finish_input_line();
-            terminal_leave_interactive_mode();
             return R_OK;
 
         case KEY_ESCAPE:
             buffer[0] = '\0';
 
             terminal_finish_input_line();
-            terminal_leave_interactive_mode();
 
             return R_ERROR;
 

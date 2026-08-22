@@ -6,6 +6,7 @@
 #include "commands.h"
 #include "common.h"
 #include "logging.h"
+#include "platform.h"
 
 static int split_args(char *input, char *argv[], int max_args) {
     int argc = 0;
@@ -91,6 +92,10 @@ int command_capture(int argc, char *argv[]) {
 
     struct command_history history = {0};
 
+    if(terminal_enter_interactive_mode() != R_OK) {
+        return R_ERROR;
+    }
+
     while(true) {
         char prompt[DEFAULT_BUFFER_SIZE];
 
@@ -143,6 +148,7 @@ int command_capture(int argc, char *argv[]) {
         }
     }
 
+    terminal_leave_interactive_mode();
     log_success("Capture mode ended.\n");
 
     return R_OK;

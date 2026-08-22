@@ -6,6 +6,7 @@
 #include "commands.h"
 #include "common.h"
 #include "logging.h"
+#include "platform.h"
 
 struct completion_result
 complete_command_definitions(const char *input, const struct command_definition *commands, size_t command_count) {
@@ -175,6 +176,10 @@ int command_console(int argc, char *argv[]) {
     snprintf(prompt, sizeof(prompt), "%s 🦊> ", APP_NAME);
     struct command_history history = {0};
 
+    if(terminal_enter_interactive_mode() != R_OK) {
+        return R_ERROR;
+    }
+
     while(true) {
         char input[DEFAULT_BUFFER_SIZE];
 
@@ -216,5 +221,6 @@ int command_console(int argc, char *argv[]) {
         run_command(command_argv[0], command_argc - 1, &command_argv[1]);
     }
 
+    terminal_leave_interactive_mode();
     return R_OK;
 }

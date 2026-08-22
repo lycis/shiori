@@ -15,6 +15,7 @@ BUILD_DIR := build
 DEBUG_DIR := $(BUILD_DIR)/debug
 RELEASE_DIR := $(BUILD_DIR)/release
 SANITIZE_DIR := $(BUILD_DIR)/sanitize
+UNIT_TEST_DIR := $(BUILD_DIR)/unit
 
 SOURCES := $(wildcard $(SOURCE_DIR)/*.c)
 HEADERS := $(wildcard $(SOURCE_DIR)/*.h)
@@ -56,8 +57,9 @@ TARGET := shiori$(EXE)
 DEBUG_BINARY := $(DEBUG_DIR)/$(TARGET)
 RELEASE_BINARY := $(RELEASE_DIR)/$(TARGET)
 SANITIZE_BINARY := $(SANITIZE_DIR)/$(TARGET)
+CLI_UNIT_TEST := $(UNIT_TEST_DIR)/cli_test$(EXE)
 
-.PHONY: all debug release sanitize clean run test test-integration test-sanitize format format-check tidy toolchain-check check check-sanitize
+.PHONY: all debug release sanitize clean run test test-unit test-integration test-sanitize format format-check tidy toolchain-check check check-sanitize
 
 all: debug
 
@@ -103,7 +105,14 @@ run: debug
 
 PYTHON ?= python
 
-test: test-integration
+test: test-unit test-integration
+
+test-unit: $(CLI_UNIT_TEST)
+	$(CLI_UNIT_TEST)
+
+$(CLI_UNIT_TEST): tests/unit/cli_test.c $(DEBUG_DIR)/cli.o
+	@$(call MKDIR,$(@D))
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
 
 test-integration: debug
 	$(PYTHON) -m robot --variable SHIORI_BINARY:$(abspath $(DEBUG_BINARY)) --outputdir $(BUILD_DIR)/test-results tests/integration
