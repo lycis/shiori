@@ -70,6 +70,11 @@ Combined Output Should Contain
     ${combined}=    Catenate    SEPARATOR=\n    ${result.stdout}    ${result.stderr}
     Should Contain    ${combined}    ${expected}
 
+Output Should Contain ANSI Sequence
+    [Arguments]    ${output}
+    ${ansi_prefix}=    Evaluate    chr(27) + "["
+    Should Contain    ${output}    ${ansi_prefix}
+
 Data File Should Contain
     [Arguments]    ${filename}    ${expected}
     File Should Exist    ${TEST_DATA}${/}${filename}
