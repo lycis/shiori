@@ -112,7 +112,7 @@ shiori [options] <command> [options] [subcommand] ...
 | `help` | Show command help. |
 | `version` | Display version and build information. |
 
-Use the global `--debug` option for diagnostic output.
+Use the global `--debug` option for diagnostic output. Use `--no-color`, set `color: false` in `.shiori`, or define a non-empty `NO_COLOR` environment variable to disable ANSI colors. Redirected output is plain automatically; see the [user guide](docs/USER_GUIDE.md#color-output) for precedence details.
 
 ---
 

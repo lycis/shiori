@@ -90,9 +90,10 @@ This creates a `.shiori` file similar to:
 # Initialized: ...
 version: 1
 base_dir: C:\path\to\your\notes
+color: true
 ```
 
-By default, `base_dir` is the directory where you ran `shiori init`. Shiori stores `NOTES.md` and `TODOS.md` there.
+By default, `base_dir` is the directory where you ran `shiori init`. Shiori stores `NOTES.md` and `TODOS.md` there. The `color` setting defaults to `true` when it is omitted, so existing configurations keep colored interactive output.
 
 To intentionally recreate an existing local configuration:
 
@@ -142,6 +143,32 @@ shiori [options] <command> [options] [subcommand] ...
 | Option | Description |
 |---|---|
 | `--debug` | Show debug and plumbing output. |
+| `--no-color` | Disable ANSI color sequences. |
+
+### Color output
+
+Shiori colors output when the destination is an interactive terminal and color is enabled in `.shiori`:
+
+```yaml
+color: true
+```
+
+Set `color: false` to disable ANSI color sequences for commands that use that configuration. You can also disable color for an individual invocation:
+
+```console
+shiori --no-color today
+```
+
+Shiori honors the [`NO_COLOR`](https://no-color.org/) convention. A present, non-empty `NO_COLOR` environment variable disables color; an empty value is ignored. Output redirected to a file or pipe is always emitted without ANSI color sequences. Standard output and standard error are detected independently.
+
+The precedence from strongest to weakest is:
+
+1. `--no-color` or a non-empty `NO_COLOR`
+2. output redirection
+3. `color: false` in `.shiori`
+4. colored interactive output by default
+
+No-color output retains Unicode symbols and layout; it removes ANSI styling only.
 
 ### Commands
 
