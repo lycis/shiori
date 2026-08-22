@@ -1,6 +1,20 @@
 #ifndef SHIORI_COLOR_H
 #define SHIORI_COLOR_H
 
+#include <stdbool.h>
+
+enum color_style {
+    COLOR_STYLE_RESET,
+    COLOR_STYLE_SUCCESS,
+    COLOR_STYLE_ERROR,
+    COLOR_STYLE_WARNING,
+    COLOR_STYLE_INFO
+};
+
+void color_set_enabled(bool enabled);
+bool color_is_enabled(void);
+const char *color_style_sequence(enum color_style style);
+
 #define ANSI_BOLD "\x1b[1m"
 #define ANSI_RESET "\x1b[0m"
 #define ANSI_FG_RGB(r, g, b) "\x1b[38;2;" #r ";" #g ";" #b "m"

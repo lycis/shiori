@@ -68,6 +68,7 @@ RELEASE_BINARY := $(RELEASE_DIR)/$(TARGET)
 SANITIZE_BINARY := $(SANITIZE_DIR)/$(TARGET)
 CLI_UNIT_TEST := $(UNIT_TEST_DIR)/cli_test$(EXE)
 TERMINAL_LIFECYCLE_UNIT_TEST := $(UNIT_TEST_DIR)/terminal_lifecycle_test$(EXE)
+COLOR_UNIT_TEST := $(UNIT_TEST_DIR)/color_test$(EXE)
 
 .PHONY: all debug release sanitize clean run test test-unit test-integration test-sanitize format format-check tidy toolchain-check check check-sanitize
 
@@ -122,15 +123,20 @@ PYTHON ?= python
 
 test: test-unit test-integration
 
-test-unit: $(CLI_UNIT_TEST) $(TERMINAL_LIFECYCLE_UNIT_TEST)
+test-unit: $(CLI_UNIT_TEST) $(TERMINAL_LIFECYCLE_UNIT_TEST) $(COLOR_UNIT_TEST)
 	$(call RUN_BINARY,$(CLI_UNIT_TEST))
 	$(call RUN_BINARY,$(TERMINAL_LIFECYCLE_UNIT_TEST))
+	$(call RUN_BINARY,$(COLOR_UNIT_TEST))
 
 $(CLI_UNIT_TEST): tests/unit/cli_test.c $(DEBUG_DIR)/cli.o
 	@$(call MKDIR,$(@D))
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
 
 $(TERMINAL_LIFECYCLE_UNIT_TEST): tests/unit/terminal_lifecycle_test.c $(DEBUG_DIR)/terminal_lifecycle.o
+	@$(call MKDIR,$(@D))
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
+
+$(COLOR_UNIT_TEST): tests/unit/color_test.c $(DEBUG_DIR)/color.o
 	@$(call MKDIR,$(@D))
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
 
