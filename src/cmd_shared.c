@@ -401,6 +401,60 @@ int read_todos(const char *filename, struct todo_list *list) {
     return R_OK;
 }
 
+static bool is_leap_year(int year) {
+    return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+}
+
+static int days_in_month(int year, int month) {
+    static const int days[] = {
+        31, 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
+    };
+
+    if(month == 2 && is_leap_year(year)) {
+        return 29;
+    }
+
+    return days[month - 1];
+}
+
+static bool parse_absolute_date(const char *value, struct tm *parsed) {
+    if(strlen(value) != 10 || value[4] != '-' || value[7] != '-') {
+        return false;
+    }
+
+    for(int i = 0; i < 10; ++i) {
+        if(i == 4 || i == 7) {
+            continue;
+        }
+
+        if(value[i] < '0' || value[i] > '9') {
+            return false;
+        }
+    }
+
+    int year = (value[0] - '0') * 1000 +
+               (value[1] - '0') * 100 +
+               (value[2] - '0') * 10 +
+               (value[3] - '0');
+    int month = (value[5] - '0') * 10 + (value[6] - '0');
+    int day = (value[8] - '0') * 10 + (value[9] - '0');
+
+    if(month < 1 || month > 12 ||
+       day < 1 || day > days_in_month(year, month)) {
+        return false;
+    }
+
+    *parsed = (struct tm){0};
+    parsed->tm_year = year - 1900;
+    parsed->tm_mon = month - 1;
+    parsed->tm_mday = day;
+    parsed->tm_hour = 12;
+    parsed->tm_isdst = -1;
+
+    return true;
+}
+
 int parse_date_arg(const char *value, time_t *result) {
     time_t now = time(NULL);
 
@@ -429,26 +483,15 @@ int parse_date_arg(const char *value, time_t *result) {
         *result = mktime(&date);
     }
     else {
-        struct tm parsed = {0};
+        struct tm parsed;
 
-        if(sscanf_s(
-            value,
-            "%d-%d-%d",
-            &parsed.tm_year,
-            &parsed.tm_mon,
-            &parsed.tm_mday
-        ) != 3) {
+        if(!parse_absolute_date(value, &parsed)) {
             log_error(
                 "Invalid date '%s'. Use YYYY-MM-DD, today, yesterday or tomorrow.\n",
                 value
             );
             return R_ERROR;
         }
-
-        parsed.tm_year -= 1900;
-        parsed.tm_mon -= 1;
-        parsed.tm_hour = 12;
-        parsed.tm_isdst = -1;
 
         *result = mktime(&parsed);
     }

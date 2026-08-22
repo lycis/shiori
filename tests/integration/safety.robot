@@ -75,8 +75,33 @@ Malformed Notes Front Matter Fails Without Rewriting
     No Rewrite Artifacts Should Remain
 
 Invalid Calendar Date Is Rejected
-    [Documentation]    Known defect: mktime normalizes impossible calendar dates instead of rejecting them.
-    [Tags]    robot:skip    known-issue
     ${result}=    Run Shiori    todo    add    --due    2030-02-31    Impossible date
     Shiori Should Fail    ${result}
     File Should Not Exist    ${TEST_DATA}${/}TODOS.md
+
+Invalid Month Lengths And Leap Days Are Rejected
+    FOR    ${date}    IN    2030-04-31    2100-02-29
+        ${result}=    Run Shiori    todo    add    --due    ${date}    Impossible date
+        Shiori Should Fail    ${result}
+        File Should Not Exist    ${TEST_DATA}${/}TODOS.md
+    END
+
+Valid Month Boundaries And Leap Days Are Accepted
+    FOR    ${date}    IN    2030-01-31    2030-04-30    2028-02-29    2000-02-29
+        ${result}=    Run Shiori    todo    add    --due    ${date}    Valid date
+        Shiori Should Succeed    ${result}
+        Data File Should Contain    TODOS.md    \#shiori/due/${date}
+    END
+
+Absolute Dates Require Strict Syntax
+    FOR    ${date}    IN    2030-2-03    2030-02-03junk
+        ${result}=    Run Shiori    todo    add    --due    ${date}    Invalid date
+        Shiori Should Fail    ${result}
+        File Should Not Exist    ${TEST_DATA}${/}TODOS.md
+    END
+
+Relative Dates Remain Supported
+    FOR    ${date}    IN    today    yesterday    tomorrow
+        ${result}=    Run Shiori    todo    add    --due    ${date}    Relative date
+        Shiori Should Succeed    ${result}
+    END
