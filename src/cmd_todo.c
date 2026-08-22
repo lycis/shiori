@@ -507,6 +507,17 @@ struct todo_filter {
 
     const char **tags;
     size_t tag_count;
+
+    enum {
+        TODO_DATE_ANY,
+        TODO_DATE_OVERDUE,
+        TODO_DATE_TODAY,
+        TODO_DATE_THIS_WEEK,
+        TODO_DATE_NONE
+    } date_filter;
+    time_t today;
+    time_t week_start;
+    time_t week_end;
 };
 
 static bool todo_has_tag(const struct todo *item, const char *tag) {
@@ -548,7 +559,78 @@ static bool todo_matches_filter(const struct todo *item, const struct todo_filte
         }
     }
 
-    return true;
+    switch(filter->date_filter) {
+    case TODO_DATE_OVERDUE:
+        return item->due != 0 && compare_dates(item->due, filter->today) < 0;
+    case TODO_DATE_TODAY:
+        return item->due != 0 && compare_dates(item->due, filter->today) == 0;
+    case TODO_DATE_THIS_WEEK:
+        return item->due != 0 && compare_dates(item->due, filter->week_start) >= 0 &&
+               compare_dates(item->due, filter->week_end) <= 0;
+    case TODO_DATE_NONE:
+        return item->due == 0;
+    case TODO_DATE_ANY:
+        return true;
+    }
+
+    return false;
+}
+
+static int initialize_date_filter(struct todo_filter *filter, int argc, char *argv[]) {
+    struct {
+        const char *option;
+        int value;
+    } date_options[] = {
+        {"--overdue", TODO_DATE_OVERDUE},
+        {"--due-today", TODO_DATE_TODAY},
+        {"--due-this-week", TODO_DATE_THIS_WEEK},
+        {"--no-due-date", TODO_DATE_NONE}
+    };
+    size_t selected = 0;
+
+    for(size_t i = 0; i < sizeof(date_options) / sizeof(date_options[0]); ++i) {
+        if(has_switch(argc, argv, date_options[i].option, false)) {
+            filter->date_filter = date_options[i].value;
+            selected++;
+        }
+    }
+
+    if(selected > 1) {
+        log_error("Date filters are mutually exclusive.\n");
+        return R_ERROR;
+    }
+
+    time_t now = time(NULL);
+    if(now == (time_t)-1 || parse_date_arg("today", &filter->today) != R_OK) {
+        log_error("Failed to determine today's date.\n");
+        return R_ERROR;
+    }
+
+    struct tm monday;
+    if(localtime_s(&monday, &filter->today) != 0) {
+        log_error("Failed to determine the current week.\n");
+        return R_ERROR;
+    }
+
+    /* tm_wday uses Sunday=0. Convert it to Monday=0 without locale data. */
+    monday.tm_mday -= (monday.tm_wday + 6) % 7;
+    monday.tm_isdst = -1;
+    filter->week_start = mktime(&monday);
+    if(filter->week_start == (time_t)-1) {
+        log_error("Failed to determine the current week.\n");
+        return R_ERROR;
+    }
+
+    struct tm sunday = monday;
+    sunday.tm_mday += 6;
+    sunday.tm_isdst = -1;
+    filter->week_end = mktime(&sunday);
+    if(filter->week_end == (time_t)-1) {
+        log_error("Failed to determine the current week.\n");
+        return R_ERROR;
+    }
+
+    return R_OK;
 }
 
 static int command_todo_list(int argc, char *argv[]) {
@@ -567,6 +649,10 @@ static int command_todo_list(int argc, char *argv[]) {
             "  %-18s Show completed todos\n"
             "  %-18s Show todos of all statuses\n"
             "  %-18s Filter by tag; may be specified multiple times\n"
+            "  %-18s Show todos due before today\n"
+            "  %-18s Show todos due today\n"
+            "  %-18s Show todos due Monday through Sunday this week\n"
+            "  %-18s Show todos without a due date\n"
             "  %-18s Show this help\n"
             "\n"
             "Examples:\n"
@@ -575,7 +661,8 @@ static int command_todo_list(int argc, char *argv[]) {
             "  %s todo list --all\n"
             "  %s todo list --tag work\n"
             "  %s todo list --tag work --tag urgent\n"
-            "  %s todo list --done --tag work\n",
+            "  %s todo list --done --tag work\n"
+            "  %s todo list --overdue --tag work\n",
             APP_NAME,
             TODO_FILE,
             "--open",
@@ -583,7 +670,12 @@ static int command_todo_list(int argc, char *argv[]) {
             "--done",
             "--all",
             "--tag <tag>",
+            "--overdue",
+            "--due-today",
+            "--due-this-week",
+            "--no-due-date",
             "-h, --help",
+            APP_NAME,
             APP_NAME,
             APP_NAME,
             APP_NAME,
@@ -607,6 +699,11 @@ static int command_todo_list(int argc, char *argv[]) {
 
     // default filter is open and in progress
     struct todo_filter filter = {.show_open = true, .show_in_progress = true, .show_done = false};
+
+    if(initialize_date_filter(&filter, argc, argv) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
 
     bool has_status_filter = has_switch(argc, argv, "--open", false) ||
                              has_switch(argc, argv, "--in-progress", false) ||

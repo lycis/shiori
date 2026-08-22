@@ -413,6 +413,22 @@ shiori todo list --done --tag work
 
 `--tag` may be repeated. A todo must contain every selected tag to match.
 
+Filter by due date:
+
+```console
+shiori todo list --overdue
+shiori todo list --due-today
+shiori todo list --due-this-week
+shiori todo list --no-due-date
+```
+
+`--overdue` means due before today, while `--due-today` matches today exactly.
+`--due-this-week` uses a fixed Monday-through-Sunday calendar week, regardless of
+the system locale. The four date switches are mutually exclusive. A selected date
+filter is combined with status and every `--tag` filter using AND semantics; for
+example, `todo list --done --overdue --tag work` shows completed, overdue todos
+that contain `#work`. Without a date switch, todos are not filtered by due date.
+
 ### Rewrite and remove
 
 Change a todo's text while preserving its ID, status, creation date, and due date:

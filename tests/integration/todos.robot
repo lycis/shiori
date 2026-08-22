@@ -61,6 +61,77 @@ Todo List Filters Status And Tags
     Should Contain        ${filtered.stdout}    Done #work #urgent
     Should Not Contain    ${filtered.stdout}    Open #work
 
+Todo List Filters Due Date With Calendar Boundaries
+    ${today}=          Evaluate    datetime.date.today()    modules=datetime
+    ${weekday}=        Evaluate    $today.weekday()
+    ${monday}=         Evaluate    $today - datetime.timedelta(days=$weekday)    modules=datetime
+    ${sunday}=         Evaluate    $monday + datetime.timedelta(days=6)    modules=datetime
+    ${before_week}=    Evaluate    $monday - datetime.timedelta(days=1)    modules=datetime
+    ${after_week}=     Evaluate    $sunday + datetime.timedelta(days=1)    modules=datetime
+    ${today_text}=     Evaluate    str($today)
+    ${monday_text}=    Evaluate    str($monday)
+    ${sunday_text}=    Evaluate    str($sunday)
+    ${before_text}=    Evaluate    str($before_week)
+    ${after_text}=     Evaluate    str($after_week)
+
+    ${result}=    Run Shiori    todo    add    --due    ${before_text}    Before week #work
+    Shiori Should Succeed    ${result}
+    ${result}=    Run Shiori    todo    add    --due    ${monday_text}    Monday boundary #work
+    Shiori Should Succeed    ${result}
+    ${result}=    Run Shiori    todo    add    --due    ${today_text}    Due today #work
+    Shiori Should Succeed    ${result}
+    ${result}=    Run Shiori    todo    add    --due    ${sunday_text}    Sunday boundary #work
+    Shiori Should Succeed    ${result}
+    ${result}=    Run Shiori    todo    add    --due    ${after_text}    After week #work
+    Shiori Should Succeed    ${result}
+    ${result}=    Run Shiori    todo    add    Unscheduled #work
+    Shiori Should Succeed    ${result}
+
+    ${today_result}=    Run Shiori    todo    list    --due-today
+    Shiori Should Succeed    ${today_result}
+    Should Contain        ${today_result.stdout}    Due today #work
+    Should Not Contain    ${today_result.stdout}    Unscheduled #work
+
+    ${overdue_result}=    Run Shiori    todo    list    --overdue
+    Shiori Should Succeed    ${overdue_result}
+    Should Contain        ${overdue_result.stdout}    Before week #work
+    Should Not Contain    ${overdue_result.stdout}    Due today #work
+
+    ${week_result}=    Run Shiori    todo    list    --due-this-week
+    Shiori Should Succeed    ${week_result}
+    Should Contain        ${week_result.stdout}    Monday boundary #work
+    Should Contain        ${week_result.stdout}    Sunday boundary #work
+    Should Not Contain    ${week_result.stdout}    Before week #work
+    Should Not Contain    ${week_result.stdout}    After week #work
+
+    ${none_result}=    Run Shiori    todo    list    --no-due-date
+    Shiori Should Succeed    ${none_result}
+    Should Contain        ${none_result.stdout}    Unscheduled #work
+    Should Not Contain    ${none_result.stdout}    Due today #work
+
+    ${conflicting}=    Run Shiori    todo    list    --overdue    --due-today
+    Shiori Should Fail    ${conflicting}
+    Combined Output Should Contain    ${conflicting}    Date filters are mutually exclusive
+
+Todo Date Filters Compose With Status And Tags
+    ${yesterday}=         Evaluate    str(datetime.date.today() - datetime.timedelta(days=1))    modules=datetime
+    ${result}=    Run Shiori    todo    add    --due    ${yesterday}    Open overdue #work
+    Shiori Should Succeed    ${result}
+    ${result}=    Run Shiori    todo    add    --due    ${yesterday}    Done overdue #work #urgent
+    Shiori Should Succeed    ${result}
+    ${result}=    Run Shiori    todo    done    1
+    Shiori Should Succeed    ${result}
+
+    ${default}=    Run Shiori    todo    list    --overdue
+    Shiori Should Succeed    ${default}
+    Should Contain        ${default.stdout}    Open overdue #work
+    Should Not Contain    ${default.stdout}    Done overdue #work #urgent
+
+    ${combined}=    Run Shiori    todo    list    --done    --overdue    --tag    work    --tag    urgent
+    Shiori Should Succeed    ${combined}
+    Should Contain        ${combined.stdout}    Done overdue #work #urgent
+    Should Not Contain    ${combined.stdout}    Open overdue #work
+
 Prune Requires Force And Preserves Id Counter
     ${completed}=    Run Shiori    todo    add    Completed
     Shiori Should Succeed    ${completed}
