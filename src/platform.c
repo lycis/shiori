@@ -7,8 +7,10 @@
 #include "color.h"
 #include "common.h"
 #include "config.h"
+#include "input_layout.h"
 #include "logging.h"
 #include "terminal_lifecycle.h"
+#include "utf8.h"
 
 #ifdef _WIN32
 static wchar_t *utf8_path_to_wide(const char *value) {
@@ -293,6 +295,7 @@ static HANDLE g_console_input = NULL;
 static HANDLE g_console_output = NULL;
 
 static size_t g_previous_suggestion_lines = 0;
+static size_t g_input_viewport_start = 0;
 static bool g_console_modes_saved = false;
 static bool g_console_handler_registered = false;
 
@@ -431,7 +434,7 @@ int terminal_enter_interactive_mode(void) {
     g_console_handler_registered = true;
 
     input_mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
-    input_mode |= ENABLE_PROCESSED_INPUT;
+    input_mode |= ENABLE_PROCESSED_INPUT | ENABLE_WINDOW_INPUT;
 
     if(!SetConsoleMode(g_console_input, input_mode)) {
         log_error("Failed enabling interactive input mode (error %lu).\n", GetLastError());
@@ -478,12 +481,14 @@ void terminal_finish_input_line(void) {
     printf("\n");
 
     g_previous_suggestion_lines = 0;
+    g_input_viewport_start = 0;
 
     fflush(stdout);
 }
 
 void terminal_cancel_input_line(void) {
     terminal_clear_input_display();
+    g_input_viewport_start = 0;
 }
 
 static const char *current_token(const char *buffer) {
@@ -502,12 +507,43 @@ static const char *current_token(const char *buffer) {
     return token;
 }
 
+static size_t terminal_visible_width(void) {
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if(g_console_output == NULL || g_console_output == INVALID_HANDLE_VALUE ||
+       !GetConsoleScreenBufferInfo(g_console_output, &info)) {
+        return 1;
+    }
+
+    return (size_t)(info.srWindow.Right - info.srWindow.Left + 1);
+}
+
+static size_t utf8_prefix_for_cell_width(const char *text, size_t maximum_width) {
+    size_t length = strlen(text);
+    size_t offset = 0;
+    size_t width = 0;
+
+    while(offset < length) {
+        size_t next = utf8_next_boundary(text, length, offset);
+        size_t character_width = utf8_range_cell_width(text, offset, next);
+        if(width + character_width > maximum_width) {
+            break;
+        }
+        width += character_width;
+        offset = next;
+    }
+    return offset;
+}
+
 void terminal_render_input(
     const char *prompt,
     const char *buffer,
     size_t cursor,
     const struct completion_result *completions
 ) {
+    size_t terminal_width = terminal_visible_width();
+    struct input_layout layout = calculate_input_layout(prompt, buffer, cursor, terminal_width, g_input_viewport_start);
+    g_input_viewport_start = layout.input_start;
+
     /*
      * Clear the current input line and all suggestion lines
      * left behind by the previous render.
@@ -525,10 +561,8 @@ void terminal_render_input(
         printf("\x1b[%zuA\r", g_previous_suggestion_lines);
     }
 
-    /*
-     * Draw the complete current input.
-     */
-    printf("%s%s", prompt, buffer);
+    fwrite(prompt + layout.prompt_start, 1, strlen(prompt) - layout.prompt_start, stdout);
+    fwrite(buffer + layout.input_start, 1, layout.input_end - layout.input_start, stdout);
 
     /*
      * Completion applies to the current token only.
@@ -561,13 +595,17 @@ void terminal_render_input(
 
             printf("\n\x1b[2K  ");
 
+            size_t suggestion_capacity = terminal_width > 2 ? terminal_width - 2 : 0;
+            size_t suggestion_end = utf8_prefix_for_cell_width(suggestion, suggestion_capacity);
+            size_t colored_prefix_end = typed_length < suggestion_end ? typed_length : suggestion_end;
+
             /*
              * Already typed portion in green.
              */
             printf(
                 "%s%.*s%s",
                 color_style_sequence(COLOR_STYLE_SUCCESS),
-                (int)typed_length,
+                (int)colored_prefix_end,
                 suggestion,
                 color_style_sequence(COLOR_STYLE_RESET)
             );
@@ -576,9 +614,10 @@ void terminal_render_input(
              * Remaining portion in grey.
              */
             printf(
-                "%s%s%s",
+                "%s%.*s%s",
                 color_style_sequence(COLOR_STYLE_COMPLETION_REMAINDER),
-                suggestion + typed_length,
+                (int)(suggestion_end - colored_prefix_end),
+                suggestion + colored_prefix_end,
                 color_style_sequence(COLOR_STYLE_RESET)
             );
 
@@ -595,14 +634,12 @@ void terminal_render_input(
         printf("\r");
     }
 
-    /*
-     * Position the physical terminal cursor at the logical
-     * cursor position.
-     *
-     * cursor is a UTF-8 byte offset into buffer.
-     */
-    printf("%s", prompt);
-    fwrite(buffer, 1, cursor, stdout);
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if(GetConsoleScreenBufferInfo(g_console_output, &info)) {
+        SHORT cursor_x = (SHORT)(info.srWindow.Left + (SHORT)layout.cursor_column);
+        COORD cursor_position = {cursor_x, info.dwCursorPosition.Y};
+        SetConsoleCursorPosition(g_console_output, cursor_position);
+    }
 
     g_previous_suggestion_lines = rendered_suggestions;
 
@@ -625,6 +662,12 @@ int terminal_read_key(struct key_event *event) {
 
         if(records_read == 0) {
             continue;
+        }
+
+        if(record.EventType == WINDOW_BUFFER_SIZE_EVENT) {
+            event->type = KEY_RESIZE;
+            event->codepoint = 0;
+            return R_OK;
         }
 
         if(record.EventType != KEY_EVENT) {

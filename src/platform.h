@@ -44,7 +44,8 @@ enum key_type {
     KEY_HOME,
     KEY_END,
     KEY_UP,
-    KEY_DOWN
+    KEY_DOWN,
+    KEY_RESIZE
 };
 struct key_event {
     enum key_type type;
