@@ -44,13 +44,13 @@ bool has_switch(int argc, char *argv[], const char *sw, bool allow_subcommands) 
 }
 
 void print_divider(size_t width) {
-    printf(COLOR_DIVIDER);
+    printf("%s", color_style_sequence(COLOR_STYLE_DIVIDER));
 
     for(size_t i = 0; i < width; ++i) {
         printf("─");
     }
 
-    printf(ANSI_RESET "\n");
+    printf("%s\n", color_style_sequence(COLOR_STYLE_RESET));
 }
 
 static int

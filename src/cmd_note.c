@@ -116,17 +116,29 @@ int command_note_show(int argc, char *argv[]) {
 
     char date_buffer[DEFAULT_BUFFER_SIZE];
     format_date(note->created, date_buffer, sizeof(date_buffer));
-    printf(COLOR_METADATA "%-15s: %s\n" ANSI_RESET, "Created:", date_buffer);
+    printf(
+        "%s%-15s: %s\n%s",
+        color_style_sequence(COLOR_STYLE_METADATA),
+        "Created:",
+        date_buffer,
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
 
-    printf(COLOR_METADATA "%-15s: %s\n" ANSI_RESET, "Topic:", note->topic);
+    printf(
+        "%s%-15s: %s\n%s",
+        color_style_sequence(COLOR_STYLE_METADATA),
+        "Topic:",
+        note->topic,
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
 
     struct tag_list tags;
     extract_note_tags(note, &tags);
-    printf(COLOR_METADATA "%-15s: ", "Tags:");
+    printf("%s%-15s: ", color_style_sequence(COLOR_STYLE_METADATA), "Tags:");
     for(size_t i = 0; i < tags.count; ++i) {
         printf("#%s ", tags.items[i]);
     }
-    printf(ANSI_RESET "\n\n");
+    printf("%s\n\n", color_style_sequence(COLOR_STYLE_RESET));
 
     printf("%s\n", note->text);
 
@@ -231,7 +243,13 @@ int command_note_retopic(int argc, char *argv[]) {
     if(strcmp(argv[1], "none") == 0) {
         log_success("Removed topic from note %s.\n", argv[0]);
     } else {
-        log_success("Changed topic of note %s to %s[%s]%s.\n", argv[0], COLOR_TOPIC, argv[1], ANSI_RESET);
+        log_success(
+            "Changed topic of note %s to %s[%s]%s.\n",
+            argv[0],
+            color_style_sequence(COLOR_STYLE_TOPIC),
+            argv[1],
+            color_style_sequence(COLOR_STYLE_RESET)
+        );
     }
 
     return R_OK;

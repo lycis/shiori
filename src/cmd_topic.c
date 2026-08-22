@@ -82,7 +82,12 @@ static int command_topic_list() {
         return R_OK;
     }
 
-    printf("%s%s🏷️ Topics%s\n", COLOR_TOPIC, ANSI_BOLD, ANSI_RESET);
+    printf(
+        "%s%s🏷️ Topics%s\n",
+        color_style_sequence(COLOR_STYLE_TOPIC),
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
     print_divider(60);
 
     for(size_t i = 0; i < topic_count; ++i) {
@@ -129,7 +134,13 @@ int command_topic(int argc, char *argv[]) {
     const char *topic = argv[0];
 
     char heading[DEFAULT_BUFFER_SIZE];
-    sprintf(heading, COLOR_TOPIC ANSI_BOLD "🏷️ Topic: %s", topic);
+    sprintf(
+        heading,
+        "%s%s🏷️ Topic: %s",
+        color_style_sequence(COLOR_STYLE_TOPIC),
+        color_style_sequence(COLOR_STYLE_BOLD),
+        topic
+    );
     printf("%s\n", heading);
     print_divider(60);
     printf("\n");
@@ -161,15 +172,21 @@ int command_topic(int argc, char *argv[]) {
                 return R_ERROR;
             }
 
-            printf(ANSI_BOLD);
+            printf("%s", color_style_sequence(COLOR_STYLE_BOLD));
             printf("%s\n", date_heading);
-            printf(ANSI_RESET);
+            printf("%s", color_style_sequence(COLOR_STYLE_RESET));
 
             last_date = list.items[i].created;
             have_last_date = true;
         }
 
-        printf(COLOR_NOTE_ID "   %s " ANSI_RESET " %s\n", list.items[i].id, list.items[i].text);
+        printf(
+            "%s   %s %s %s\n",
+            color_style_sequence(COLOR_STYLE_NOTE_ID),
+            list.items[i].id,
+            color_style_sequence(COLOR_STYLE_RESET),
+            list.items[i].text
+        );
     }
 
     printf("\n");

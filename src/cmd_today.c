@@ -95,12 +95,24 @@ int command_today(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    printf("%s%s%s\n", ANSI_BOLD ANSI_BOLD COLOR_HEADING, heading, ANSI_RESET);
+    printf(
+        "%s%s%s%s\n",
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(COLOR_STYLE_HEADING),
+        heading,
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
     print_divider(60);
     printf("\n");
 
     // Today's notes
-    printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD COLOR_NOTES, "🗒️ Notes", ANSI_RESET);
+    printf(
+        "  %s%s%s%s\n",
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(COLOR_STYLE_NOTES),
+        "🗒️ Notes",
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
     struct note_list note_list;
     note_list_init(&note_list);
     if(read_notes_for_date(NOTES_FILE, selected_date, &note_list) != R_OK) {
@@ -111,12 +123,25 @@ int command_today(int argc, char *argv[]) {
     for(size_t i = 0; i < note_list.count; ++i) {
         char topic[DEFAULT_BUFFER_SIZE];
         if(strlen(note_list.items[i].topic) > 0) {
-            sprintf(topic, COLOR_TOPIC " 🏷️ %s" ANSI_RESET, note_list.items[i].topic);
+            sprintf(
+                topic,
+                "%s 🏷️ %s%s",
+                color_style_sequence(COLOR_STYLE_TOPIC),
+                note_list.items[i].topic,
+                color_style_sequence(COLOR_STYLE_RESET)
+            );
         } else {
             sprintf(topic, "");
         }
 
-        printf(COLOR_NOTE_ID "   %s " ANSI_RESET "%s%s\n", note_list.items[i].id, note_list.items[i].text, topic);
+        printf(
+            "%s   %s %s%s%s\n",
+            color_style_sequence(COLOR_STYLE_NOTE_ID),
+            note_list.items[i].id,
+            color_style_sequence(COLOR_STYLE_RESET),
+            note_list.items[i].text,
+            topic
+        );
     }
 
     note_list_free(&note_list);
@@ -180,15 +205,20 @@ int command_today(int argc, char *argv[]) {
 
     // overdue tasks
     if(overdue_todos.count > 0) {
-        printf("  %s%s%s\n", COLOR_OVERDUE, "⚠️ Overdue", ANSI_RESET);
+        printf(
+            "  %s%s%s\n",
+            color_style_sequence(COLOR_STYLE_ERROR),
+            "⚠️ Overdue",
+            color_style_sequence(COLOR_STYLE_RESET)
+        );
         for(size_t i = 0; i < overdue_todos.count; ++i) {
             struct todo *item = &overdue_todos.items[i];
             printf(
                 "    %s%s %4llu%s  %s\n",
-                COLOR_OVERDUE,
+                color_style_sequence(COLOR_STYLE_ERROR),
                 todo_status_simple_icon(item->status),
                 item->id,
-                ANSI_RESET,
+                color_style_sequence(COLOR_STYLE_RESET),
                 item->text
             );
         }
@@ -197,41 +227,74 @@ int command_today(int argc, char *argv[]) {
     todo_list_free(&overdue_todos);
 
     // today due tasks
-    printf("  %s%s%s\n", COLOR_TODOS, "📅 Due Today", ANSI_RESET);
+    printf(
+        "  %s%s%s\n",
+        color_style_sequence(COLOR_STYLE_TODOS),
+        "📅 Due Today",
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
     if(today_todos.count > 0) {
         for(size_t i = 0; i < today_todos.count; ++i) {
             struct todo *item = &today_todos.items[i];
             printf(
                 "    %s%s %4llu%s  %s\n",
-                COLOR_TODOS,
+                color_style_sequence(COLOR_STYLE_TODOS),
                 todo_status_simple_icon(item->status),
                 item->id,
-                ANSI_RESET,
+                color_style_sequence(COLOR_STYLE_RESET),
                 item->text
             );
         }
     } else {
-        printf(COLOR_SUCCESS "    All clear 👍\n" ANSI_RESET);
+        printf(
+            "%s    All clear 👍\n%s",
+            color_style_sequence(COLOR_STYLE_SUCCESS),
+            color_style_sequence(COLOR_STYLE_RESET)
+        );
     }
     printf("\n");
     todo_list_free(&overdue_todos);
 
     // print active todos
-    printf("  %s%s%s\n", ANSI_BOLD COLOR_IN_PROGRESS, "🚧 In Progress", ANSI_RESET);
+    printf(
+        "  %s%s%s%s\n",
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(COLOR_STYLE_WARNING),
+        "🚧 In Progress",
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
     for(size_t i = 0; i < in_progress_todos.count; ++i) {
         struct todo *item = &in_progress_todos.items[i];
 
-        printf("    %s› %4llu%s  %s\n", ANSI_BOLD, item->id, ANSI_RESET, item->text);
+        printf(
+            "    %s› %4llu%s  %s\n",
+            color_style_sequence(COLOR_STYLE_BOLD),
+            item->id,
+            color_style_sequence(COLOR_STYLE_RESET),
+            item->text
+        );
     }
     todo_list_free(&in_progress_todos);
     printf("\n");
 
     // print open todos
-    printf("  %s%s%s\n", ANSI_BOLD COLOR_OPEN, "📌 Open", ANSI_RESET);
+    printf(
+        "  %s%s%s%s\n",
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(COLOR_STYLE_OPEN),
+        "📌 Open",
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
     for(size_t i = 0; i < open_todos.count; ++i) {
         struct todo *item = &open_todos.items[i];
 
-        printf("    %s· %4llu%s  %s\n", COLOR_OPEN, item->id, ANSI_RESET, item->text);
+        printf(
+            "    %s· %4llu%s  %s\n",
+            color_style_sequence(COLOR_STYLE_OPEN),
+            item->id,
+            color_style_sequence(COLOR_STYLE_RESET),
+            item->text
+        );
     }
     todo_list_free(&open_todos);
 

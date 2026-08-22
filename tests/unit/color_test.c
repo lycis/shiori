@@ -16,9 +16,15 @@ int main(void) {
 
     color_set_enabled(false);
 
-    if(color_is_enabled() || strcmp(color_style_sequence(COLOR_STYLE_ERROR), "") != 0 ||
-       strcmp(color_style_sequence(COLOR_STYLE_RESET), "") != 0) {
-        fprintf(stderr, "disabled styles should be empty\n");
+    for(int style = COLOR_STYLE_RESET; style <= COLOR_STYLE_DIVIDER; ++style) {
+        if(strcmp(color_style_sequence((enum color_style)style), "") != 0) {
+            fprintf(stderr, "disabled style %d should be empty\n", style);
+            return 1;
+        }
+    }
+
+    if(color_is_enabled()) {
+        fprintf(stderr, "color should report disabled\n");
         return 1;
     }
 

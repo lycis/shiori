@@ -530,12 +530,23 @@ void terminal_render_input(
             /*
              * Already typed portion in green.
              */
-            printf("%s%.*s%s", COLOR_COMPLETION_MATCH, (int)typed_length, suggestion, ANSI_RESET);
+            printf(
+                "%s%.*s%s",
+                color_style_sequence(COLOR_STYLE_SUCCESS),
+                (int)typed_length,
+                suggestion,
+                color_style_sequence(COLOR_STYLE_RESET)
+            );
 
             /*
              * Remaining portion in grey.
              */
-            printf("%s%s%s", COLOR_COMPLETION_REMAINDER, suggestion + typed_length, ANSI_RESET);
+            printf(
+                "%s%s%s",
+                color_style_sequence(COLOR_STYLE_COMPLETION_REMAINDER),
+                suggestion + typed_length,
+                color_style_sequence(COLOR_STYLE_RESET)
+            );
 
             rendered_suggestions++;
         }

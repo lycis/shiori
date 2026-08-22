@@ -90,7 +90,12 @@ int command_capture(int argc, char *argv[]) {
     if(topic == NULL) {
         topic = "";
     } else {
-        printf("✍️ Capturing topic: %s%s%s\n", COLOR_TOPIC, topic, ANSI_RESET);
+        printf(
+            "✍️ Capturing topic: %s%s%s\n",
+            color_style_sequence(COLOR_STYLE_TOPIC),
+            topic,
+            color_style_sequence(COLOR_STYLE_RESET)
+        );
         print_divider(60);
         printf("\n");
     }

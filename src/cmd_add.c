@@ -255,14 +255,21 @@ int command_add(int argc, char *argv[]) {
     }
 
     if(n.topic[0] == '\0') {
-        log_success("Added note " COLOR_NOTE_ID "%s" ANSI_RESET ".\n", n.id);
+        log_success(
+            "Added note %s%s%s.\n",
+            color_style_sequence(COLOR_STYLE_NOTE_ID),
+            n.id,
+            color_style_sequence(COLOR_STYLE_RESET)
+        );
     } else {
         log_success(
-            "Added note " COLOR_NOTE_ID "%s" ANSI_RESET " %s[%s]%s\n",
+            "Added note %s%s%s %s[%s]%s\n",
+            color_style_sequence(COLOR_STYLE_NOTE_ID),
             n.id,
-            COLOR_SUCCESS,
+            color_style_sequence(COLOR_STYLE_RESET),
+            color_style_sequence(COLOR_STYLE_SUCCESS),
             n.topic,
-            ANSI_RESET
+            color_style_sequence(COLOR_STYLE_RESET)
         );
     }
     return R_OK;

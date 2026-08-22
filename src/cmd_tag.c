@@ -88,12 +88,24 @@ int command_tag(int argc, char *argv[]) {
     }
 
     char heading[DEFAULT_BUFFER_SIZE];
-    sprintf(heading, COLOR_TAG ANSI_BOLD "🏷️ Tag: %s", argv[0]);
+    sprintf(
+        heading,
+        "%s%s🏷️ Tag: %s",
+        color_style_sequence(COLOR_STYLE_TOPIC),
+        color_style_sequence(COLOR_STYLE_BOLD),
+        argv[0]
+    );
     printf("%s\n", heading);
     print_divider(60);
     printf("\n");
 
-    printf("  %s%s%s\n", ANSI_BOLD ANSI_BOLD COLOR_NOTES, "🗒️ Notes", ANSI_RESET);
+    printf(
+        "  %s%s%s%s\n",
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(COLOR_STYLE_NOTES),
+        "🗒️ Notes",
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
     struct note_list list;
     note_list_init(&list);
     if(read_notes(NOTES_FILE, &list) != R_OK) {
@@ -130,15 +142,21 @@ int command_tag(int argc, char *argv[]) {
                 return R_ERROR;
             }
 
-            printf(ANSI_BOLD);
+            printf("%s", color_style_sequence(COLOR_STYLE_BOLD));
             printf("  %s\n", date_heading);
-            printf(ANSI_RESET);
+            printf("%s", color_style_sequence(COLOR_STYLE_RESET));
 
             last_date = list.items[i].created;
             have_last_date = true;
         }
 
-        printf(COLOR_NOTE_ID "    %s " ANSI_RESET "%s\n", list.items[i].id, list.items[i].text);
+        printf(
+            "%s    %s %s%s\n",
+            color_style_sequence(COLOR_STYLE_NOTE_ID),
+            list.items[i].id,
+            color_style_sequence(COLOR_STYLE_RESET),
+            list.items[i].text
+        );
     }
 
     note_list_free(&list);
@@ -147,7 +165,7 @@ int command_tag(int argc, char *argv[]) {
     print_divider(60);
     printf("\n");
 
-    printf("  %s%s%s\n", COLOR_TODOS, "📌 Todos", ANSI_RESET);
+    printf("  %s%s%s\n", color_style_sequence(COLOR_STYLE_TODOS), "📌 Todos", color_style_sequence(COLOR_STYLE_RESET));
 
     struct todo_list todos;
     todo_list_init(&todos);
@@ -187,7 +205,12 @@ int command_tag(int argc, char *argv[]) {
                 return R_ERROR;
             }
 
-            printf("  %s📅 %s%s", COLOR_DUE_DATE, due_date, ANSI_RESET);
+            printf(
+                "  %s📅 %s%s",
+                color_style_sequence(COLOR_STYLE_DUE_DATE),
+                due_date,
+                color_style_sequence(COLOR_STYLE_RESET)
+            );
         }
 
         printf("\n");

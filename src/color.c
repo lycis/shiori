@@ -26,6 +26,28 @@ const char *color_style_sequence(enum color_style style) {
         return COLOR_WARNING;
     case COLOR_STYLE_INFO:
         return COLOR_INFO;
+    case COLOR_STYLE_BOLD:
+        return ANSI_BOLD;
+    case COLOR_STYLE_TOPIC:
+        return COLOR_TOPIC;
+    case COLOR_STYLE_TODOS:
+        return COLOR_TODOS;
+    case COLOR_STYLE_NOTES:
+        return COLOR_NOTES;
+    case COLOR_STYLE_DUE_DATE:
+        return COLOR_DUE_DATE;
+    case COLOR_STYLE_HEADING:
+        return COLOR_HEADING;
+    case COLOR_STYLE_NOTE_ID:
+        return COLOR_NOTE_ID;
+    case COLOR_STYLE_METADATA:
+        return COLOR_METADATA;
+    case COLOR_STYLE_OPEN:
+        return COLOR_OPEN;
+    case COLOR_STYLE_COMPLETION_REMAINDER:
+        return COLOR_COMPLETION_REMAINDER;
+    case COLOR_STYLE_DIVIDER:
+        return COLOR_DIVIDER;
     default:
         return "";
     }
