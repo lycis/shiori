@@ -16,10 +16,12 @@ DEBUG_DIR := $(BUILD_DIR)/debug
 RELEASE_DIR := $(BUILD_DIR)/release
 SANITIZE_DIR := $(BUILD_DIR)/sanitize
 UNIT_TEST_DIR := $(BUILD_DIR)/unit
+TOOLCHAIN_CHECK_DIR := $(BUILD_DIR)/toolchain-check
+TOOLCHAIN_CHECK_SOURCE := tests/toolchain/windows_sdk_check.c
 
 SOURCES := $(wildcard $(SOURCE_DIR)/*.c)
 HEADERS := $(wildcard $(SOURCE_DIR)/*.h)
-FORMAT_FILES := $(SOURCES) $(HEADERS)
+FORMAT_FILES := $(SOURCES) $(HEADERS) $(TOOLCHAIN_CHECK_SOURCE)
 DEBUG_OBJECTS := $(patsubst $(SOURCE_DIR)/%.c,$(DEBUG_DIR)/%.o,$(SOURCES))
 RELEASE_OBJECTS := $(patsubst $(SOURCE_DIR)/%.c,$(RELEASE_DIR)/%.o,$(SOURCES))
 SANITIZE_OBJECTS := $(patsubst $(SOURCE_DIR)/%.c,$(SANITIZE_DIR)/%.o,$(SOURCES))
@@ -37,6 +39,7 @@ ifeq ($(OS),Windows_NT)
     SANITIZER_RUNTIME := $(shell $(CC) -print-resource-dir)/lib/windows/clang_rt.asan_dynamic-x86_64.dll
     COPY_SANITIZER_RUNTIME = copy /Y "$(subst /,\,$(SANITIZER_RUNTIME))" "$(subst /,\,$(SANITIZE_DIR))" >NUL
     VERIFY_LLVM_VERSION = findstr /C:"version $(LLVM_VERSION)" >NUL
+    WINDOWS_SDK_CHECK := $(TOOLCHAIN_CHECK_DIR)/windows_sdk_check.exe
     RM_BUILD = if exist "$(subst /,\,$(BUILD_DIR))" rmdir /S /Q "$(subst /,\,$(BUILD_DIR))"
     RM_TARGET = if exist "$(TARGET)" del /Q "$(TARGET)" & if exist "$(TARGET:.exe=.pdb)" del /Q "$(TARGET:.exe=.pdb)"
 else
@@ -64,12 +67,17 @@ TERMINAL_LIFECYCLE_UNIT_TEST := $(UNIT_TEST_DIR)/terminal_lifecycle_test$(EXE)
 
 all: debug
 
-debug release sanitize format format-check tidy: toolchain-check
+debug release sanitize format format-check tidy test-unit: toolchain-check
 
 toolchain-check:
 	@$(CC) --version | $(VERIFY_LLVM_VERSION)
 	@$(CLANG_FORMAT) --version | $(VERIFY_LLVM_VERSION)
 	@$(CLANG_TIDY) --version | $(VERIFY_LLVM_VERSION)
+ifeq ($(OS),Windows_NT)
+	@$(call MKDIR,$(TOOLCHAIN_CHECK_DIR))
+	@$(CC) $(CFLAGS) $(TOOLCHAIN_CHECK_SOURCE) $(LDFLAGS) -o $(WINDOWS_SDK_CHECK) >NUL 2>&1 || (echo ERROR: Clang cannot compile and link with the MSVC and Windows SDK toolchain. & echo Install Visual Studio Build Tools with the Desktop development with C++ workload, then run this build from an x64 Native Tools Command Prompt. & exit /b 1)
+	@del /Q "$(subst /,\,$(WINDOWS_SDK_CHECK))" "$(subst /,\,$(WINDOWS_SDK_CHECK:.exe=.pdb))" 2>NUL
+endif
 
 debug: $(DEBUG_BINARY)
 	@$(call COPY_TARGET,$<)
@@ -121,10 +129,10 @@ $(TERMINAL_LIFECYCLE_UNIT_TEST): tests/unit/terminal_lifecycle_test.c $(DEBUG_DI
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
 
 test-integration: debug
-	$(PYTHON) -m robot --variable SHIORI_BINARY:$(abspath $(DEBUG_BINARY)) --outputdir $(BUILD_DIR)/test-results tests/integration
+	$(PYTHON) -m robot --variable SHIORI_BINARY:$(abspath $(DEBUG_BINARY)) --outputdir $(BUILD_DIR)/test-results --xunit xunit.xml tests/integration
 
 test-sanitize: sanitize
-	$(PYTHON) -m robot --variable SHIORI_BINARY:$(abspath $(SANITIZE_BINARY)) --outputdir $(BUILD_DIR)/sanitize-test-results tests/integration
+	$(PYTHON) -m robot --variable SHIORI_BINARY:$(abspath $(SANITIZE_BINARY)) --outputdir $(BUILD_DIR)/sanitize-test-results --xunit xunit.xml tests/integration
 
 format:
 	$(CLANG_FORMAT) -i $(FORMAT_FILES)

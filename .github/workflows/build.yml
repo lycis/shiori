@@ -31,37 +31,27 @@ jobs:
           tar -xf $archive -C $env:RUNNER_TEMP
           "$directory\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Verify LLVM toolchain
-        shell: pwsh
-        run: |
-          $expected = (Get-Content .llvm-version -Raw).Trim()
-          $actual = (clang-format --version) -replace '^.*?(\d+\.\d+\.\d+).*$','$1'
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: requirements-test.txt
 
-          clang --version
-          clang-format --version
-          clang-tidy --version
+      - name: Install integration test dependencies
+        run: python -m pip install -r requirements-test.txt
 
-          if ($actual -ne $expected) {
-            throw "Expected LLVM $expected but found $actual"
-          }
+      - name: Verify supported toolchain
+        run: make toolchain-check
 
-      - name: Check C formatting
-        shell: pwsh
-        run: |
-          $files = Get-ChildItem src -Include *.c,*.h -File -Recurse | ForEach-Object FullName
-          clang-format --dry-run --Werror $files
+      - name: Run project checks
+        run: make check
 
-      - name: Run static analysis
-        shell: pwsh
-        run: |
-          $sources = Get-ChildItem src -Filter *.c | ForEach-Object FullName
-          clang-tidy '--warnings-as-errors=*' $sources -- -std=c23 -Isrc -Wall -Wextra -Wpedantic -Werror
+      - name: Run integration tests with sanitizers
+        run: make check-sanitize
 
       - name: Build release executable
-        shell: pwsh
-        run: |
-          $sources = Get-ChildItem src -Filter *.c | ForEach-Object FullName
-          clang -std=c23 -Wall -Wextra -Wpedantic -Werror -O2 -fms-runtime-lib=static $sources -o shiori.exe
+        run: make release
 
       - name: Verify self-contained runtime
         shell: pwsh
@@ -80,45 +70,6 @@ jobs:
 
       - name: Smoke-check executable
         run: .\shiori.exe version
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-          cache: pip
-          cache-dependency-path: requirements-test.txt
-
-      - name: Install integration test dependencies
-        run: python -m pip install -r requirements-test.txt
-
-      - name: Run integration tests
-        shell: pwsh
-        run: |
-          python -m robot `
-            --variable "SHIORI_BINARY:$((Resolve-Path .\shiori.exe).Path)" `
-            --outputdir build/test-results `
-            --xunit xunit.xml `
-            tests/integration
-
-      - name: Build AddressSanitizer executable
-        shell: pwsh
-        run: |
-          $sources = Get-ChildItem src -Filter *.c | ForEach-Object FullName
-          clang `
-            -std=c23 -Wall -Wextra -Wpedantic -Werror `
-            -O1 -g -fno-omit-frame-pointer -fsanitize=address `
-            $sources -o build/shiori-sanitize.exe
-          $resourceDir = clang -print-resource-dir
-          Copy-Item "$resourceDir\lib\windows\clang_rt.asan_dynamic-x86_64.dll" build
-
-      - name: Run integration tests with AddressSanitizer
-        shell: pwsh
-        run: |
-          python -m robot `
-            --variable "SHIORI_BINARY:$((Resolve-Path .\build\shiori-sanitize.exe).Path)" `
-            --outputdir build/sanitize-test-results `
-            --xunit xunit.xml `
-            tests/integration
 
       - name: Upload integration test results
         if: always()

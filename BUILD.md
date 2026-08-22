@@ -25,9 +25,10 @@ make toolchain-check
 
 On Windows, run the build from an x64 Native Tools/Developer Command Prompt,
 or first load the equivalent Visual Studio developer environment. LLVM's
-Windows target uses the MSVC and Windows SDK headers and libraries; a normal
-shell without that environment can fail with errors such as `stdio.h file not
-found` even when `clang --version` works.
+Windows target uses the MSVC and Windows SDK headers and libraries. The
+`toolchain-check` target compiles and links a small probe so a normal shell
+without that environment stops immediately with setup instructions instead of
+failing later on a missing standard header or library.
 
 Install the Python test dependency with:
 
@@ -118,21 +119,23 @@ make test PYTHON=py
 
 `.github/workflows/build.yml` runs on Windows for pushes to `main`, pull
 requests, and manual dispatches. It downloads the LLVM version named in
-`.llvm-version`, checks formatting and static analysis, compiles an optimized
-Windows x64 executable, verifies that no dynamic C/C++ runtime DLL is imported,
-runs the integration suite against both the release and AddressSanitizer
-builds, and uploads `shiori.exe` as the `shiori-windows-x64` artifact.
-
-The CI release compile is expressed directly as a Clang command rather than by
-calling the Makefile:
+`.llvm-version`, installs the Python test dependency, and uses the same
+Makefile targets as local development:
 
 ```console
-clang -std=c23 -Wall -Wextra -Wpedantic -Werror -O2 \
-  -fms-runtime-lib=static src/*.c -o shiori.exe
+make toolchain-check
+make check
+make check-sanitize
+make release
 ```
 
+This covers formatting, static analysis, C unit tests, integration tests, and
+the AddressSanitizer integration run. CI then verifies that the release imports
+no dynamic C/C++ runtime DLL and uploads `shiori.exe` as the
+`shiori-windows-x64` artifact.
+
 `.github/workflows/release-build.yml` runs for tags shaped like `X.Y.Z`. It
-performs the same optimized Windows build and runtime check, then packages
+uses `make release`, performs the same runtime check, then packages
 `shiori.exe`, `LICENSE`, and `README.md` as
 `shiori-X.Y.Z-windows-x64.zip` and generates a SHA-256 checksum file.
 
