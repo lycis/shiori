@@ -28,6 +28,10 @@ SANITIZE_OBJECTS := $(patsubst $(SOURCE_DIR)/%.c,$(SANITIZE_DIR)/%.o,$(SOURCES))
 DEPENDENCIES := $(DEBUG_OBJECTS:.o=.d) $(RELEASE_OBJECTS:.o=.d) $(SANITIZE_OBJECTS:.o=.d)
 
 ifeq ($(OS),Windows_NT)
+    # GitHub Actions and Git for Windows may export SHELL=/usr/bin/bash.
+    # These recipes use cmd.exe syntax, so select the supported shell explicitly.
+    SHELL := cmd.exe
+    .SHELLFLAGS := /C
     EXE := .exe
     # Link the MSVC C runtime into shiori.exe. Windows system DLLs such as
     # KERNEL32.dll remain normal operating-system dependencies.
@@ -35,6 +39,7 @@ ifeq ($(OS),Windows_NT)
     LDFLAGS += -fms-runtime-lib=static
     SANITIZERS := address
     MKDIR = if not exist "$(subst /,\,$1)" mkdir "$(subst /,\,$1)"
+    RUN_BINARY = "$(subst /,\,$1)"
     COPY_TARGET = copy /Y "$(subst /,\,$1)" "$(TARGET)" >NUL
     SANITIZER_RUNTIME := $(shell $(CC) -print-resource-dir)/lib/windows/clang_rt.asan_dynamic-x86_64.dll
     COPY_SANITIZER_RUNTIME = copy /Y "$(subst /,\,$(SANITIZER_RUNTIME))" "$(subst /,\,$(SANITIZE_DIR))" >NUL
@@ -45,6 +50,7 @@ ifeq ($(OS),Windows_NT)
 else
     EXE :=
     MKDIR = mkdir -p "$1"
+    RUN_BINARY = "$1"
     COPY_TARGET = cp "$1" "$(TARGET)"
     COPY_SANITIZER_RUNTIME =
     VERIFY_LLVM_VERSION = grep -F "version $(LLVM_VERSION)" >/dev/null
@@ -110,15 +116,15 @@ $(SANITIZE_DIR)/%.o: $(SOURCE_DIR)/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(SANITIZEFLAGS) -MMD -MP -c $< -o $@
 
 run: debug
-	./$(TARGET)
+	$(call RUN_BINARY,$(TARGET))
 
 PYTHON ?= python
 
 test: test-unit test-integration
 
 test-unit: $(CLI_UNIT_TEST) $(TERMINAL_LIFECYCLE_UNIT_TEST)
-	$(CLI_UNIT_TEST)
-	$(TERMINAL_LIFECYCLE_UNIT_TEST)
+	$(call RUN_BINARY,$(CLI_UNIT_TEST))
+	$(call RUN_BINARY,$(TERMINAL_LIFECYCLE_UNIT_TEST))
 
 $(CLI_UNIT_TEST): tests/unit/cli_test.c $(DEBUG_DIR)/cli.o
 	@$(call MKDIR,$(@D))
