@@ -46,6 +46,7 @@ int command_init(int argc, char *argv[]) {
     char buffer[DEFAULT_BUFFER_SIZE];
     get_current_path(buffer, DEFAULT_BUFFER_SIZE);
     fprintf(config_file, "base_dir: %s\n", buffer);
+    fprintf(config_file, "color: true\n");
 
     fclose(config_file);
 

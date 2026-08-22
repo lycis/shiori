@@ -15,6 +15,7 @@ int read_config_file() {
 
     // clear the whole config
     memset(&g_config, 0, sizeof(g_config));
+    g_config.color = true;
 
     char config_path[DEFAULT_BUFFER_SIZE];
 
@@ -88,6 +89,16 @@ int read_config_file() {
                 strcpy_s(g_config.base_dir, sizeof(g_config.base_dir), value);
             } else {
                 log_error("invalid configuration (line %d): Empty base directory is not permitted.\n", lnr);
+            }
+        } else if(strcmp(key, "color") == 0) {
+            if(strcmp(value, "true") == 0) {
+                g_config.color = true;
+            } else if(strcmp(value, "false") == 0) {
+                g_config.color = false;
+            } else {
+                log_error("invalid configuration (line %d): color must be true or false.\n", lnr);
+                fclose(config_file);
+                return R_ERROR;
             }
         } else if(strcmp(key, "hook_after_command") == 0) {
             if(strlen(value) > 0) {

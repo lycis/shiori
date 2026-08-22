@@ -11,6 +11,7 @@ Init Creates Local Configuration
     ${config}=    Get File    ${TEST_CWD}${/}.shiori    encoding=UTF-8
     Should Contain    ${config}    version: 1
     Should Contain    ${config}    base_dir: ${TEST_CWD}
+    Should Contain    ${config}    color: true
 
 Init Refuses To Overwrite Configuration
     ${first}=     Run Shiori    init
@@ -47,3 +48,21 @@ Home Configuration Is Used As Fallback
     ${result}=    Run Shiori    config    show
     Shiori Should Succeed    ${result}
     Should Contain    ${result.stdout}    base_dir: ${TEST_DATA}
+
+Missing Color Setting Defaults To True
+    Write Shiori Config
+    ${result}=    Run Shiori    config    show
+    Shiori Should Succeed    ${result}
+    Should Contain    ${result.stdout}    color: true
+
+Color Setting Accepts False
+    Write Shiori Config    color=false
+    ${result}=    Run Shiori    config    show
+    Shiori Should Succeed    ${result}
+    Should Contain    ${result.stdout}    color: false
+
+Invalid Color Setting Is Rejected
+    Write Shiori Config    color=sometimes
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    color must be true or false

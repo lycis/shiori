@@ -9,6 +9,7 @@ struct config_hooks {
 struct configuration {
     int version;
     char base_dir[4096];
+    bool color;
     struct config_hooks hooks;
 };
 

@@ -23,6 +23,7 @@ int command_config(int argc, char *argv[]) {
     if(strcmp(argv[0], "show") == 0) {
         printf("version: %d\n", g_config.version);
         printf("base_dir: %s\n", g_config.base_dir);
+        printf("color: %s\n", g_config.color ? "true" : "false");
         printf("\n");
         printf("hooks:\n");
         printf(
