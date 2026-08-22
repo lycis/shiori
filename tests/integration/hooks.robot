@@ -28,6 +28,21 @@ Successful Command Invokes Hook With Environment
     Should Contain    ${hook_result}    command=add
     Should Contain    ${hook_result}    args=Hook argument with spaces
 
+Relative Base Directory Invokes Hook Outside Base Directory
+    Set Test Variable    ${TEST_DATA}    ${TEST_CWD}${/}data
+    Create Directory    ${TEST_DATA}
+    ${hook}=    Catenate    SEPARATOR=\n
+    ...    @echo off
+    ...    > hook-result.txt echo cwd=%CD%
+    Create File    ${TEST_DATA}${/}record-hook.cmd    ${hook}${\n}    encoding=UTF-8
+    Write Shiori Config    base_dir=data    hook=record-hook.cmd
+
+    ${result}=    Run Shiori    add    Relative base directory hook
+    Shiori Should Succeed    ${result}
+    File Should Exist    ${TEST_DATA}${/}hook-result.txt
+    ${hook_result}=    Get File    ${TEST_DATA}${/}hook-result.txt    encoding=UTF-8
+    Should Contain    ${hook_result}    cwd=${TEST_DATA}
+
 Failing Hook Does Not Undo Successful Command
     ${hook}=    Catenate    SEPARATOR=\n
     ...    @echo off

@@ -244,9 +244,22 @@ int run_script_basedir(const char *path) {
         return -1;
     }
 
+    char working_dir[DEFAULT_BUFFER_SIZE];
+
+#ifdef _WIN32
+    if(_fullpath(working_dir, g_config.base_dir, sizeof(working_dir)) == NULL) {
+        log_error("Could not resolve base directory '%s'.\n", g_config.base_dir);
+        return -1;
+    }
+#else
+#error not implemented
+#endif
+
     char script_path[DEFAULT_BUFFER_SIZE * 2];
 
-    if(get_base_dir_file_path(path, script_path, sizeof(script_path)) != R_OK) {
+    int script_path_written =
+        snprintf(script_path, sizeof(script_path), "%s%s%s", working_dir, get_path_separator(), path);
+    if(script_path_written < 0 || (size_t)script_path_written >= sizeof(script_path)) {
         log_error("Script path is too long.\n");
         return -1;
     }
@@ -260,13 +273,13 @@ int run_script_basedir(const char *path) {
             return -1;
         }
 
-        return run_process(command, g_config.base_dir);
+        return run_process(command, working_dir);
     }
 #else
 #error not implemented
 #endif
 
-    return run_process(script_path, g_config.base_dir);
+    return run_process(script_path, working_dir);
 }
 
 // Terminal rendering functions
