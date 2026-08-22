@@ -86,5 +86,31 @@
     <div><span class="fox">🦊</span><p><strong>Write it down.<br>Keep moving.</strong></p></div>
     <p>Shiori is open source under the <a href="https://github.com/lycis/shiori/blob/main/LICENSE">MIT License</a>.<br>Made for the command line, with care.</p>
   </footer>
+
+  <button class="ai-note-trigger" type="button" aria-haspopup="dialog" aria-controls="ai-note">
+    <span class="ai-mark" aria-hidden="true">AI</span>
+    <span>How AI is used</span>
+  </button>
+
+  <dialog class="ai-note" id="ai-note" aria-labelledby="ai-note-title">
+    <form method="dialog">
+      <button class="dialog-close" type="submit" aria-label="Close AI note">×</button>
+      <p class="kicker">Transparency note</p>
+      <h2 id="ai-note-title">A note on AI</h2>
+      <p>Shiori uses AI as a supporting tool for planning features, reviewing ideas, and checking implementations. The code itself is owned, crafted, understood, and maintained by a human.</p>
+      <p>This is not a vibe-coded project. Shiori is developed by an experienced software engineer who enjoys writing code and takes responsibility for every technical decision.</p>
+      <p>AI is given more leeway when helping with documentation and this website, areas where its assistance is especially welcome. Ultimately, however, the project and everything published under its name remain human-directed and human-owned.</p>
+    </form>
+  </dialog>
+
+  <script>
+    const aiNoteTrigger = document.querySelector('.ai-note-trigger');
+    const aiNote = document.querySelector('#ai-note');
+
+    aiNoteTrigger.addEventListener('click', () => aiNote.showModal());
+    aiNote.addEventListener('click', (event) => {
+      if (event.target === aiNote) aiNote.close();
+    });
+  </script>
 </body>
 </html>
