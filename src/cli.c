@@ -167,7 +167,7 @@ static void recall_history_item(char *buffer, size_t buffer_size, size_t *length
     *cursor = *length;
 }
 
-int read_interactive_line(
+enum interactive_read_result read_interactive_line(
     const char *prompt,
     char *buffer,
     size_t buffer_size,
@@ -175,7 +175,7 @@ int read_interactive_line(
     struct command_history *history
 ) {
     if(prompt == NULL || buffer == NULL || buffer_size == 0) {
-        return R_ERROR;
+        return INTERACTIVE_READ_FAILED;
     }
 
     size_t length = 0;
@@ -197,7 +197,8 @@ int read_interactive_line(
         struct key_event event;
 
         if(terminal_read_key(&event) != R_OK) {
-            return R_ERROR;
+            terminal_cancel_input_line();
+            return INTERACTIVE_READ_FAILED;
         }
 
         switch(event.type) {
@@ -293,14 +294,14 @@ int read_interactive_line(
         case KEY_ENTER:
             add_history_item(history, buffer);
             terminal_finish_input_line();
-            return R_OK;
+            return INTERACTIVE_READ_ACCEPTED;
 
         case KEY_ESCAPE:
             buffer[0] = '\0';
 
-            terminal_finish_input_line();
+            terminal_cancel_input_line();
 
-            return R_ERROR;
+            return INTERACTIVE_READ_CANCELLED;
 
         case KEY_LEFT:
             if(cursor > 0) {

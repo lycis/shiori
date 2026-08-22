@@ -161,9 +161,13 @@ int command_console(int argc, char *argv[]) {
         printf(
             "You can enter %s commands directly in the console. "
             "This helps as you do not have to run `%s <command>` all the time. "
-            "Useful if you want to work continuously.\n",
+            "Useful if you want to work continuously.\n"
+            "\n"
+            "Enter 'exit' or 'quit' to end the session, Escape to cancel it, "
+            "or Ctrl+C to interrupt Shiori with exit status %d.\n",
             APP_NAME,
-            APP_NAME
+            APP_NAME,
+            SHIORI_EXIT_INTERRUPTED
         );
 
         return R_OK;
@@ -175,6 +179,7 @@ int command_console(int argc, char *argv[]) {
     char prompt[DEFAULT_BUFFER_SIZE];
     snprintf(prompt, sizeof(prompt), "%s 🦊> ", APP_NAME);
     struct command_history history = {0};
+    int result = R_OK;
 
     if(terminal_enter_interactive_mode() != R_OK) {
         return R_ERROR;
@@ -183,8 +188,16 @@ int command_console(int argc, char *argv[]) {
     while(true) {
         char input[DEFAULT_BUFFER_SIZE];
 
-        if(read_interactive_line(prompt, input, sizeof(input), console_completion, &history) != R_OK) {
+        enum interactive_read_result read_result =
+            read_interactive_line(prompt, input, sizeof(input), console_completion, &history);
+
+        if(read_result == INTERACTIVE_READ_CANCELLED) {
+            break;
+        }
+
+        if(read_result == INTERACTIVE_READ_FAILED) {
             log_error("Failed reading console input.\n");
+            result = R_ERROR;
             break;
         }
 
@@ -222,5 +235,5 @@ int command_console(int argc, char *argv[]) {
     }
 
     terminal_leave_interactive_mode();
-    return R_OK;
+    return result;
 }

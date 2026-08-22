@@ -48,6 +48,8 @@ int command_capture(int argc, char *argv[]) {
             "  %-22s Add a todo\n"
             "  %-22s Add a todo with a due date\n"
             "  %-22s End the capture session\n"
+            "  %-22s Cancel the capture session\n"
+            "  %-22s Interrupt Shiori (exit status %d)\n"
             "\n"
             "Examples:\n"
             "  %s capture\n"
@@ -59,6 +61,9 @@ int command_capture(int argc, char *argv[]) {
             "! <text>",
             "! --due <date> <text>",
             "/done, /exit, /quit",
+            "Escape",
+            "Ctrl+C",
+            SHIORI_EXIT_INTERRUPTED,
             APP_NAME,
             APP_NAME
         );
@@ -91,6 +96,7 @@ int command_capture(int argc, char *argv[]) {
     }
 
     struct command_history history = {0};
+    int result = R_OK;
 
     if(terminal_enter_interactive_mode() != R_OK) {
         return R_ERROR;
@@ -107,8 +113,16 @@ int command_capture(int argc, char *argv[]) {
 
         char input[DEFAULT_BUFFER_SIZE];
 
-        if(read_interactive_line(prompt, input, sizeof(input), capture_completion, &history) != R_OK) {
+        enum interactive_read_result read_result =
+            read_interactive_line(prompt, input, sizeof(input), capture_completion, &history);
+
+        if(read_result == INTERACTIVE_READ_CANCELLED) {
+            break;
+        }
+
+        if(read_result == INTERACTIVE_READ_FAILED) {
             log_critical("Failed to read interactive input.\n");
+            result = R_ERROR;
             break;
         }
 
@@ -151,5 +165,5 @@ int command_capture(int argc, char *argv[]) {
     terminal_leave_interactive_mode();
     log_success("Capture mode ended.\n");
 
-    return R_OK;
+    return result;
 }

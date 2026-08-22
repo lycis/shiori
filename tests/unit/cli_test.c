@@ -7,7 +7,9 @@
 static int enter_calls = 0;
 static int leave_calls = 0;
 static int finish_calls = 0;
+static int cancel_calls = 0;
 static size_t event_index = 0;
+static bool send_escape = false;
 
 int terminal_enter_interactive_mode(void) {
     enter_calls++;
@@ -34,6 +36,10 @@ void terminal_finish_input_line(void) {
     finish_calls++;
 }
 
+void terminal_cancel_input_line(void) {
+    cancel_calls++;
+}
+
 int terminal_read_key(struct key_event *event) {
     static const struct key_event events[] = {
         {KEY_CHARACTER, 'h'},
@@ -41,7 +47,21 @@ int terminal_read_key(struct key_event *event) {
         {KEY_ENTER, 0},
     };
 
-    if(event == NULL || event_index >= sizeof(events) / sizeof(events[0])) {
+    if(event == NULL) {
+        return R_ERROR;
+    }
+
+    if(send_escape) {
+        if(event_index > 0) {
+            return R_ERROR;
+        }
+
+        *event = (struct key_event){KEY_ESCAPE, 0};
+        event_index++;
+        return R_OK;
+    }
+
+    if(event_index >= sizeof(events) / sizeof(events[0])) {
         return R_ERROR;
     }
 
@@ -53,9 +73,9 @@ int main(void) {
     char buffer[16];
     struct command_history history = {0};
 
-    int result = read_interactive_line("> ", buffer, sizeof(buffer), NULL, &history);
+    enum interactive_read_result result = read_interactive_line("> ", buffer, sizeof(buffer), NULL, &history);
 
-    if(result != R_OK) {
+    if(result != INTERACTIVE_READ_ACCEPTED) {
         fprintf(stderr, "read_interactive_line returned %d\n", result);
         return 1;
     }
@@ -75,8 +95,25 @@ int main(void) {
         return 1;
     }
 
+    if(cancel_calls != 0) {
+        fprintf(stderr, "accepted input unexpectedly cancelled the line\n");
+        return 1;
+    }
+
     if(history.count != 1 || strcmp(history.items[0], "hi") != 0) {
         fprintf(stderr, "submitted line was not added to history\n");
+        return 1;
+    }
+
+    event_index = 0;
+    send_escape = true;
+    finish_calls = 0;
+    cancel_calls = 0;
+
+    result = read_interactive_line("> ", buffer, sizeof(buffer), NULL, &history);
+
+    if(result != INTERACTIVE_READ_CANCELLED || finish_calls != 0 || cancel_calls != 1) {
+        fprintf(stderr, "Escape did not cancel and clear the active line\n");
         return 1;
     }
 

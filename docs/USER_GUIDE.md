@@ -280,6 +280,8 @@ End the session with any of:
 /quit
 ```
 
+Press Escape to cancel the capture session cleanly. Press Ctrl+C to interrupt Shiori immediately; the process restores the original terminal mode and exits with status `130`.
+
 Blank lines are ignored, and an empty `!` todo is rejected without ending the session. Use `shiori capture --help` for the built-in reference.
 
 ## Organizing notes with topics
@@ -505,6 +507,8 @@ shiori 🦊> exit
 ```
 
 Enter `exit` or `quit` to leave console mode.
+
+Press Escape to cancel the console session cleanly. Press Ctrl+C to interrupt Shiori immediately; the process restores the original terminal mode and exits with status `130`.
 
 As you type a command, Shiori displays matching suggestions in color. Press Tab to accept a single match; when several commands match, Tab expands the input to their longest shared prefix. Console completion includes Shiori commands plus `exit` and `quit`.
 

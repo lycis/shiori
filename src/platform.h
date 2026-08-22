@@ -58,6 +58,7 @@ void terminal_render_input(
     const struct completion_result *completions
 );
 void terminal_finish_input_line(void);
+void terminal_cancel_input_line(void);
 int terminal_read_key(struct key_event *event);
 
 #endif

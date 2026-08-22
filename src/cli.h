@@ -25,7 +25,13 @@ struct command_history {
     size_t count;
 };
 
-int read_interactive_line(
+enum interactive_read_result {
+    INTERACTIVE_READ_ACCEPTED,
+    INTERACTIVE_READ_CANCELLED,
+    INTERACTIVE_READ_FAILED
+};
+
+enum interactive_read_result read_interactive_line(
     const char *prompt,
     char *buffer,
     size_t buffer_size,

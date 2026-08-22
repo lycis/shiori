@@ -8,6 +8,7 @@
 #include "common.h"
 #include "config.h"
 #include "logging.h"
+#include "terminal_lifecycle.h"
 
 #ifdef _WIN32
 static wchar_t *utf8_path_to_wide(const char *value) {
@@ -252,17 +253,102 @@ int run_script_basedir(const char *path) {
 static DWORD g_original_console_input_mode = 0;
 static DWORD g_original_console_output_mode = 0;
 
-static size_t g_interactive_mode_depth = 0;
+static struct terminal_lifecycle g_terminal_lifecycle = {0};
 
 static HANDLE g_console_input = NULL;
 static HANDLE g_console_output = NULL;
 
 static size_t g_previous_suggestion_lines = 0;
+static bool g_console_modes_saved = false;
+static bool g_console_handler_registered = false;
+
+static BOOL WINAPI terminal_control_handler(DWORD control_type);
+
+static void terminal_clear_input_display(void) {
+    if(g_console_output == NULL || g_console_output == INVALID_HANDLE_VALUE) {
+        return;
+    }
+
+    CONSOLE_SCREEN_BUFFER_INFO info;
+    if(!GetConsoleScreenBufferInfo(g_console_output, &info)) {
+        return;
+    }
+
+    COORD row_start = {0, info.dwCursorPosition.Y};
+    DWORD cells = (DWORD)info.dwSize.X;
+
+    for(size_t i = 0; i <= g_previous_suggestion_lines; ++i) {
+        SHORT row = (SHORT)(row_start.Y + (SHORT)i);
+        if(row >= info.dwSize.Y) {
+            break;
+        }
+
+        COORD position = {0, row};
+        DWORD written;
+        FillConsoleOutputCharacterW(g_console_output, L' ', cells, position, &written);
+        FillConsoleOutputAttribute(g_console_output, info.wAttributes, cells, position, &written);
+    }
+
+    SHORT next_row = row_start.Y < info.dwSize.Y - 1 ? (SHORT)(row_start.Y + 1) : row_start.Y;
+    COORD next_position = {0, next_row};
+    SetConsoleCursorPosition(g_console_output, next_position);
+    g_previous_suggestion_lines = 0;
+}
+
+static void terminal_restore_claimed_cleanup(bool cancel_input, bool unregister_handler, bool warn) {
+    if(cancel_input) {
+        terminal_clear_input_display();
+    }
+
+    if(g_console_modes_saved) {
+        if(!SetConsoleMode(g_console_input, g_original_console_input_mode) && warn) {
+            log_warning("Failed restoring console input mode (error %lu).\n", GetLastError());
+        }
+
+        if(!SetConsoleMode(g_console_output, g_original_console_output_mode) && warn) {
+            log_warning("Failed restoring console output mode (error %lu).\n", GetLastError());
+        }
+    }
+
+    if(unregister_handler && g_console_handler_registered) {
+        if(!SetConsoleCtrlHandler(terminal_control_handler, FALSE) && warn) {
+            log_warning("Failed unregistering console control handler (error %lu).\n", GetLastError());
+        }
+    }
+
+    g_console_modes_saved = false;
+    g_console_handler_registered = false;
+    terminal_lifecycle_complete_cleanup(&g_terminal_lifecycle);
+}
+
+static void terminal_fail_first_entry(void) {
+    if(terminal_lifecycle_leave(&g_terminal_lifecycle)) {
+        terminal_restore_claimed_cleanup(false, true, true);
+    }
+}
+
+static BOOL WINAPI terminal_control_handler(DWORD control_type) {
+    if(control_type != CTRL_C_EVENT) {
+        return FALSE;
+    }
+
+    if(!terminal_lifecycle_claim_cleanup(&g_terminal_lifecycle)) {
+        return atomic_load(&g_terminal_lifecycle.phase) == TERMINAL_LIFECYCLE_CLEANING;
+    }
+
+    terminal_restore_claimed_cleanup(true, false, false);
+    ExitProcess(SHIORI_EXIT_INTERRUPTED);
+}
 
 int terminal_enter_interactive_mode(void) {
-    if(g_interactive_mode_depth > 0) {
-        g_interactive_mode_depth++;
+    enum terminal_lifecycle_enter_result enter_result = terminal_lifecycle_enter(&g_terminal_lifecycle);
+
+    if(enter_result == TERMINAL_LIFECYCLE_ENTER_NESTED) {
         return R_OK;
+    }
+
+    if(enter_result != TERMINAL_LIFECYCLE_ENTER_FIRST) {
+        return R_ERROR;
     }
 
     g_console_input = GetStdHandle(STD_INPUT_HANDLE);
@@ -270,11 +356,13 @@ int terminal_enter_interactive_mode(void) {
 
     if(g_console_input == INVALID_HANDLE_VALUE || g_console_input == NULL) {
         log_error("Failed getting console input handle.\n");
+        terminal_fail_first_entry();
         return R_ERROR;
     }
 
     if(g_console_output == INVALID_HANDLE_VALUE || g_console_output == NULL) {
         log_error("Failed getting console output handle.\n");
+        terminal_fail_first_entry();
         return R_ERROR;
     }
 
@@ -282,70 +370,58 @@ int terminal_enter_interactive_mode(void) {
      * Input mode
      */
     DWORD input_mode;
+    DWORD output_mode;
 
     if(!GetConsoleMode(g_console_input, &input_mode)) {
         log_error("Failed reading console input mode (error %lu).\n", GetLastError());
+        terminal_fail_first_entry();
+        return R_ERROR;
+    }
+
+    if(!GetConsoleMode(g_console_output, &output_mode)) {
+        log_error("Failed reading console output mode (error %lu).\n", GetLastError());
+        terminal_fail_first_entry();
         return R_ERROR;
     }
 
     g_original_console_input_mode = input_mode;
+    g_original_console_output_mode = output_mode;
+    g_console_modes_saved = true;
+
+    if(!SetConsoleCtrlHandler(terminal_control_handler, TRUE)) {
+        log_error("Failed registering console control handler (error %lu).\n", GetLastError());
+        terminal_fail_first_entry();
+        return R_ERROR;
+    }
+
+    g_console_handler_registered = true;
 
     input_mode &= ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT);
     input_mode |= ENABLE_PROCESSED_INPUT;
 
     if(!SetConsoleMode(g_console_input, input_mode)) {
         log_error("Failed enabling interactive input mode (error %lu).\n", GetLastError());
+        terminal_fail_first_entry();
         return R_ERROR;
     }
-
-    /*
-     * Output mode
-     */
-    DWORD output_mode;
-
-    if(!GetConsoleMode(g_console_output, &output_mode)) {
-        log_error("Failed reading console output mode (error %lu).\n", GetLastError());
-
-        SetConsoleMode(g_console_input, g_original_console_input_mode);
-
-        return R_ERROR;
-    }
-
-    g_original_console_output_mode = output_mode;
 
     output_mode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
 
     if(!SetConsoleMode(g_console_output, output_mode)) {
         log_error("Failed enabling virtual terminal processing (error %lu).\n", GetLastError());
-
-        SetConsoleMode(g_console_input, g_original_console_input_mode);
-
+        terminal_fail_first_entry();
         return R_ERROR;
     }
-
-    g_interactive_mode_depth = 1;
 
     return R_OK;
 }
 
 void terminal_leave_interactive_mode(void) {
-    if(g_interactive_mode_depth == 0) {
+    if(!terminal_lifecycle_leave(&g_terminal_lifecycle)) {
         return;
     }
 
-    g_interactive_mode_depth--;
-
-    if(g_interactive_mode_depth > 0) {
-        return;
-    }
-
-    if(!SetConsoleMode(g_console_input, g_original_console_input_mode)) {
-        log_warning("Failed restoring console input mode (error %lu).\n", GetLastError());
-    }
-
-    if(!SetConsoleMode(g_console_output, g_original_console_output_mode)) {
-        log_warning("Failed restoring console output mode (error %lu).\n", GetLastError());
-    }
+    terminal_restore_claimed_cleanup(false, true, true);
 }
 
 void terminal_finish_input_line(void) {
@@ -371,6 +447,11 @@ void terminal_finish_input_line(void) {
 
     fflush(stdout);
 }
+
+void terminal_cancel_input_line(void) {
+    terminal_clear_input_display();
+}
+
 static const char *current_token(const char *buffer) {
     if(buffer == NULL) {
         return "";
