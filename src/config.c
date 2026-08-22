@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "color.h"
 #include "common.h"
 #include "logging.h"
 #include "platform.h"
@@ -112,6 +113,10 @@ int read_config_file() {
     }
 
     fclose(config_file);
+
+    if(!g_config.color) {
+        color_set_enabled(false);
+    }
 
     return R_OK;
 }

@@ -21,6 +21,7 @@ int command_help(int argc, char *argv[]) {
     printf("\n");
     printf("Options:\n");
     printf("  %-16s %s\n", "--debug", "Show debug and plumbing output.");
+    printf("  %-16s %s\n", "--no-color", "Disable colored output.");
 
     printf("\n");
     printf("Available commands:\n");

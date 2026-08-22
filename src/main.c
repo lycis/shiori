@@ -23,6 +23,7 @@
 #endif
 
 #include "cli.h"
+#include "color.h"
 #include "commands.h"
 #include "common.h"
 #include "config.h"
@@ -47,6 +48,10 @@ int shiori_main(int argc, char *argv[]) {
         // throw away the executable name
         argc--;
         argv++;
+
+        if(has_switch(argc, argv, "--no-color", true) || environment_variable_nonempty("NO_COLOR")) {
+            color_set_enabled(false);
+        }
 
         // enable debug log
         if(has_switch(argc, argv, "--debug", true)) {

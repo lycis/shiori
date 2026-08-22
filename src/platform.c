@@ -177,6 +177,19 @@ int set_environment_variable(const char *name, const char *value) {
 #endif
 }
 
+bool environment_variable_nonempty(const char *name) {
+#ifdef _WIN32
+    size_t required = 0;
+    if(getenv_s(&required, NULL, 0, name) != 0) {
+        return false;
+    }
+    return required > 1;
+#else
+    const char *value = getenv(name);
+    return value != NULL && value[0] != '\0';
+#endif
+}
+
 int run_process(const char *path, const char *working_dir) {
 #ifdef _WIN32
     STARTUPINFOA startup_info = {0};

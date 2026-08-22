@@ -49,6 +49,7 @@ Run Shiori
     ...    cwd=${TEST_CWD}
     ...    env:HOME=${TEST_HOME}
     ...    env:USERPROFILE=${TEST_HOME}
+    ...    env:NO_COLOR=${EMPTY}
     ...    output_encoding=UTF-8
     ...    timeout=10s
     ...    on_timeout=terminate
@@ -77,6 +78,25 @@ Output Should Contain ANSI Sequence
     [Arguments]    ${output}
     ${ansi_prefix}=    Evaluate    chr(27) + "["
     Should Contain    ${output}    ${ansi_prefix}
+
+Output Should Not Contain ANSI Sequence
+    [Arguments]    ${output}
+    ${ansi_prefix}=    Evaluate    chr(27) + "["
+    Should Not Contain    ${output}    ${ansi_prefix}
+
+Run Shiori With NO_COLOR
+    [Arguments]    ${no_color}    @{arguments}
+    ${result}=    Run Process
+    ...    ${SHIORI_BINARY}
+    ...    @{arguments}
+    ...    cwd=${TEST_CWD}
+    ...    env:HOME=${TEST_HOME}
+    ...    env:USERPROFILE=${TEST_HOME}
+    ...    env:NO_COLOR=${no_color}
+    ...    output_encoding=UTF-8
+    ...    timeout=10s
+    ...    on_timeout=terminate
+    RETURN    ${result}
 
 Data File Should Contain
     [Arguments]    ${filename}    ${expected}
