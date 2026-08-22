@@ -346,7 +346,6 @@ void terminal_leave_interactive_mode(void) {
     if(!SetConsoleMode(g_console_output, g_original_console_output_mode)) {
         log_warning("Failed restoring console output mode (error %lu).\n", GetLastError());
     }
-
 }
 
 void terminal_finish_input_line(void) {
