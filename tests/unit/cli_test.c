@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "cli.h"
@@ -125,6 +126,25 @@ int main(void) {
     result = read_interactive_line("> ", limited_buffer, sizeof(limited_buffer), NULL, NULL);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(limited_buffer, "abcdefg") != 0) {
         fprintf(stderr, "input near the buffer limit was not safely bounded\n");
+        return 1;
+    }
+
+    struct key_event *stress_events = calloc(DEFAULT_BUFFER_SIZE + 1, sizeof(*stress_events));
+    if(stress_events == NULL) {
+        fprintf(stderr, "failed allocating buffer-limit stress events\n");
+        return 1;
+    }
+    for(size_t i = 0; i < DEFAULT_BUFFER_SIZE; ++i) {
+        stress_events[i] = (struct key_event){KEY_CHARACTER, 'x'};
+    }
+    stress_events[DEFAULT_BUFFER_SIZE] = (struct key_event){KEY_ENTER, 0};
+
+    char stress_buffer[DEFAULT_BUFFER_SIZE];
+    use_events(stress_events, DEFAULT_BUFFER_SIZE + 1);
+    result = read_interactive_line("> ", stress_buffer, sizeof(stress_buffer), NULL, NULL);
+    free(stress_events);
+    if(result != INTERACTIVE_READ_ACCEPTED || strlen(stress_buffer) != DEFAULT_BUFFER_SIZE - 1) {
+        fprintf(stderr, "configured input buffer limit was not preserved\n");
         return 1;
     }
 

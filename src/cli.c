@@ -59,6 +59,10 @@ insert_codepoint_utf8(char *buffer, size_t buffer_size, size_t *length, size_t *
     unsigned char encoded[4];
     size_t count;
 
+    if((codepoint >= 0xD800 && codepoint <= 0xDFFF) || codepoint > 0x10FFFF) {
+        return R_ERROR;
+    }
+
     if(codepoint <= 0x7F) {
         encoded[0] = (unsigned char)codepoint;
         count = 1;
@@ -66,21 +70,17 @@ insert_codepoint_utf8(char *buffer, size_t buffer_size, size_t *length, size_t *
         encoded[0] = 0xC0 | (codepoint >> 6);
         encoded[1] = 0x80 | (codepoint & 0x3F);
         count = 2;
-    } else if(codepoint >= 0xD800 && codepoint <= 0xDFFF) {
-        return R_ERROR;
     } else if(codepoint <= 0xFFFF) {
         encoded[0] = 0xE0 | (codepoint >> 12);
         encoded[1] = 0x80 | ((codepoint >> 6) & 0x3F);
         encoded[2] = 0x80 | (codepoint & 0x3F);
         count = 3;
-    } else if(codepoint <= 0x10FFFF) {
+    } else {
         encoded[0] = 0xF0 | (codepoint >> 18);
         encoded[1] = 0x80 | ((codepoint >> 12) & 0x3F);
         encoded[2] = 0x80 | ((codepoint >> 6) & 0x3F);
         encoded[3] = 0x80 | (codepoint & 0x3F);
         count = 4;
-    } else {
-        return R_ERROR;
     }
 
     if(*length + count >= buffer_size || *cursor > *length) {

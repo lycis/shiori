@@ -514,7 +514,7 @@ static size_t terminal_visible_width(void) {
         return 1;
     }
 
-    return (size_t)(info.srWindow.Right - info.srWindow.Left + 1);
+    return (size_t)info.srWindow.Right - (size_t)info.srWindow.Left + 1;
 }
 
 static size_t utf8_prefix_for_cell_width(const char *text, size_t maximum_width) {
