@@ -142,6 +142,32 @@ size_t utf8_range_cell_width(const char *text, size_t start, size_t end) {
     return width;
 }
 
+enum utf16_decode_result
+utf16_decode_code_unit(struct utf16_decoder *decoder, unsigned int code_unit, unsigned int *codepoint) {
+    if(decoder == NULL || codepoint == NULL || code_unit > 0xFFFF) {
+        return UTF16_DECODE_INVALID;
+    }
+
+    if(code_unit >= 0xD800 && code_unit <= 0xDBFF) {
+        decoder->high_surrogate = code_unit;
+        return UTF16_DECODE_PENDING;
+    }
+
+    if(code_unit >= 0xDC00 && code_unit <= 0xDFFF) {
+        if(decoder->high_surrogate == 0) {
+            return UTF16_DECODE_INVALID;
+        }
+
+        *codepoint = 0x10000 + ((decoder->high_surrogate - 0xD800) << 10) + (code_unit - 0xDC00);
+        decoder->high_surrogate = 0;
+        return UTF16_DECODE_CODEPOINT;
+    }
+
+    decoder->high_surrogate = 0;
+    *codepoint = code_unit;
+    return UTF16_DECODE_CODEPOINT;
+}
+
 #ifdef _WIN32
 #include <windows.h>
 

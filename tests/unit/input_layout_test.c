@@ -18,6 +18,15 @@ int main(void) {
     CHECK(utf8_range_cell_width("e\xCC\x81", 0, 3) == 1, "combining-mark width is incorrect");
     CHECK(utf8_range_cell_width("\xF0\x9F\x98\x80", 0, 4) == 2, "supplementary-plane width is incorrect");
 
+    struct utf16_decoder decoder = {0};
+    unsigned int codepoint = 0;
+    CHECK(utf16_decode_code_unit(&decoder, 0xD83D, &codepoint) == UTF16_DECODE_PENDING,
+          "high surrogate was not retained");
+    CHECK(utf16_decode_code_unit(&decoder, 0xDE00, &codepoint) == UTF16_DECODE_CODEPOINT && codepoint == 0x1F600,
+          "surrogate pair was not combined");
+    CHECK(utf16_decode_code_unit(&decoder, 0xDE00, &codepoint) == UTF16_DECODE_INVALID,
+          "unpaired low surrogate was accepted");
+
     struct input_layout layout = calculate_input_layout("> ", "abcdefghij", 10, 8, 0);
     CHECK(layout.input_start == 5 && layout.input_end == 10, "long ASCII input did not scroll to the cursor");
     CHECK(layout.cursor_column == 7, "ASCII cursor column is incorrect");

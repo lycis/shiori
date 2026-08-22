@@ -7,6 +7,7 @@
 #include "color.h"
 #include "common.h"
 #include "platform.h"
+#include "utf8.h"
 
 void strip_leading_flags(int *argc, char ***argv) {
     while(*argc > 0) {
@@ -65,6 +66,8 @@ insert_codepoint_utf8(char *buffer, size_t buffer_size, size_t *length, size_t *
         encoded[0] = 0xC0 | (codepoint >> 6);
         encoded[1] = 0x80 | (codepoint & 0x3F);
         count = 2;
+    } else if(codepoint >= 0xD800 && codepoint <= 0xDFFF) {
+        return R_ERROR;
     } else if(codepoint <= 0xFFFF) {
         encoded[0] = 0xE0 | (codepoint >> 12);
         encoded[1] = 0x80 | ((codepoint >> 6) & 0x3F);
@@ -211,11 +214,7 @@ enum interactive_read_result read_interactive_line(
                 /*
                  * Remove the complete UTF-8 codepoint before the cursor.
                  */
-                size_t character_start = cursor - 1;
-
-                while(character_start > 0 && ((unsigned char)buffer[character_start] & 0xC0) == 0x80) {
-                    character_start--;
-                }
+                size_t character_start = utf8_previous_boundary(buffer, cursor);
 
                 size_t removed = cursor - character_start;
 
@@ -229,11 +228,7 @@ enum interactive_read_result read_interactive_line(
         case KEY_DELETE:
             if(cursor < length) {
                 // remove the complete UTF-8 codepoint under the cursor.
-                size_t character_end = cursor + 1;
-
-                while(character_end < length && ((unsigned char)buffer[character_end] & 0xC0) == 0x80) {
-                    character_end++;
-                }
+                size_t character_end = utf8_next_boundary(buffer, length, cursor);
 
                 size_t removed = character_end - cursor;
 
@@ -305,21 +300,13 @@ enum interactive_read_result read_interactive_line(
 
         case KEY_LEFT:
             if(cursor > 0) {
-                cursor--;
-
-                while(cursor > 0 && ((unsigned char)buffer[cursor] & 0xC0) == 0x80) {
-                    cursor--;
-                }
+                cursor = utf8_previous_boundary(buffer, cursor);
             }
             break;
 
         case KEY_RIGHT:
             if(cursor < length) {
-                cursor++;
-
-                while(cursor < length && ((unsigned char)buffer[cursor] & 0xC0) == 0x80) {
-                    cursor++;
-                }
+                cursor = utf8_next_boundary(buffer, length, cursor);
             }
             break;
 

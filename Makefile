@@ -130,7 +130,7 @@ test-unit: $(CLI_UNIT_TEST) $(TERMINAL_LIFECYCLE_UNIT_TEST) $(COLOR_UNIT_TEST) $
 	$(call RUN_BINARY,$(COLOR_UNIT_TEST))
 	$(call RUN_BINARY,$(INPUT_LAYOUT_UNIT_TEST))
 
-$(CLI_UNIT_TEST): tests/unit/cli_test.c $(DEBUG_DIR)/cli.o $(DEBUG_DIR)/color.o
+$(CLI_UNIT_TEST): tests/unit/cli_test.c $(DEBUG_DIR)/cli.o $(DEBUG_DIR)/color.o $(DEBUG_DIR)/utf8.o
 	@$(call MKDIR,$(@D))
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
 

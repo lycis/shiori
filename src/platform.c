@@ -653,6 +653,7 @@ int terminal_read_key(struct key_event *event) {
 
     INPUT_RECORD record;
     DWORD records_read;
+    static struct utf16_decoder decoder = {0};
 
     while(true) {
         if(!ReadConsoleInputW(g_console_input, &record, 1, &records_read)) {
@@ -746,8 +747,14 @@ int terminal_read_key(struct key_event *event) {
             continue;
         }
 
+        unsigned int codepoint;
+        enum utf16_decode_result decode_result = utf16_decode_code_unit(&decoder, (unsigned int)wc, &codepoint);
+        if(decode_result != UTF16_DECODE_CODEPOINT) {
+            continue;
+        }
+
         event->type = KEY_CHARACTER;
-        event->codepoint = (unsigned int)wc;
+        event->codepoint = codepoint;
 
         return R_OK;
     }
