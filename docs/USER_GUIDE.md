@@ -557,6 +557,10 @@ As you type a command, Shiori displays matching suggestions in color. Press Tab 
 
 Capture mode uses the same UTF-8-aware input renderer and suggests its slash commands (`/done`, `/exit`, and `/quit`).
 
+Input remains on one terminal row. When a command grows wider than the available space, Shiori scrolls the line horizontally to keep the editing cursor visible. `Home` reveals the beginning, `End` reveals the end, and the arrow keys move through the complete input rather than only the visible portion. Resizing the terminal recalculates the visible portion without changing the command.
+
+Interactive input accepts at most 1,023 UTF-8 bytes. Once that limit is reached, additional characters are ignored while the existing command remains available for editing or submission.
+
 ## Debugging
 
 Enable diagnostic output with the global `--debug` option:
