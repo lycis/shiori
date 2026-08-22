@@ -1,6 +1,7 @@
 CC := clang
 CLANG_FORMAT := clang-format
 CLANG_TIDY := clang-tidy
+LLVM_VERSION := $(file <.llvm-version)
 CPPFLAGS := -Isrc
 CFLAGS := -std=c23 -Wall -Wextra -Wpedantic -Werror
 DEBUGFLAGS := -O0 -gdwarf-4
@@ -34,6 +35,7 @@ ifeq ($(OS),Windows_NT)
     COPY_TARGET = copy /Y "$(subst /,\,$1)" "$(TARGET)" >NUL
     SANITIZER_RUNTIME := $(shell $(CC) -print-resource-dir)/lib/windows/clang_rt.asan_dynamic-x86_64.dll
     COPY_SANITIZER_RUNTIME = copy /Y "$(subst /,\,$(SANITIZER_RUNTIME))" "$(subst /,\,$(SANITIZE_DIR))" >NUL
+    VERIFY_LLVM_VERSION = findstr /C:"version $(LLVM_VERSION)" >NUL
     RM_BUILD = if exist "$(subst /,\,$(BUILD_DIR))" rmdir /S /Q "$(subst /,\,$(BUILD_DIR))"
     RM_TARGET = if exist "$(TARGET)" del /Q "$(TARGET)" & if exist "$(TARGET:.exe=.pdb)" del /Q "$(TARGET:.exe=.pdb)"
 else
@@ -41,6 +43,7 @@ else
     MKDIR = mkdir -p "$1"
     COPY_TARGET = cp "$1" "$(TARGET)"
     COPY_SANITIZER_RUNTIME =
+    VERIFY_LLVM_VERSION = grep -F "version $(LLVM_VERSION)" >/dev/null
     RM_BUILD = rm -rf "$(BUILD_DIR)"
     RM_TARGET = rm -f "$(TARGET)"
     SANITIZERS := address,undefined
@@ -54,9 +57,16 @@ DEBUG_BINARY := $(DEBUG_DIR)/$(TARGET)
 RELEASE_BINARY := $(RELEASE_DIR)/$(TARGET)
 SANITIZE_BINARY := $(SANITIZE_DIR)/$(TARGET)
 
-.PHONY: all debug release sanitize clean run test test-integration test-sanitize format format-check tidy check check-sanitize
+.PHONY: all debug release sanitize clean run test test-integration test-sanitize format format-check tidy toolchain-check check check-sanitize
 
 all: debug
+
+debug release sanitize format format-check tidy: toolchain-check
+
+toolchain-check:
+	@$(CC) --version | $(VERIFY_LLVM_VERSION)
+	@$(CLANG_FORMAT) --version | $(VERIFY_LLVM_VERSION)
+	@$(CLANG_TIDY) --version | $(VERIFY_LLVM_VERSION)
 
 debug: $(DEBUG_BINARY)
 	@$(call COPY_TARGET,$<)
