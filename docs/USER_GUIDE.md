@@ -372,6 +372,17 @@ shiori tag decision backend
 
 Matching uses complete tags, so searching for `work` does not match `#workshop`.
 
+List every tag used by notes and todos:
+
+```console
+shiori tag --list
+shiori tag -l
+```
+
+The list is sorted alphabetically and shows the total number of matching items,
+with separate note and todo counts. Repeating the same tag within one note or todo
+counts once for that item. Shiori's internal `#shiori/...` metadata is excluded.
+
 Use `shiori tag --help` for the built-in reference. The `todo list --tag` filters remain useful when you only want todos and want to combine tags with todo status filters.
 
 ## Managing todos
