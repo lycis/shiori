@@ -2,7 +2,7 @@
 
 Shiori is a local-first command-line scratchpad and task tracker. It stores notes and todos as ordinary Markdown files in a directory you control.
 
-This guide covers installation, configuration, every current workflow, and the on-disk formats. For the project overview and build status, see the [README](../README.md).
+This guide covers installation, configuration, every current workflow, and the on-disk formats. For the project overview and build status, see the [README](../README.md). Existing users moving from 0.1.0 should read the [upgrade guide](UPGRADING.md) before running 0.2.0 against their workspace.
 
 ## Contents
 
@@ -28,13 +28,28 @@ This guide covers installation, configuration, every current workflow, and the o
 
 ### Download the standalone executable
 
-Every successful GitHub Actions build publishes a `shiori-windows-x64` artifact containing `shiori.exe`. Download the artifact, extract it, and verify the executable:
+Download `shiori-0.2.0-windows-x64.zip` and
+`shiori-0.2.0-windows-x64.zip.sha256` from the
+[0.2.0 release](https://github.com/lycis/shiori/releases/tag/0.2.0).
+
+Verify the archive in PowerShell:
+
+```powershell
+(Get-FileHash .\shiori-0.2.0-windows-x64.zip -Algorithm SHA256).Hash.ToLower()
+Get-Content .\shiori-0.2.0-windows-x64.zip.sha256
+```
+
+The hashes must match. Extract the archive, then verify the executable:
 
 ```console
-.\shiori.exe help
+.\shiori.exe version
 ```
 
 The release executable statically links the C runtime. It does not require a separate Visual C++ Redistributable or third-party DLLs; it only uses DLLs provided by Windows.
+
+Development builds from successful GitHub Actions runs also publish a
+`shiori-windows-x64` artifact. Those builds track `main`; use the versioned
+release archive for normal installation.
 
 ### Build from source
 

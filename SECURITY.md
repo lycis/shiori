@@ -1,16 +1,17 @@
-Security Policy
+# Security Policy
 
-Supported Versions
+## Supported Versions
 
 Shiori is currently in early development. Security fixes are provided for the latest released version only.
 
-Version| Supported
-Latest release| ✅
-Older releases| ❌
+| Version | Supported |
+|---|---|
+| 0.2.x | ✅ |
+| 0.1.x | ❌ |
 
 Because Shiori is still evolving rapidly, users are encouraged to update to the latest available version before reporting a security issue.
 
-Reporting a Vulnerability
+## Reporting a Vulnerability
 
 If you discover a security vulnerability in Shiori, please report it using GitHub's private vulnerability reporting feature.
 
@@ -27,7 +28,7 @@ When reporting a vulnerability, please include as much of the following informat
 
 Please avoid publicly disclosing the vulnerability until it has been investigated and, where necessary, a fix has been released.
 
-What to Expect
+## What to Expect
 
 Reported vulnerabilities will be reviewed to determine whether they represent a security issue and which versions are affected.
 
@@ -35,7 +36,7 @@ If a report is accepted, the issue will be investigated and a fix will be prepar
 
 Reports may be declined if the behavior does not represent a security vulnerability or cannot reasonably be reproduced.
 
-Scope
+## Scope
 
 Security issues may include, but are not limited to:
 
@@ -48,7 +49,7 @@ Security issues may include, but are not limited to:
 
 Normal application bugs, usability issues, crashes without security impact, and feature requests should be reported through the project's regular issue tracker.
 
-Security Considerations
+## Security Considerations
 
 Shiori operates directly on local files and is intended to work with user-controlled Markdown content.
 

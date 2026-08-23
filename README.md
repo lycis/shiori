@@ -63,7 +63,9 @@ Shiori keeps the result in ordinary `NOTES.md` and `TODOS.md` files that work wi
 
 ## Quick start
 
-Download the `shiori-windows-x64` artifact from a successful GitHub Actions build, extract `shiori.exe`, then run:
+Download `shiori-0.2.0-windows-x64.zip` and its checksum from the
+[0.2.0 release](https://github.com/lycis/shiori/releases/tag/0.2.0), verify the
+download, extract `shiori.exe`, then run:
 
 ```console
 .\shiori.exe help
@@ -73,6 +75,10 @@ Download the `shiori-windows-x64` artifact from a successful GitHub Actions buil
 ```
 
 `init` creates `.shiori` in the current directory and stores `NOTES.md` and `TODOS.md` there by default.
+
+Upgrading from 0.1.0 requires a one-time notes migration. Back up the workspace
+and follow the [upgrade guide](docs/UPGRADING.md) before using 0.2.0 with
+existing data.
 
 ---
 
@@ -120,6 +126,7 @@ Use the global `--debug` option for diagnostic output. Use `--no-color`, set `co
 
 - **[User Guide](docs/USER_GUIDE.md)** — installation, configuration, commands, workflows, storage formats, and troubleshooting
 - **[Upgrade Guide](docs/UPGRADING.md)** — backups, migrations, verification, and recovery between releases
+- **[Changelog](CHANGELOG.md)** — release history, compatibility notes, features, and fixes
 - **[Build Guide](BUILD.md)** — toolchain setup, local build targets, tests, CI, and release packaging
 - **[Hooks Guide](docs/HOOKS.md)** — hook lifecycle, environment variables, examples, security, and limitations
 - **[Contributing](CONTRIBUTING.md)** — development setup and project conventions
@@ -129,7 +136,7 @@ Use the global `--debug` option for diagnostic output. Use `--no-color`, set `co
 
 ## Status
 
-Shiori is alpha software, currently Windows-first, and developed with Clang + C23. Linux abstractions exist, but Linux support is incomplete. Current ideas and planned work live in [`IDEAS.md`](IDEAS.md).
+Shiori is alpha software, currently Windows-first, and developed with Clang + C23. Linux abstractions exist, but Linux support is incomplete. Current ideas and planned work live in [`planning/IDEAS.md`](planning/IDEAS.md).
 
 The project will stay focused on quick capture rather than becoming a full knowledge-management platform wearing a tiny CLI hat.
 
