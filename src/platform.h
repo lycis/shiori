@@ -58,7 +58,9 @@ void terminal_render_input(
     const char *prompt,
     const char *buffer,
     size_t cursor,
-    const struct completion_result *completions
+    const struct completion_result *completions,
+    bool has_completion_selection,
+    size_t completion_selection
 );
 void terminal_finish_input_line(void);
 void terminal_cancel_input_line(void);

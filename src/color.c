@@ -60,6 +60,8 @@ const char *color_style_sequence_for(FILE *stream, enum color_style style) {
         return COLOR_METADATA;
     case COLOR_STYLE_OPEN:
         return COLOR_OPEN;
+    case COLOR_STYLE_COMPLETION_SELECTED:
+        return COLOR_COMPLETION_SELECTED;
     case COLOR_STYLE_COMPLETION_REMAINDER:
         return COLOR_COMPLETION_REMAINDER;
     case COLOR_STYLE_DIVIDER:

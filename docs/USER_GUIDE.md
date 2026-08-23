@@ -581,6 +581,14 @@ Press Escape to cancel the console session cleanly. Press Ctrl+C to interrupt Sh
 
 As you type a command, Shiori displays matching suggestions in color. Press Tab to accept a single match; when several commands match, Tab expands the input to their longest shared prefix. Console completion includes Shiori commands plus `exit` and `quit`.
 
+When several suggestions are visible, press Down to select the first suggestion or
+Up to select the last. Continue with Up or Down to move through the list; selection
+wraps at either end without changing the text you have edited. Press Tab or Enter to
+accept the selected suggestion. Enter accepts the suggestion without running the
+command, so press Enter again when you are ready to submit it. Typing, deleting, or
+moving the cursor clears the selection. When no suggestions are visible, Up and Down
+continue to navigate command history.
+
 Capture mode uses the same UTF-8-aware input renderer and suggests its slash commands (`/done`, `/exit`, and `/quit`).
 
 Input remains on one terminal row. When a command grows wider than the available space, Shiori scrolls the line horizontally to keep the editing cursor visible. `Home` reveals the beginning, `End` reveals the end, and the arrow keys move through the complete input rather than only the visible portion. Resizing the terminal recalculates the visible portion without changing the command.

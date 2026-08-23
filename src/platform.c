@@ -538,7 +538,9 @@ void terminal_render_input(
     const char *prompt,
     const char *buffer,
     size_t cursor,
-    const struct completion_result *completions
+    const struct completion_result *completions,
+    bool has_completion_selection,
+    size_t completion_selection
 ) {
     size_t terminal_width = terminal_visible_width();
     struct input_layout layout = calculate_input_layout(prompt, buffer, cursor, terminal_width, g_input_viewport_start);
@@ -586,18 +588,25 @@ void terminal_render_input(
                 continue;
             }
 
-            /*
-             * Don't show an exact match as a suggestion.
-             */
-            if(strcmp(suggestion, token) == 0) {
-                continue;
-            }
+            bool selected = has_completion_selection && rendered_suggestions == completion_selection;
 
-            printf("\n\x1b[2K  ");
+            printf("\n\x1b[2K  %s ", selected ? "›" : " ");
 
-            size_t suggestion_capacity = terminal_width > 2 ? terminal_width - 2 : 0;
+            size_t suggestion_capacity = terminal_width > 4 ? terminal_width - 4 : 0;
             size_t suggestion_end = utf8_prefix_for_cell_width(suggestion, suggestion_capacity);
             size_t colored_prefix_end = typed_length < suggestion_end ? typed_length : suggestion_end;
+
+            if(selected) {
+                printf(
+                    "%s%.*s%s",
+                    color_style_sequence(COLOR_STYLE_COMPLETION_SELECTED),
+                    (int)suggestion_end,
+                    suggestion,
+                    color_style_sequence(COLOR_STYLE_RESET)
+                );
+                rendered_suggestions++;
+                continue;
+            }
 
             /*
              * Already typed portion in green.

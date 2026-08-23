@@ -143,6 +143,49 @@ static size_t current_token_start(const char *buffer) {
     return start;
 }
 
+static struct completion_result
+visible_completions(const struct completion_result *completions, const char *current_token) {
+    struct completion_result visible = {0};
+
+    if(completions == NULL || current_token == NULL) {
+        return visible;
+    }
+
+    for(size_t i = 0; i < completions->count && visible.count < MAX_COMPLETIONS; ++i) {
+        const char *candidate = completions->items[i];
+
+        if(candidate == NULL || strcmp(candidate, current_token) == 0) {
+            continue;
+        }
+
+        visible.items[visible.count++] = candidate;
+    }
+
+    return visible;
+}
+
+static bool
+accept_completion(char *buffer, size_t buffer_size, size_t *length, size_t *cursor, const char *completion) {
+    if(buffer == NULL || length == NULL || cursor == NULL || completion == NULL || *cursor != *length) {
+        return false;
+    }
+
+    size_t token_start = current_token_start(buffer);
+    size_t completion_length = strlen(completion);
+    size_t new_length = token_start + completion_length;
+
+    if(new_length >= buffer_size) {
+        return false;
+    }
+
+    memcpy(buffer + token_start, completion, completion_length);
+    buffer[new_length] = '\0';
+    *length = new_length;
+    *cursor = new_length;
+
+    return true;
+}
+
 static void add_history_item(struct command_history *history, const char *line) {
     if(history == NULL || line == NULL || line[0] == '\0') {
         return;
@@ -185,17 +228,27 @@ enum interactive_read_result read_interactive_line(
     size_t cursor = 0;
     size_t history_position = history != NULL ? history->count : 0;
     char draft[DEFAULT_BUFFER_SIZE] = "";
+    bool has_completion_selection = false;
+    size_t completion_selection = 0;
 
     buffer[0] = '\0';
 
     while(true) {
-        struct completion_result completions = {0};
+        struct completion_result raw_completions = {0};
 
-        if(complete != NULL && length > 0) {
-            completions = complete(buffer);
+        if(complete != NULL && length > 0 && cursor == length) {
+            raw_completions = complete(buffer);
         }
 
-        terminal_render_input(prompt, buffer, cursor, &completions);
+        const char *token = buffer + current_token_start(buffer);
+        struct completion_result completions = visible_completions(&raw_completions, token);
+
+        if(completions.count == 0 || completion_selection >= completions.count) {
+            has_completion_selection = false;
+            completion_selection = 0;
+        }
+
+        terminal_render_input(prompt, buffer, cursor, &completions, has_completion_selection, completion_selection);
 
         struct key_event event;
 
@@ -207,6 +260,7 @@ enum interactive_read_result read_interactive_line(
         switch(event.type) {
         case KEY_CHARACTER:
             insert_codepoint_utf8(buffer, buffer_size, &length, &cursor, event.codepoint);
+            has_completion_selection = false;
             break;
 
         case KEY_BACKSPACE:
@@ -223,6 +277,7 @@ enum interactive_read_result read_interactive_line(
                 length -= removed;
                 cursor = character_start;
             }
+            has_completion_selection = false;
             break;
 
         case KEY_DELETE:
@@ -236,6 +291,7 @@ enum interactive_read_result read_interactive_line(
 
                 length -= removed;
             }
+            has_completion_selection = false;
             break;
 
         case KEY_TAB: {
@@ -243,23 +299,14 @@ enum interactive_read_result read_interactive_line(
                 break;
             }
 
-            size_t token_start = current_token_start(buffer);
+            if(has_completion_selection) {
+                accept_completion(buffer, buffer_size, &length, &cursor, completions.items[completion_selection]);
+                has_completion_selection = false;
+                break;
+            }
 
             if(completions.count == 1) {
-                const char *completion = completions.items[0];
-                size_t completion_length = strlen(completion);
-
-                size_t new_length = token_start + completion_length;
-
-                if(new_length < buffer_size) {
-                    memcpy(buffer + token_start, completion, completion_length);
-
-                    buffer[new_length] = '\0';
-
-                    length = new_length;
-                    cursor = length;
-                }
-
+                accept_completion(buffer, buffer_size, &length, &cursor, completions.items[0]);
                 break;
             }
 
@@ -269,6 +316,7 @@ enum interactive_read_result read_interactive_line(
              */
             size_t prefix_length = completion_common_prefix_length(&completions);
 
+            size_t token_start = current_token_start(buffer);
             size_t current_token_length = length - token_start;
 
             if(prefix_length > current_token_length) {
@@ -287,6 +335,12 @@ enum interactive_read_result read_interactive_line(
             break;
         }
         case KEY_ENTER:
+            if(has_completion_selection) {
+                accept_completion(buffer, buffer_size, &length, &cursor, completions.items[completion_selection]);
+                has_completion_selection = false;
+                break;
+            }
+
             add_history_item(history, buffer);
             terminal_finish_input_line();
             return INTERACTIVE_READ_ACCEPTED;
@@ -302,24 +356,36 @@ enum interactive_read_result read_interactive_line(
             if(cursor > 0) {
                 cursor = utf8_previous_boundary(buffer, cursor);
             }
+            has_completion_selection = false;
             break;
 
         case KEY_RIGHT:
             if(cursor < length) {
                 cursor = utf8_next_boundary(buffer, length, cursor);
             }
+            has_completion_selection = false;
             break;
 
         case KEY_HOME:
             cursor = 0;
+            has_completion_selection = false;
             break;
 
         case KEY_END:
             cursor = length;
+            has_completion_selection = false;
             break;
 
         case KEY_UP:
-            if(history != NULL && history_position > 0) {
+            if(completions.count > 0) {
+                if(!has_completion_selection) {
+                    completion_selection = completions.count - 1;
+                } else {
+                    completion_selection = completion_selection == 0 ? completions.count - 1 : completion_selection - 1;
+                }
+
+                has_completion_selection = true;
+            } else if(history != NULL && history_position > 0) {
                 if(history_position == history->count) {
                     strcpy_s(draft, sizeof(draft), buffer);
                 }
@@ -330,7 +396,15 @@ enum interactive_read_result read_interactive_line(
             break;
 
         case KEY_DOWN:
-            if(history != NULL && history_position < history->count) {
+            if(completions.count > 0) {
+                if(!has_completion_selection) {
+                    completion_selection = 0;
+                } else {
+                    completion_selection = (completion_selection + 1) % completions.count;
+                }
+
+                has_completion_selection = true;
+            } else if(history != NULL && history_position < history->count) {
                 history_position++;
 
                 recall_history_item(

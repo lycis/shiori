@@ -19,6 +19,7 @@ enum color_style {
     COLOR_STYLE_NOTE_ID,
     COLOR_STYLE_METADATA,
     COLOR_STYLE_OPEN,
+    COLOR_STYLE_COMPLETION_SELECTED,
     COLOR_STYLE_COMPLETION_REMAINDER,
     COLOR_STYLE_DIVIDER
 };
@@ -30,6 +31,7 @@ const char *color_style_sequence(enum color_style style);
 const char *color_style_sequence_for(FILE *stream, enum color_style style);
 
 #define ANSI_BOLD "\x1b[1m"
+#define ANSI_REVERSE "\x1b[7m"
 #define ANSI_RESET "\x1b[0m"
 #define ANSI_FG_RGB(r, g, b) "\x1b[38;2;" #r ";" #g ";" #b "m"
 
@@ -56,6 +58,7 @@ const char *color_style_sequence_for(FILE *stream, enum color_style style);
 // Interactive terminal / completion
 
 #define COLOR_COMPLETION_MATCH COLOR_SUCCESS
+#define COLOR_COMPLETION_SELECTED ANSI_REVERSE
 #define COLOR_COMPLETION_REMAINDER ANSI_FG_RGB(120, 130, 145)
 
 #define COLOR_DIVIDER ANSI_FG_RGB(90, 105, 120)

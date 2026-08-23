@@ -14,6 +14,11 @@ int main(void) {
         return 1;
     }
 
+    if(strcmp(color_style_sequence(COLOR_STYLE_COMPLETION_SELECTED), COLOR_COMPLETION_SELECTED) != 0) {
+        fprintf(stderr, "completion selection style is not highlighted\n");
+        return 1;
+    }
+
     color_set_enabled(false);
 
     for(int style = COLOR_STYLE_RESET; style <= COLOR_STYLE_DIVIDER; ++style) {
