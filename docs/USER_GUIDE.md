@@ -634,6 +634,9 @@ Migration adds version front matter and assigns IDs to notes that do not already
 
 Review the retained `NOTES.md.bak` recovery copy after migration before removing it.
 
+For backup steps, verification, failure recovery, and all compatibility changes
+when moving from 0.1.0, see the [upgrade guide](UPGRADING.md).
+
 ## Data storage and safety
 
 Shiori avoids proprietary storage. Markdown remains the source of truth.

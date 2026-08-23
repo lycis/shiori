@@ -119,6 +119,7 @@ Use the global `--debug` option for diagnostic output. Use `--no-color`, set `co
 ## Documentation
 
 - **[User Guide](docs/USER_GUIDE.md)** — installation, configuration, commands, workflows, storage formats, and troubleshooting
+- **[Upgrade Guide](docs/UPGRADING.md)** — backups, migrations, verification, and recovery between releases
 - **[Build Guide](BUILD.md)** — toolchain setup, local build targets, tests, CI, and release packaging
 - **[Hooks Guide](docs/HOOKS.md)** — hook lifecycle, environment variables, examples, security, and limitations
 - **[Contributing](CONTRIBUTING.md)** — development setup and project conventions
