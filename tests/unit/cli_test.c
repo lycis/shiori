@@ -110,7 +110,7 @@ int main(void) {
         {KEY_ENTER, 0},
     };
     char buffer[16];
-    struct command_history history = {0};
+    struct command_history history = {};
 
     use_events(accepted_events, sizeof(accepted_events) / sizeof(accepted_events[0]));
 
@@ -319,7 +319,7 @@ int main(void) {
         return 1;
     }
 
-    struct command_history completion_history = {0};
+    struct command_history completion_history = {};
     strcpy_s(completion_history.items[0], sizeof(completion_history.items[0]), "previous");
     completion_history.count = 1;
     static const struct key_event completion_history_events[] = {

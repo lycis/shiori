@@ -169,7 +169,7 @@ static int parse_daily_heading(const char *heading, time_t *date) {
         return R_ERROR;
     }
 
-    struct tm parsed = {0};
+    struct tm parsed = {};
 
     parsed.tm_year = year - 1900;
     parsed.tm_mon = month - 1;
@@ -253,7 +253,7 @@ int read_notes(const char *filename, struct note_list *list) {
 
         current += 2;
 
-        struct note item = {0};
+        struct note item = {};
 
         if(create_note_from_markdown(current, current_date, &item) != R_OK) {
             log_error("Failed parsing note on line %u.\n", line_number);

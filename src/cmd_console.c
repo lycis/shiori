@@ -9,7 +9,7 @@
 
 struct completion_result
 complete_command_definitions(const char *input, const struct command_definition *commands, size_t command_count) {
-    struct completion_result result = {0};
+    struct completion_result result = {};
 
     if(commands == NULL) {
         return result;
@@ -57,7 +57,7 @@ static void add_console_special_completions(struct completion_result *result, co
 }
 
 static struct completion_result console_completion(const char *input) {
-    struct completion_result result = {0};
+    struct completion_result result = {};
 
     size_t command_count = 0;
     const struct command_definition *current_commands = get_commands(&command_count);
@@ -177,7 +177,7 @@ int command_console(int argc, char *argv[]) {
 
     char prompt[DEFAULT_BUFFER_SIZE];
     snprintf(prompt, sizeof(prompt), "%s 🦊> ", APP_NAME);
-    struct command_history history = {0};
+    struct command_history history = {};
     int result = R_OK;
 
     if(terminal_enter_interactive_mode() != R_OK) {

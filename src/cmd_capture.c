@@ -100,7 +100,7 @@ int command_capture(int argc, char *argv[]) {
         printf("\n");
     }
 
-    struct command_history history = {0};
+    struct command_history history = {};
     int result = R_OK;
 
     if(terminal_enter_interactive_mode() != R_OK) {

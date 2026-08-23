@@ -419,7 +419,7 @@ static bool parse_absolute_date(const char *value, struct tm *parsed) {
         return false;
     }
 
-    *parsed = (struct tm){0};
+    *parsed = (struct tm){};
     parsed->tm_year = year - 1900;
     parsed->tm_mon = month - 1;
     parsed->tm_mday = day;

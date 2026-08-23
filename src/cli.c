@@ -144,7 +144,7 @@ static size_t current_token_start(const char *buffer) {
 
 static struct completion_result
 visible_completions(const struct completion_result *completions, const char *current_token) {
-    struct completion_result visible = {0};
+    struct completion_result visible = {};
 
     if(completions == NULL || current_token == NULL) {
         return visible;
@@ -233,7 +233,7 @@ enum interactive_read_result read_interactive_line(
     buffer[0] = '\0';
 
     while(true) {
-        struct completion_result raw_completions = {0};
+        struct completion_result raw_completions = {};
 
         if(complete != NULL && length > 0 && cursor == length) {
             raw_completions = complete(buffer);
@@ -423,7 +423,7 @@ enum interactive_read_result read_interactive_line(
 }
 
 struct completion_result find_completions(const char *input, const char *options[], size_t option_count) {
-    struct completion_result result = {0};
+    struct completion_result result = {};
 
     if(input == NULL || input[0] == '\0') {
         return result;

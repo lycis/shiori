@@ -202,8 +202,8 @@ bool stream_is_terminal(FILE *stream) {
 
 int run_process(const char *path, const char *working_dir) {
 #ifdef _WIN32
-    STARTUPINFOA startup_info = {0};
-    PROCESS_INFORMATION process_info = {0};
+    STARTUPINFOA startup_info = {};
+    PROCESS_INFORMATION process_info = {};
 
     startup_info.cb = sizeof(startup_info);
 
@@ -289,7 +289,7 @@ int run_script_basedir(const char *path) {
 static DWORD g_original_console_input_mode = 0;
 static DWORD g_original_console_output_mode = 0;
 
-static struct terminal_lifecycle g_terminal_lifecycle = {0};
+static struct terminal_lifecycle g_terminal_lifecycle = {};
 
 static HANDLE g_console_input = NULL;
 static HANDLE g_console_output = NULL;
@@ -662,7 +662,7 @@ int terminal_read_key(struct key_event *event) {
 
     INPUT_RECORD record;
     DWORD records_read;
-    static struct utf16_decoder decoder = {0};
+    static struct utf16_decoder decoder = {};
 
     while(true) {
         if(!ReadConsoleInputW(g_console_input, &record, 1, &records_read)) {

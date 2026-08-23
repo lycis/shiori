@@ -12,7 +12,7 @@ static int expect(bool condition, const char *message) {
 }
 
 int main(void) {
-    struct terminal_lifecycle lifecycle = {0};
+    struct terminal_lifecycle lifecycle = {};
 
     if(expect(
            terminal_lifecycle_enter(&lifecycle) == TERMINAL_LIFECYCLE_ENTER_FIRST,

@@ -18,7 +18,7 @@ int main(void) {
     CHECK(utf8_range_cell_width("e\xCC\x81", 0, 3) == 1, "combining-mark width is incorrect");
     CHECK(utf8_range_cell_width("\xF0\x9F\x98\x80", 0, 4) == 2, "supplementary-plane width is incorrect");
 
-    struct utf16_decoder decoder = {0};
+    struct utf16_decoder decoder = {};
     unsigned int codepoint = 0;
     CHECK(utf16_decode_code_unit(&decoder, 0xD83D, &codepoint) == UTF16_DECODE_PENDING,
           "high surrogate was not retained");
