@@ -44,6 +44,12 @@ Todo Show Prints Complete Script Friendly Details
     Should Contain    ${show.stdout}    Created: ${today}
     Should Contain    ${show.stdout}    Due: 2030-04-05
     Should Contain    ${show.stdout}    Tags: work, urgent
+    Should Contain    ${show.stdout}    🚧 Todo 0
+    Should Contain    ${show.stdout}    🚦 Status:
+    Should Contain    ${show.stdout}    📝 Text:
+    Should Contain    ${show.stdout}    ⏰ Due:
+    Should Contain    ${show.stdout}    🏷️ Tags:
+    Output Should Not Contain ANSI Sequence    ${show.stdout}
 
 Todo Show Prints None For Optional Details
     ${add}=    Run Shiori    todo    add    Untagged task

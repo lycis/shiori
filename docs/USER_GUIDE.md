@@ -397,7 +397,9 @@ shiori todo show 1
 The command prints stable, labeled fields for the ID, status, text, creation date,
 due date, and tags. A todo without a due date or tags prints `none` for that field.
 Tags are listed without the leading `#`. The command is read-only and returns a
-nonzero exit code when the ID is missing, malformed, or unknown.
+nonzero exit code when the ID is missing, malformed, or unknown. Interactive output
+uses the todo status icon and semantic colors; redirected output keeps the icons but
+omits ANSI color sequences so it remains suitable for scripts.
 
 ### Due dates
 

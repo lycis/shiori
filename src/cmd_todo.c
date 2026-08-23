@@ -8,6 +8,7 @@
 
 #include "cli.h"
 #include "cmd_shared.h"
+#include "color.h"
 #include "commands.h"
 #include "common.h"
 #include "logging.h"
@@ -832,7 +833,14 @@ static void print_todo_tags(const char *text) {
 
         if(length > 1 && token[0] == '#' &&
            !(length >= strlen("#shiori/") && strncmp(token, "#shiori/", strlen("#shiori/")) == 0)) {
-            printf("%s%.*s", found ? ", " : "", (int)(length - 1), token + 1);
+            printf(
+                "%s%s%.*s%s",
+                found ? ", " : "",
+                color_style_sequence(COLOR_STYLE_TOPIC),
+                (int)(length - 1),
+                token + 1,
+                color_style_sequence(COLOR_STYLE_RESET)
+            );
             found = true;
         }
     }
@@ -842,6 +850,19 @@ static void print_todo_tags(const char *text) {
     }
 
     printf("\n");
+}
+
+static enum color_style todo_status_color(todo_status status) {
+    switch(status) {
+    case OPEN:
+        return COLOR_STYLE_OPEN;
+    case IN_PROGRESS:
+        return COLOR_STYLE_WARNING;
+    case DONE:
+        return COLOR_STYLE_SUCCESS;
+    default:
+        return COLOR_STYLE_METADATA;
+    }
 }
 
 static int command_todo_show(int argc, char *argv[]) {
@@ -893,13 +914,58 @@ static int command_todo_show(int argc, char *argv[]) {
         due = due_date;
     }
 
-    printf("ID: %llu\n", item->id);
-    printf("Status: %s\n", todo_status_string(item->status));
-    printf("Text: %s\n", item->text);
-    printf("Created: %s\n", created_date);
-    printf("Due: %s\n", due);
-    printf("Tags: ");
+    enum color_style status_color = todo_status_color(item->status);
+
+    printf(
+        "%s%s%s Todo %llu%s\n",
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(status_color),
+        todo_status_icon(item->status),
+        item->id,
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
+    print_divider(48);
+    printf("\n");
+
+    printf(
+        "  %s🔖 ID:%s %llu\n",
+        color_style_sequence(COLOR_STYLE_METADATA),
+        color_style_sequence(COLOR_STYLE_RESET),
+        item->id
+    );
+    printf(
+        "  %s🚦 Status:%s %s%s%s\n",
+        color_style_sequence(COLOR_STYLE_METADATA),
+        color_style_sequence(COLOR_STYLE_RESET),
+        color_style_sequence(status_color),
+        todo_status_string(item->status),
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
+    printf(
+        "  %s📝 Text:%s %s\n",
+        color_style_sequence(COLOR_STYLE_METADATA),
+        color_style_sequence(COLOR_STYLE_RESET),
+        item->text
+    );
+    printf(
+        "  %s➕ Created:%s %s\n",
+        color_style_sequence(COLOR_STYLE_METADATA),
+        color_style_sequence(COLOR_STYLE_RESET),
+        created_date
+    );
+    printf(
+        "  %s⏰ Due:%s %s%s%s\n",
+        color_style_sequence(COLOR_STYLE_METADATA),
+        color_style_sequence(COLOR_STYLE_RESET),
+        color_style_sequence(item->due != 0 ? COLOR_STYLE_DUE_DATE : COLOR_STYLE_METADATA),
+        due,
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
+    printf("  %s🏷️ Tags:%s ", color_style_sequence(COLOR_STYLE_METADATA), color_style_sequence(COLOR_STYLE_RESET));
     print_todo_tags(item->text);
+
+    printf("\n");
+    print_divider(48);
 
     todo_list_free(&todos);
     return R_OK;
