@@ -1,7 +1,6 @@
 #ifndef SHIORI_CLI_H
 #define SHIORI_CLI_H
 
-#include <stdbool.h>
 
 #include "color.h"
 #include "common.h"

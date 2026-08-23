@@ -1,7 +1,6 @@
 #ifndef SHIORI_COLOR_H
 #define SHIORI_COLOR_H
 
-#include <stdbool.h>
 #include <stdio.h>
 
 enum color_style {

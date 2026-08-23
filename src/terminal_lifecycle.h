@@ -2,7 +2,6 @@
 #define SHIORI_TERMINAL_LIFECYCLE_H
 
 #include <stdatomic.h>
-#include <stdbool.h>
 
 enum terminal_lifecycle_phase {
     TERMINAL_LIFECYCLE_INACTIVE,

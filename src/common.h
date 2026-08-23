@@ -23,7 +23,6 @@
 #define TODO_FILE "TODOS.md"
 #define NOTES_FILE "NOTES.md"
 
-#include <stdbool.h>
 #include <time.h>
 
 char *trim(char *str);

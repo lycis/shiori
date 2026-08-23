@@ -1,6 +1,5 @@
 #define __STDC_WANT_LIB_EXT1__ 1
 #include <stdarg.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,7 +1,6 @@
 #ifndef SHIORI_UTF8_H
 #define SHIORI_UTF8_H
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <wchar.h>
 

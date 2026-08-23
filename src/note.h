@@ -1,7 +1,6 @@
 #ifndef SHIORI_NOTE_H
 #define SHIORI_NOTE_H
 
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <time.h>

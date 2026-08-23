@@ -1,6 +1,5 @@
 #include "terminal_lifecycle.h"
 
-#include <stdbool.h>
 #include <stddef.h>
 
 enum terminal_lifecycle_enter_result terminal_lifecycle_enter(struct terminal_lifecycle *lifecycle) {
