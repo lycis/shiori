@@ -386,6 +386,19 @@ Each todo receives a stable numeric ID, a creation date, and an initial status o
 
 Quote tags when using PowerShell because an unquoted `#` starts a comment.
 
+### Show one todo
+
+Display the complete details of one todo by its stable ID:
+
+```console
+shiori todo show 1
+```
+
+The command prints stable, labeled fields for the ID, status, text, creation date,
+due date, and tags. A todo without a due date or tags prints `none` for that field.
+Tags are listed without the leading `#`. The command is read-only and returns a
+nonzero exit code when the ID is missing, malformed, or unknown.
+
 ### Due dates
 
 Add an optional due date with `--due` or `-d`. The date may be an ISO date or one of `today`, `tomorrow`, and `yesterday`:

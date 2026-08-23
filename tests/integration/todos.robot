@@ -29,6 +29,56 @@ Todo Can Move Through Lifecycle
     Data File Should Contain    TODOS.md    * [ ] Ship release
     No Rewrite Artifacts Should Remain
 
+Todo Show Prints Complete Script Friendly Details
+    ${today}=    Evaluate    str(datetime.date.today())    modules=datetime
+    ${add}=    Run Shiori    todo    add    --due    2030-04-05    Ship release #work #urgent
+    Shiori Should Succeed    ${add}
+    ${start}=    Run Shiori    todo    start    0
+    Shiori Should Succeed    ${start}
+
+    ${show}=    Run Shiori    todo    show    0
+    Shiori Should Succeed    ${show}
+    Should Contain    ${show.stdout}    ID: 0
+    Should Contain    ${show.stdout}    Status: IN PROGRESS
+    Should Contain    ${show.stdout}    Text: Ship release #work #urgent
+    Should Contain    ${show.stdout}    Created: ${today}
+    Should Contain    ${show.stdout}    Due: 2030-04-05
+    Should Contain    ${show.stdout}    Tags: work, urgent
+
+Todo Show Prints None For Optional Details
+    ${add}=    Run Shiori    todo    add    Untagged task
+    Shiori Should Succeed    ${add}
+
+    ${show}=    Run Shiori    todo    show    0
+    Shiori Should Succeed    ${show}
+    Should Contain    ${show.stdout}    Due: none
+    Should Contain    ${show.stdout}    Tags: none
+
+Invalid Todo Show Requests Leave Storage Unchanged
+    ${add}=    Run Shiori    todo    add    Existing task
+    Shiori Should Succeed    ${add}
+    ${before}=    Get File    ${TEST_DATA}${/}TODOS.md    encoding=UTF-8
+
+    ${missing}=    Run Shiori    todo    show
+    Shiori Should Fail    ${missing}
+    Combined Output Should Contain    ${missing}    exactly one todo ID
+
+    ${malformed}=    Run Shiori    todo    show    12x
+    Shiori Should Fail    ${malformed}
+    Combined Output Should Contain    ${malformed}    Invalid todo ID
+
+    ${negative}=    Run Shiori    todo    show    -1
+    Shiori Should Fail    ${negative}
+    Combined Output Should Contain    ${negative}    Invalid todo ID
+
+    ${unknown}=    Run Shiori    todo    show    999
+    Shiori Should Fail    ${unknown}
+    Combined Output Should Contain    ${unknown}    Todo 999 not found
+
+    ${after}=    Get File    ${TEST_DATA}${/}TODOS.md    encoding=UTF-8
+    Should Be Equal    ${after}    ${before}
+    No Rewrite Artifacts Should Remain
+
 Todo Due Date Can Be Rewritten And Removed
     ${add}=    Run Shiori    todo    add    --due    2030-04-05    Dated task
     Shiori Should Succeed    ${add}

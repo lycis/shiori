@@ -1,3 +1,5 @@
+#include <ctype.h>
+#include <errno.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -792,16 +794,114 @@ static int command_todo_list(int argc, char *argv[]) {
 }
 
 static int parse_todo_id(const char *value, unsigned long long *id) {
+    if(value[0] == '\0' || value[0] == '-') {
+        log_error("Invalid todo ID: %s\n", value);
+        return R_ERROR;
+    }
+
     char *end = NULL;
 
+    errno = 0;
     unsigned long long parsed = strtoull(value, &end, 10);
 
-    if(end == value || *end != '\0') {
+    if(errno == ERANGE || end == value || *end != '\0') {
         log_error("Invalid todo ID: %s\n", value);
         return R_ERROR;
     }
 
     *id = parsed;
+    return R_OK;
+}
+
+static void print_todo_tags(const char *text) {
+    const char *current = text;
+    bool found = false;
+
+    while(*current != '\0') {
+        while(isspace((unsigned char)*current)) {
+            current++;
+        }
+
+        const char *token = current;
+
+        while(*current != '\0' && !isspace((unsigned char)*current)) {
+            current++;
+        }
+
+        size_t length = (size_t)(current - token);
+
+        if(length > 1 && token[0] == '#' &&
+           !(length >= strlen("#shiori/") && strncmp(token, "#shiori/", strlen("#shiori/")) == 0)) {
+            printf("%s%.*s", found ? ", " : "", (int)(length - 1), token + 1);
+            found = true;
+        }
+    }
+
+    if(!found) {
+        printf("none");
+    }
+
+    printf("\n");
+}
+
+static int command_todo_show(int argc, char *argv[]) {
+    if(argc != 1) {
+        log_error("You must specify exactly one todo ID to show.\n");
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    struct todo_list todos;
+    todo_list_init(&todos);
+
+    if(read_todos(TODO_FILE, &todos) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    struct todo *item = todo_list_find_by_id(&todos, id);
+
+    if(item == NULL) {
+        log_error("Todo %llu not found.\n", id);
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    char created_date[11];
+
+    if(format_todo_date(item->created, created_date, sizeof(created_date)) != R_OK) {
+        log_error("Failed to format creation date for todo %llu.\n", id);
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    char due_date[11];
+    const char *due = "none";
+
+    if(item->due != 0) {
+        if(format_todo_date(item->due, due_date, sizeof(due_date)) != R_OK) {
+            log_error("Failed to format due date for todo %llu.\n", id);
+            todo_list_free(&todos);
+            return R_ERROR;
+        }
+
+        due = due_date;
+    }
+
+    printf("ID: %llu\n", item->id);
+    printf("Status: %s\n", todo_status_string(item->status));
+    printf("Text: %s\n", item->text);
+    printf("Created: %s\n", created_date);
+    printf("Due: %s\n", due);
+    printf("Tags: ");
+    print_todo_tags(item->text);
+
+    todo_list_free(&todos);
     return R_OK;
 }
 
@@ -1344,6 +1444,7 @@ static const struct command_definition todo_commands[] = {
     {"help", "", "Display help and info for the `todo` commands", command_todo_help, NULL, 0, true},
     {"add", "<text>", "Add a new todo", command_todo_add, NULL, 0, true},
     {"list", "", "List todos", command_todo_list, NULL, 0, true},
+    {"show", "<id>", "Show one todo", command_todo_show, NULL, 0, true},
     {"start", "<id>", "Mark a todo as in progress", command_todo_start, NULL, 0, true},
     {"done", "<id>", "Mark a todo as completed", command_todo_done, NULL, 0, true},
     {"reopen", "<id>", "Reopen a todo", command_todo_reopen, NULL, 0, true},

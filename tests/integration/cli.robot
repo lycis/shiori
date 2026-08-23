@@ -43,3 +43,10 @@ Completion Script Can Be Generated Without Configuration
     Shiori Should Succeed    ${result}
     Should Contain    ${result.stdout}    Register-ArgumentCompleter
     Should Contain    ${result.stdout}    'todo'
+    Should Contain    ${result.stdout}    'show'
+
+Todo Help Includes Show Command
+    Write Shiori Config
+    ${result}=    Run Shiori    todo    help
+    Shiori Should Succeed    ${result}
+    Should Contain    ${result.stdout}    show <id>
