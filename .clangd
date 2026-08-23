@@ -1,0 +1,9 @@
+If:
+  PathMatch: .*\.(c|h)$
+
+CompileFlags:
+  Compiler: clang
+  Add:
+    - -xc
+    - -std=c23
+    - -Isrc
