@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 
-#include "todo.h"
 #include "todo_list.h"
 
 // clang-format off: long line is ok here... better than the format

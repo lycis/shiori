@@ -1,7 +1,6 @@
 #define __STDC_WANT_LIB_EXT1__ 1
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #if defined(_WIN32)
@@ -25,8 +24,6 @@
 #include "color.h"
 #include "commands.h"
 #include "common.h"
-#include "config.h"
-#include "hooks.h"
 #include "logging.h"
 #include "platform.h"
 #include "utf8.h"

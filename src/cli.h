@@ -1,7 +1,6 @@
 #ifndef SHIORI_CLI_H
 #define SHIORI_CLI_H
 
-#include "color.h"
 #include "common.h"
 
 void strip_leading_flags(int *argc, char ***argv);

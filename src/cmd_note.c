@@ -7,6 +7,7 @@
 #include "common.h"
 #include "logging.h"
 #include "note.h"
+#include "color.h"
 
 int command_note(int argc, char *argv[]) {
     (void)argc;
