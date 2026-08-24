@@ -11,7 +11,7 @@
 
 struct configuration g_config;
 
-int read_config_file() {
+int read_config_file(void) {
     log_debug("Reading config file.\n");
 
     // clear the whole config

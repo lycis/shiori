@@ -7,8 +7,8 @@ struct todo_list {
 };
 void todo_list_init(struct todo_list *list);
 void todo_list_free(struct todo_list *list);
-int todo_list_add(struct todo_list *list, const struct todo *item);
+[[nodiscard]] int todo_list_add(struct todo_list *list, const struct todo *item);
 struct todo *todo_list_find_by_id(struct todo_list *list, unsigned long long id);
-int todo_list_remove_by_id(struct todo_list *list, unsigned long long id);
+[[nodiscard]] int todo_list_remove_by_id(struct todo_list *list, unsigned long long id);
 
 #endif

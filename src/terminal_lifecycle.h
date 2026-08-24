@@ -20,9 +20,9 @@ struct terminal_lifecycle {
     atomic_size_t depth;
 };
 
-enum terminal_lifecycle_enter_result terminal_lifecycle_enter(struct terminal_lifecycle *lifecycle);
-bool terminal_lifecycle_leave(struct terminal_lifecycle *lifecycle);
-bool terminal_lifecycle_claim_cleanup(struct terminal_lifecycle *lifecycle);
+[[nodiscard]] enum terminal_lifecycle_enter_result terminal_lifecycle_enter(struct terminal_lifecycle *lifecycle);
+[[nodiscard]] bool terminal_lifecycle_leave(struct terminal_lifecycle *lifecycle);
+[[nodiscard]] bool terminal_lifecycle_claim_cleanup(struct terminal_lifecycle *lifecycle);
 void terminal_lifecycle_complete_cleanup(struct terminal_lifecycle *lifecycle);
 
 #endif

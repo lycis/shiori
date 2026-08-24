@@ -43,7 +43,11 @@ int command_init(int argc, char *argv[]) {
 
     // by default the base dir for keeping notes is the current work dir
     char buffer[DEFAULT_BUFFER_SIZE];
-    get_current_path(buffer, DEFAULT_BUFFER_SIZE);
+    if(get_current_path(buffer, DEFAULT_BUFFER_SIZE) == nullptr) {
+        log_error("Failed resolving the current directory.\n");
+        fclose(config_file);
+        return R_ERROR;
+    }
     fprintf(config_file, "base_dir: %s\n", buffer);
     fprintf(config_file, "color: true\n");
 

@@ -180,24 +180,34 @@ int command_today(int argc, char *argv[]) {
             continue; // don't care for done
         }
 
+        struct todo_list *target = nullptr;
+
         if(item->due != 0) {
             // we have a due date, so it could land in one of our due-buckets
             int due_cmp = compare_dates(item->due, selected_date);
             if(due_cmp < 0) {
-                todo_list_add(&overdue_todos, item);
-                continue;
-            }
-
-            if(due_cmp == 0) {
-                todo_list_add(&today_todos, item);
-                continue;
+                target = &overdue_todos;
+            } else if(due_cmp == 0) {
+                target = &today_todos;
             }
         }
 
-        if(item->status == IN_PROGRESS) {
-            todo_list_add(&in_progress_todos, item);
-        } else if(item->status == OPEN) {
-            todo_list_add(&open_todos, item);
+        if(target == nullptr) {
+            if(item->status == IN_PROGRESS) {
+                target = &in_progress_todos;
+            } else if(item->status == OPEN) {
+                target = &open_todos;
+            }
+        }
+
+        if(target != nullptr && todo_list_add(target, item) != R_OK) {
+            log_error("Failed building today overview.\n");
+            todo_list_free(&overdue_todos);
+            todo_list_free(&today_todos);
+            todo_list_free(&in_progress_todos);
+            todo_list_free(&open_todos);
+            todo_list_free(&todo_list);
+            return R_ERROR;
         }
     }
 
@@ -253,7 +263,7 @@ int command_today(int argc, char *argv[]) {
         );
     }
     printf("\n");
-    todo_list_free(&overdue_todos);
+    todo_list_free(&today_todos);
 
     // print active todos
     printf(

@@ -40,7 +40,10 @@ bool g_debug_enabled = false;
 // ---------------------
 
 int shiori_main(int argc, char *argv[]) {
-    terminal_enable_utf8();
+    if(terminal_enable_utf8() != R_OK) {
+        printf("Failed to put terminal into UTF8 mode. Ending.\n");
+        return SHIORI_EXIT_UTF8_FAILED;
+    }
     color_set_stream_enabled(stdout, stream_is_terminal(stdout));
     color_set_stream_enabled(stderr, stream_is_terminal(stderr));
 

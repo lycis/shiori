@@ -19,14 +19,14 @@
 
 #include "cli.h"
 
-char *get_path_separator();
-int file_access_utf8(const char *path, int mode);
-int file_open_utf8(FILE **file, const char *path, const char *mode);
+char *get_path_separator(void);
+[[nodiscard]] int file_access_utf8(const char *path, int mode);
+[[nodiscard]] int file_open_utf8(FILE **file, const char *path, const char *mode);
 int file_remove_utf8(const char *path);
-int file_rename_utf8(const char *old_path, const char *new_path);
-int terminal_enable_utf8(void);
-int get_user_home(char *buffer, size_t size);
-char *get_current_path(char *buffer, size_t size);
+[[nodiscard]] int file_rename_utf8(const char *old_path, const char *new_path);
+[[nodiscard]] int terminal_enable_utf8(void);
+[[nodiscard]] int get_user_home(char *buffer, size_t size);
+[[nodiscard]] char *get_current_path(char *buffer, size_t size);
 int set_environment_variable(const char *name, const char *value);
 bool environment_variable_nonempty(const char *name);
 bool stream_is_terminal(FILE *stream);
@@ -52,7 +52,7 @@ struct key_event {
     unsigned int codepoint;
 };
 
-int terminal_enter_interactive_mode(void);
+[[nodiscard]] int terminal_enter_interactive_mode(void);
 void terminal_leave_interactive_mode(void);
 void terminal_render_input(
     const char *prompt,
@@ -64,6 +64,6 @@ void terminal_render_input(
 );
 void terminal_finish_input_line(void);
 void terminal_cancel_input_line(void);
-int terminal_read_key(struct key_event *event);
+[[nodiscard]] int terminal_read_key(struct key_event *event);
 
 #endif

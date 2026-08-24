@@ -15,6 +15,6 @@ struct configuration {
 
 extern struct configuration g_config;
 
-int read_config_file();
+[[nodiscard]] int read_config_file(void);
 
 #endif

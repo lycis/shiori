@@ -10,6 +10,7 @@
 #define SHIORI_EXIT_CONFIG_ERROR 1
 #define SHIORI_EXIT_NO_COMMAND 2
 #define SHIORI_EXIT_COMMAND_FAILED 3
+#define SHIORI_EXIT_UTF8_FAILED 4
 #define SHIORI_EXIT_INTERRUPTED 130
 
 #define CONFIG_FILE_NAME ".shiori"
@@ -26,16 +27,16 @@
 #include <time.h>
 
 char *trim(char *str);
-int create_file_if_not_exists(char *fname);
-int get_base_dir_file_path(const char *filename, char *buffer, size_t buffer_size);
-int build_text_from_args(int argc, char *argv[], char *buffer, size_t buffer_size);
-int build_daily_heading(char *buffer, size_t size, time_t date);
+[[nodiscard]] int create_file_if_not_exists(char *fname);
+[[nodiscard]] int get_base_dir_file_path(const char *filename, char *buffer, size_t buffer_size);
+[[nodiscard]] int build_text_from_args(int argc, char *argv[], char *buffer, size_t buffer_size);
+[[nodiscard]] int build_daily_heading(char *buffer, size_t size, time_t date);
 bool str_ends_with(const char *str, const char *suffix);
 bool dates_equal(time_t a, time_t b);
-int format_date(time_t date, char *buffer, size_t buffer_size);
+[[nodiscard]] int format_date(time_t date, char *buffer, size_t buffer_size);
 int compare_dates(time_t a, time_t b);
-int parse_int(const char *text, int *result);
-int join_array(int argc, char *argv[], char *buffer, size_t buffer_size);
+[[nodiscard]] int parse_int(const char *text, int *result);
+[[nodiscard]] int join_array(int argc, char *argv[], char *buffer, size_t buffer_size);
 bool ends_with_whitespace(const char *text);
 
 #endif

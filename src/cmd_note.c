@@ -115,7 +115,11 @@ int command_note_show(int argc, char *argv[]) {
     print_divider(60);
 
     char date_buffer[DEFAULT_BUFFER_SIZE];
-    format_date(note->created, date_buffer, sizeof(date_buffer));
+    if(format_date(note->created, date_buffer, sizeof(date_buffer) != R_OK)) {
+        log_critical("Failed to format date from note.\n");
+        note_list_free(&list);
+        return R_ERROR;
+    }
     printf(
         "%s%-15s: %s\n%s",
         color_style_sequence(COLOR_STYLE_METADATA),
