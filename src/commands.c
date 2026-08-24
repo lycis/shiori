@@ -9,7 +9,23 @@
 #include "hooks.h"
 #include "logging.h"
 
-#define COMMAND_COUNT 13
+enum command_index {
+    COMMAND_INIT,
+    COMMAND_CONFIG,
+    COMMAND_ADD,
+    COMMAND_CAPTURE,
+    COMMAND_TOPIC,
+    COMMAND_TAG,
+    COMMAND_TODO,
+    COMMAND_TODAY,
+    COMMAND_CONSOLE,
+    COMMAND_UTIL,
+    COMMAND_HELP,
+    COMMAND_VERSION,
+    COMMAND_NOTE,
+    COMMAND_COUNT
+};
+
 
 static struct command_definition commands[COMMAND_COUNT];
 static bool commands_initialized = false;
@@ -24,10 +40,10 @@ static void init_commands() {
     size_t note_commands_count = 0;
     const struct command_definition *note_commands = get_note_commands(&note_commands_count);
 
-    commands[0] =
+    commands[COMMAND_INIT] =
         (struct command_definition){"init", "", "Initialize a new configuration", command_init, nullptr, 0, false};
 
-    commands[1] = (struct command_definition){
+    commands[COMMAND_CONFIG] = (struct command_definition){
         "config",
         "<command>",
         "Show or modify configuration",
@@ -37,7 +53,7 @@ static void init_commands() {
         true
     };
 
-    commands[2] = (struct command_definition){
+    commands[COMMAND_ADD] = (struct command_definition){
         "add",
         "[--topic <topic>] <note>",
         "Add a new note or thought to the day",
@@ -47,7 +63,7 @@ static void init_commands() {
         true
     };
 
-    commands[3] = (struct command_definition){
+    commands[COMMAND_CAPTURE] = (struct command_definition){
         "capture",
         "",
         "Interactively capture notes and todos",
@@ -57,13 +73,13 @@ static void init_commands() {
         true
     };
 
-    commands[4] =
+    commands[COMMAND_TOPIC] =
         (struct command_definition){"topic", "<topic>", "Browse notes by topic", command_topic, nullptr, 0, true};
 
-    commands[5] =
+    commands[COMMAND_TAG] =
         (struct command_definition){"tag", "<tag>", "Find notes and todos by tag", command_tag, nullptr, 0, true};
 
-    commands[6] = (struct command_definition){
+    commands[COMMAND_TODO] = (struct command_definition){
         "todo",
         "<cmd>",
         "Manage your todos and tasks",
@@ -73,13 +89,13 @@ static void init_commands() {
         true
     };
 
-    commands[7] =
+    commands[COMMAND_TODAY] =
         (struct command_definition){"today", "", "Your overview for the current day", command_today, nullptr, 0, true};
 
-    commands[8] =
+    commands[COMMAND_CONSOLE] =
         (struct command_definition){"console", "", "Start the interactive console", command_console, nullptr, 0, true};
 
-    commands[9] = (struct command_definition){
+    commands[COMMAND_UTIL] = (struct command_definition){
         "util",
         "<cmd>",
         "Utility and integration commands",
@@ -89,9 +105,9 @@ static void init_commands() {
         true
     };
 
-    commands[10] = (struct command_definition){"help", "", "Show this help", command_help, nullptr, 0, false};
+    commands[COMMAND_HELP] = (struct command_definition){"help", "", "Show this help", command_help, nullptr, 0, false};
 
-    commands[11] = (struct command_definition){
+    commands[COMMAND_VERSION] = (struct command_definition){
         "version",
         "",
         "Display current version information",
@@ -101,7 +117,7 @@ static void init_commands() {
         false
     };
 
-    commands[12] = (struct command_definition){
+    commands[COMMAND_NOTE] = (struct command_definition){
         "note",
         "<cmd>",
         "Access and display details around your notes",
