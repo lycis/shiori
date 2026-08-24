@@ -128,8 +128,14 @@ static int count_tags_in_text(
 
         if(entry == nullptr) {
             if(*tag_count == *tag_capacity) {
-                size_t new_capacity = *tag_capacity == 0 ? 8 : *tag_capacity * 2;
-                struct tag_count *new_tags = realloc(*tags, new_capacity * sizeof(struct tag_count));
+                size_t new_capacity;
+                size_t allocation_size;
+                if(calculate_array_growth(*tag_capacity, sizeof(**tags), &new_capacity, &allocation_size) != R_OK) {
+                    log_critical("Tag list is too large.\n");
+                    return R_ERROR;
+                }
+
+                struct tag_count *new_tags = realloc(*tags, allocation_size);
 
                 if(new_tags == nullptr) {
                     log_error("Failed allocating tag list.\n");

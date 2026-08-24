@@ -3,11 +3,11 @@
 #include <string.h>
 
 #include "cli.h"
+#include "color.h"
 #include "commands.h"
 #include "common.h"
 #include "logging.h"
 #include "note.h"
-#include "color.h"
 
 int command_note(int argc, char *argv[]) {
     (void)argc;

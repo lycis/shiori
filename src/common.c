@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <stdckdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -222,6 +223,31 @@ int join_array(int argc, char *argv[], char *buffer, size_t buffer_size) {
         used += (size_t)written;
     }
 
+    return R_OK;
+}
+
+int calculate_array_growth(
+    size_t current_capacity,
+    size_t element_size,
+    size_t *new_capacity,
+    size_t *allocation_size
+) {
+    if(element_size == 0 || new_capacity == nullptr || allocation_size == nullptr) {
+        return R_ERROR;
+    }
+
+    size_t capacity = 8;
+    if(current_capacity != 0 && ckd_mul(&capacity, current_capacity, (size_t)2)) {
+        return R_ERROR;
+    }
+
+    size_t size;
+    if(ckd_mul(&size, capacity, element_size)) {
+        return R_ERROR;
+    }
+
+    *new_capacity = capacity;
+    *allocation_size = size;
     return R_OK;
 }
 

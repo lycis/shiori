@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 
+#include "common.h"
 #include "logging.h"
 #include "todo.h"
 
@@ -21,9 +22,14 @@ void todo_list_free(struct todo_list *list) {
 
 int todo_list_add(struct todo_list *list, const struct todo *item) {
     if(list->count == list->capacity) {
-        size_t new_capacity = list->capacity == 0 ? 8 : list->capacity * 2;
+        size_t new_capacity;
+        size_t allocation_size;
+        if(calculate_array_growth(list->capacity, sizeof(*list->items), &new_capacity, &allocation_size) != R_OK) {
+            log_critical("TODO list is too large.\n");
+            return R_ERROR;
+        }
 
-        struct todo *new_items = realloc(list->items, new_capacity * sizeof(struct todo));
+        struct todo *new_items = realloc(list->items, allocation_size);
 
         if(new_items == nullptr) {
             log_error("Failed allocating TODO list.\n");

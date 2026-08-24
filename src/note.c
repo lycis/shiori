@@ -25,9 +25,14 @@ void note_list_free(struct note_list *list) {
 
 int note_list_add(struct note_list *list, const struct note *item) {
     if(list->count == list->capacity) {
-        size_t new_capacity = list->capacity == 0 ? 8 : list->capacity * 2;
+        size_t new_capacity;
+        size_t allocation_size;
+        if(calculate_array_growth(list->capacity, sizeof(*list->items), &new_capacity, &allocation_size) != R_OK) {
+            log_critical("Note list is too large.\n");
+            return R_ERROR;
+        }
 
-        struct note *new_items = realloc(list->items, new_capacity * sizeof(struct note));
+        struct note *new_items = realloc(list->items, allocation_size);
 
         if(new_items == nullptr) {
             log_error("Failed allocating note list.\n");

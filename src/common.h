@@ -24,6 +24,7 @@
 #define TODO_FILE "TODOS.md"
 #define NOTES_FILE "NOTES.md"
 
+#include <stddef.h>
 #include <time.h>
 
 char *trim(char *str);
@@ -37,6 +38,8 @@ bool dates_equal(time_t a, time_t b);
 int compare_dates(time_t a, time_t b);
 [[nodiscard]] int parse_int(const char *text, int *result);
 [[nodiscard]] int join_array(int argc, char *argv[], char *buffer, size_t buffer_size);
+[[nodiscard]] int
+calculate_array_growth(size_t current_capacity, size_t element_size, size_t *new_capacity, size_t *allocation_size);
 bool ends_with_whitespace(const char *text);
 
 #endif

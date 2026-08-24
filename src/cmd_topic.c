@@ -47,9 +47,16 @@ static int command_topic_list() {
 
         // new topic to register
         if(topic_count == topic_capacity) {
-            size_t new_capacity = topic_capacity == 0 ? 8 : topic_capacity * 2;
+            size_t new_capacity;
+            size_t allocation_size;
+            if(calculate_array_growth(topic_capacity, sizeof(*topics), &new_capacity, &allocation_size) != R_OK) {
+                log_critical("Topic list is too large.\n");
+                free(topics);
+                note_list_free(&notes);
+                return R_ERROR;
+            }
 
-            struct topic_count *new_topics = realloc(topics, new_capacity * sizeof(struct topic_count));
+            struct topic_count *new_topics = realloc(topics, allocation_size);
 
             if(new_topics == nullptr) {
                 log_error("Failed allocating topic list.\n");
