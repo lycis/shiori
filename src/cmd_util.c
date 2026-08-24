@@ -5,6 +5,7 @@
 #include "cli.h"
 #include "commands.h"
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "note.h"
 
@@ -207,7 +208,7 @@ static int migrate_notes_v0_to_v1(void) {
     struct note_list all_notes;
     note_list_init(&all_notes);
 
-    if(read_notes(NOTES_FILE, &all_notes) != R_OK) {
+    if(read_notes(g_config.notes_filename, &all_notes) != R_OK) {
         log_critical("Failed to read all notes.\n");
         note_list_free(&all_notes);
         return R_ERROR;
@@ -305,7 +306,7 @@ static int migrate_notes_v0_to_v1(void) {
 
 static int migrate_notes() {
     struct notes_metadata metadata;
-    if(read_notes_metadata(NOTES_FILE, &metadata) != R_OK) {
+    if(read_notes_metadata(g_config.notes_filename, &metadata) != R_OK) {
         log_critical("Failed to read notes metadata.\n");
         return R_ERROR;
     }

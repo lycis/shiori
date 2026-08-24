@@ -6,6 +6,7 @@
 #include "cmd_shared.h"
 #include "color.h"
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "note.h"
 
@@ -144,7 +145,7 @@ static int assign_note_id(struct note *note) {
     struct note_list notes;
     note_list_init(&notes);
 
-    if(read_notes_for_date(NOTES_FILE, note->created, &notes) != R_OK) {
+    if(read_notes_for_date(g_config.notes_filename, note->created, &notes) != R_OK) {
         log_critical("Failed reading notes for date.\n");
         note_list_free(&notes);
         return R_ERROR;
@@ -220,7 +221,7 @@ int command_add(int argc, char *argv[]) {
 
     struct note_list notes_before;
     note_list_init(&notes_before);
-    if(read_notes(NOTES_FILE, &notes_before) != R_OK) {
+    if(read_notes(g_config.notes_filename, &notes_before) != R_OK) {
         note_list_free(&notes_before);
         return R_ERROR;
     }
@@ -238,13 +239,13 @@ int command_add(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    if(add_note_to_markdown(&n, NOTES_FILE, heading) != R_OK) {
+    if(add_note_to_markdown(&n, g_config.notes_filename, heading) != R_OK) {
         return R_ERROR;
     }
 
     struct note_list notes_after;
     note_list_init(&notes_after);
-    int validation_result = read_notes(NOTES_FILE, &notes_after);
+    int validation_result = read_notes(g_config.notes_filename, &notes_after);
     size_t new_count = notes_after.count;
     note_list_free(&notes_after);
 

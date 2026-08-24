@@ -6,6 +6,7 @@
 #include "cli.h"
 #include "color.h"
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "note.h"
 
@@ -17,7 +18,7 @@ struct topic_count {
 static int command_topic_list() {
     struct note_list notes;
     note_list_init(&notes);
-    if(read_notes(NOTES_FILE, &notes) != R_OK) {
+    if(read_notes(g_config.notes_filename, &notes) != R_OK) {
         note_list_free(&notes);
         return R_ERROR;
     }
@@ -154,7 +155,7 @@ int command_topic(int argc, char *argv[]) {
 
     struct note_list list;
     note_list_init(&list);
-    if(read_notes(NOTES_FILE, &list) != R_OK) {
+    if(read_notes(g_config.notes_filename, &list) != R_OK) {
         return R_ERROR;
     }
 

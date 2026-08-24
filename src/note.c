@@ -6,6 +6,7 @@
 
 #include "cmd_shared.h"
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "platform.h"
 
@@ -445,7 +446,7 @@ int write_note(FILE *file, const struct note *note) {
 
 int restore_notes_backup(void) {
     char file_path[DEFAULT_BUFFER_SIZE];
-    if(get_base_dir_file_path(NOTES_FILE, file_path, sizeof(file_path)) != R_OK) {
+    if(get_base_dir_file_path(g_config.notes_filename, file_path, sizeof(file_path)) != R_OK) {
         return R_ERROR;
     }
 
@@ -477,7 +478,7 @@ int rewrite_notes(struct note_list *notes, struct notes_metadata *md, bool allow
     struct note_list existing_notes;
     note_list_init(&existing_notes);
 
-    if(read_notes(NOTES_FILE, &existing_notes) != R_OK) {
+    if(read_notes(g_config.notes_filename, &existing_notes) != R_OK) {
         note_list_free(&existing_notes);
         return R_ERROR;
     }
@@ -495,12 +496,12 @@ int rewrite_notes(struct note_list *notes, struct notes_metadata *md, bool allow
     }
 
     char file_path[DEFAULT_BUFFER_SIZE];
-    if(get_base_dir_file_path(NOTES_FILE, file_path, sizeof(file_path)) != R_OK) {
+    if(get_base_dir_file_path(g_config.notes_filename, file_path, sizeof(file_path)) != R_OK) {
         return R_ERROR;
     }
 
     char temp_file[DEFAULT_BUFFER_SIZE];
-    int written = snprintf(temp_file, sizeof(temp_file), "%s.tmp", NOTES_FILE);
+    int written = snprintf(temp_file, sizeof(temp_file), "%s.tmp", g_config.notes_filename);
     if(written < 0 || (size_t)written >= sizeof(temp_file)) {
         log_error("Temporary file path is too long.\n");
         return R_ERROR;
@@ -594,7 +595,7 @@ int rewrite_notes(struct note_list *notes, struct notes_metadata *md, bool allow
 
     struct note_list written_notes;
     note_list_init(&written_notes);
-    int validation_result = read_notes(NOTES_FILE, &written_notes);
+    int validation_result = read_notes(g_config.notes_filename, &written_notes);
     size_t written_count = written_notes.count;
     note_list_free(&written_notes);
 

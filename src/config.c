@@ -17,6 +17,8 @@ int read_config_file(void) {
     // clear the whole config
     memset(&g_config, 0, sizeof(g_config));
     g_config.color = true;
+    strcpy_s(g_config.todo_filename, sizeof(g_config.todo_filename), "TODOS.md");
+    strcpy_s(g_config.notes_filename, sizeof(g_config.notes_filename), "NOTES.md");
 
     char config_path[DEFAULT_BUFFER_SIZE];
 
@@ -105,6 +107,22 @@ int read_config_file(void) {
             if(strlen(value) > 0) {
                 if(strcpy_s(g_config.hooks.after_command, sizeof(g_config.hooks.after_command), value) != 0) {
                     log_error("invalid configuration (line %d): hook_after_command path is too long\n", lnr);
+                    fclose(config_file);
+                    return R_ERROR;
+                }
+            }
+        } else if(strcmp(key, "todo_filename") == 0) {
+            if(strlen(value) > 0) {
+                if(strcpy_s(g_config.todo_filename, sizeof(g_config.todo_filename), value) != 0) {
+                    log_error("invalid configuration file (line %d): todo_filename is too long.\n", lnr);
+                    fclose(config_file);
+                    return R_ERROR;
+                }
+            }
+        } else if(strcmp(key, "notes_filename") == 0) {
+            if(strlen(value) > 0) {
+                if(strcpy_s(g_config.notes_filename, sizeof(g_config.notes_filename), value) != 0) {
+                    log_error("invalid configuration file (line %d): notes_filename is too long.\n", lnr);
                     fclose(config_file);
                     return R_ERROR;
                 }

@@ -11,6 +11,7 @@
 #include "color.h"
 #include "commands.h"
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "platform.h"
 #include "todo.h"
@@ -402,7 +403,7 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     }
 
     struct todo_metadata md;
-    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
+    if(read_todo_metadata(g_config.todo_filename, &md) != R_OK) {
         log_critical("Could not read TODO metadata.");
         return R_ERROR;
     }
@@ -420,7 +421,7 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     item->status = OPEN;
 
     log_debug("Updating todo metadata with last_id change.");
-    if(write_todo_metadata(TODO_FILE, &md) != R_OK) {
+    if(write_todo_metadata(g_config.todo_filename, &md) != R_OK) {
         return R_ERROR;
     }
 
@@ -503,7 +504,7 @@ int command_todo_add(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    if(write_todo(TODO_FILE, &item) != R_OK) {
+    if(write_todo(g_config.todo_filename, &item) != R_OK) {
         return R_ERROR;
     }
 
@@ -675,7 +676,7 @@ static int command_todo_list(int argc, char *argv[]) {
             "  %s todo list --done --tag work\n"
             "  %s todo list --overdue --tag work\n",
             APP_NAME,
-            TODO_FILE,
+            g_config.todo_filename,
             "--open",
             "--in-progress",
             "--done",
@@ -703,7 +704,7 @@ static int command_todo_list(int argc, char *argv[]) {
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(TODO_FILE, &todos) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -888,7 +889,7 @@ static int command_todo_show(int argc, char *argv[]) {
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(TODO_FILE, &todos) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1100,7 +1101,7 @@ static int set_todo_status(unsigned long long id, todo_status status) {
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(TODO_FILE, &todos) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1118,12 +1119,12 @@ static int set_todo_status(unsigned long long id, todo_status status) {
     // write todo list back to file
     struct todo_metadata md;
 
-    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
+    if(read_todo_metadata(g_config.todo_filename, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    if(write_todo_list(TODO_FILE, &todos, &md) != R_OK) {
+    if(write_todo_list(g_config.todo_filename, &todos, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1248,7 +1249,7 @@ static int command_todo_rewrite(int argc, char *argv[]) {
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(TODO_FILE, &todos) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1316,7 +1317,7 @@ static int command_todo_rewrite(int argc, char *argv[]) {
      */
     struct todo_metadata md;
 
-    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
+    if(read_todo_metadata(g_config.todo_filename, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1324,7 +1325,7 @@ static int command_todo_rewrite(int argc, char *argv[]) {
     /*
      * Save modified list.
      */
-    if(write_todo_list(TODO_FILE, &todos, &md) != R_OK) {
+    if(write_todo_list(g_config.todo_filename, &todos, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1371,7 +1372,7 @@ static int command_todo_remove(int argc, char *argv[]) {
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(TODO_FILE, &todos) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1403,12 +1404,12 @@ static int command_todo_remove(int argc, char *argv[]) {
 
     struct todo_metadata md;
 
-    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
+    if(read_todo_metadata(g_config.todo_filename, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    if(write_todo_list(TODO_FILE, &todos, &md) != R_OK) {
+    if(write_todo_list(g_config.todo_filename, &todos, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1424,7 +1425,7 @@ static int command_todo_prune(int argc, char *argv[]) {
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(TODO_FILE, &todos) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
@@ -1486,12 +1487,12 @@ static int command_todo_prune(int argc, char *argv[]) {
      */
     struct todo_metadata md;
 
-    if(read_todo_metadata(TODO_FILE, &md) != R_OK) {
+    if(read_todo_metadata(g_config.todo_filename, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }
 
-    if(write_todo_list(TODO_FILE, &todos, &md) != R_OK) {
+    if(write_todo_list(g_config.todo_filename, &todos, &md) != R_OK) {
         todo_list_free(&todos);
         return R_ERROR;
     }

@@ -10,6 +10,8 @@ struct configuration {
     int version;
     char base_dir[4096];
     bool color;
+    char todo_filename[2048];
+    char notes_filename[2048];
     struct config_hooks hooks;
 };
 

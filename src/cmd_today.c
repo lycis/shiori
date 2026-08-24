@@ -6,6 +6,7 @@
 #include "cmd_shared.h"
 #include "color.h"
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "note.h"
 #include "todo.h"
@@ -115,7 +116,7 @@ int command_today(int argc, char *argv[]) {
     );
     struct note_list note_list;
     note_list_init(&note_list);
-    if(read_notes_for_date(NOTES_FILE, selected_date, &note_list) != R_OK) {
+    if(read_notes_for_date(g_config.notes_filename, selected_date, &note_list) != R_OK) {
         note_list_free(&note_list);
         return R_ERROR;
     }

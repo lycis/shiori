@@ -64,7 +64,7 @@ FILE *open_base_dir_file(const char *filename, const char *mode) {
 }
 
 FILE *open_notes_file(const char *mode) {
-    return open_base_dir_file(NOTES_FILE, mode);
+    return open_base_dir_file(g_config.notes_filename, mode);
 }
 
 int add_markdown_item(int argc, char *argv[], const char *filename, const char *prefix, const char *heading) {
@@ -184,7 +184,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
         return R_ERROR;
     }
 
-    if(strcmp(filename, NOTES_FILE) != 0 && file_remove_utf8(backup_path) != 0) {
+    if(strcmp(filename, g_config.notes_filename) != 0 && file_remove_utf8(backup_path) != 0) {
         log_warning("Failed to remove backup: %s\n", backup_path);
     }
 

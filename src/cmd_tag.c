@@ -7,6 +7,7 @@
 #include "cmd_shared.h"
 #include "color.h"
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "note.h"
 #include "todo.h"
@@ -186,7 +187,7 @@ static int command_tag_list() {
     struct note_list notes;
     note_list_init(&notes);
 
-    if(read_notes(NOTES_FILE, &notes) != R_OK) {
+    if(read_notes(g_config.notes_filename, &notes) != R_OK) {
         note_list_free(&notes);
         return R_ERROR;
     }
@@ -194,7 +195,7 @@ static int command_tag_list() {
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(TODO_FILE, &todos) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
         note_list_free(&notes);
         todo_list_free(&todos);
         return R_ERROR;
@@ -317,7 +318,7 @@ int command_tag(int argc, char *argv[]) {
     );
     struct note_list list;
     note_list_init(&list);
-    if(read_notes(NOTES_FILE, &list) != R_OK) {
+    if(read_notes(g_config.notes_filename, &list) != R_OK) {
         return R_ERROR;
     }
 
@@ -379,7 +380,7 @@ int command_tag(int argc, char *argv[]) {
     struct todo_list todos;
     todo_list_init(&todos);
 
-    if(read_todos(TODO_FILE, &todos) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
         log_critical("Failed reading todo list.\n");
         todo_list_free(&todos);
         return R_ERROR;
