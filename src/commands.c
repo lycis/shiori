@@ -26,7 +26,6 @@ enum command_index {
     COMMAND_COUNT
 };
 
-
 static struct command_definition commands[COMMAND_COUNT];
 static bool commands_initialized = false;
 
