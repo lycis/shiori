@@ -86,6 +86,11 @@ existing data.
 
 You need GNU Make and a C23-capable compiler; the current supported development setup is Windows with Clang.
 
+Shiori uses trunk-based development directly on `main`. The `main` branch contains
+the current development state and is normally ahead of the latest user release;
+it is not a stable release branch. To build a released version, check out its
+version tag instead.
+
 ```console
 make
 ```
@@ -124,7 +129,18 @@ Use the global `--debug` option for diagnostic output. Use `--no-color`, set `co
 
 ## Documentation
 
-- **[User Guide](docs/USER_GUIDE.md)** — installation, configuration, commands, workflows, storage formats, and troubleshooting
+Shiori uses trunk-based development directly on `main`. Consequently, documentation
+on `main` describes the current trunk and may cover behavior that has not been
+released yet. Releases and their matching documentation are preserved by version
+tags. Users of a released binary should select the guide for that binary's version
+(shown by `shiori version`), rather than the guide on `main`.
+
+| Version | User guide |
+|---|---|
+| Current trunk (`main`) | **[Trunk User Guide](docs/USER_GUIDE.md)** |
+| 0.2.0 (latest release) | **[0.2.0 User Guide](https://github.com/lycis/shiori/blob/0.2.0/docs/USER_GUIDE.md)** |
+| 0.1.0 | **[0.1.0 User Guide](https://github.com/lycis/shiori/blob/0.1.0/docs/USER_GUIDE.md)** |
+
 - **[Upgrade Guide](docs/UPGRADING.md)** — backups, migrations, verification, and recovery between releases
 - **[Changelog](CHANGELOG.md)** — release history, compatibility notes, features, and fixes
 - **[Build Guide](BUILD.md)** — toolchain setup, local build targets, tests, CI, and release packaging
