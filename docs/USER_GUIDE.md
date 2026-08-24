@@ -106,9 +106,19 @@ This creates a `.shiori` file similar to:
 version: 1
 base_dir: C:\path\to\your\notes
 color: true
+notes_filename: NOTES.md
+todo_filename: TODOS.md
 ```
 
 By default, `base_dir` is the directory where you ran `shiori init`. Shiori stores `NOTES.md` and `TODOS.md` there. The `color` setting defaults to `true` when it is omitted, so existing configurations keep colored interactive output.
+
+`notes_filename` and `todo_filename` may independently name files below
+`base_dir`, including files in an existing relative subdirectory. Absolute
+paths, empty values, `.` or `..` components, duplicate paths, and conflicts
+with Shiori's `.tmp` and `.bak` rewrite files are rejected. On Windows, path
+comparison is case-insensitive. The extension is not restricted, although the
+files contain Markdown regardless of their names. Existing configurations that
+omit these settings continue to use `NOTES.md` and `TODOS.md`.
 
 To intentionally recreate an existing local configuration:
 
