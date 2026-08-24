@@ -29,15 +29,21 @@ Use Working Directory As Data Directory
     Set Test Variable    ${TEST_DATA}    ${TEST_CWD}
 
 Write Shiori Config
-    [Arguments]    ${base_dir}=${TEST_DATA}    ${hook}=${EMPTY}    ${color}=${EMPTY}
+    [Arguments]    ${base_dir}=${TEST_DATA}    ${hook}=${EMPTY}    ${color}=${EMPTY}    ${notes}=${EMPTY}    ${todos}=${EMPTY}
     ${content}=    Catenate    SEPARATOR=\n
     ...    version: 1
     ...    base_dir: ${base_dir}
-    IF    '${color}' != '${EMPTY}'
+    IF    $color
         ${content}=    Catenate    SEPARATOR=\n    ${content}    color: ${color}
     END
-    IF    '${hook}' != '${EMPTY}'
+    IF    $hook
         ${content}=    Catenate    SEPARATOR=\n    ${content}    hook_after_command: ${hook}
+    END
+    IF    $notes
+        ${content}=    Catenate    SEPARATOR=\n    ${content}    notes_filename: ${notes}
+    END
+    IF    $todos
+        ${content}=    Catenate    SEPARATOR=\n    ${content}    todo_filename: ${todos}
     END
     Create File    ${TEST_CWD}${/}.shiori    ${content}${\n}    encoding=UTF-8
 

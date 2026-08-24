@@ -12,6 +12,8 @@ Init Creates Local Configuration
     Should Contain    ${config}    version: 1
     Should Contain    ${config}    base_dir: ${TEST_CWD}
     Should Contain    ${config}    color: true
+    Should Contain    ${config}    notes_filename: NOTES.md
+    Should Contain    ${config}    todo_filename: TODOS.md
 
 Init Refuses To Overwrite Configuration
     ${first}=     Run Shiori    init
@@ -66,3 +68,42 @@ Invalid Color Setting Is Rejected
     ${result}=    Run Shiori    config    show
     Shiori Should Fail    ${result}
     Combined Output Should Contain    ${result}    color must be true or false
+
+Relative Storage Filenames Are Accepted
+    Write Shiori Config    notes=journal\\notes.markdown    todos=tasks.txt
+    ${result}=    Run Shiori    config    show
+    Shiori Should Succeed    ${result}
+    Should Contain    ${result.stdout}    notes_filename: journal\\notes.markdown
+    Should Contain    ${result.stdout}    todo_filename: tasks.txt
+
+Equivalent Storage Paths Are Rejected
+    Write Shiori Config    notes=data.md    todos=DATA.md
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    storage paths conflict
+
+Storage Paths Cannot Escape Base Directory
+    Write Shiori Config    notes=..\\outside.md
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    invalid path component
+
+Absolute Storage Paths Are Rejected
+    Write Shiori Config    todos=C:\\absolute\\todos.md
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    must be relative to base_dir
+
+Storage Paths Cannot Conflict With Rewrite Artifacts
+    Write Shiori Config    notes=tasks.md.bak    todos=tasks.md
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    storage paths conflict
+
+Explicitly Empty Storage Filename Is Rejected
+    Create File
+    ...    ${TEST_CWD}${/}.shiori
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}notes_filename:${\n}
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    notes_filename must not be empty
