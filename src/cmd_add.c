@@ -9,14 +9,14 @@
 #include "note.h"
 
 static int build_note_from_args(int argc, char *argv[], struct note *note) {
-    if(argc <= 0 || argv == NULL || note == NULL) {
+    if(argc <= 0 || argv == nullptr || note == nullptr) {
         return R_ERROR;
     }
 
     char *text_argv[argc];
     int text_argc = 0;
 
-    const char *topic = NULL;
+    const char *topic = nullptr;
 
     for(int i = 0; i < argc; ++i) {
         if(strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--topic") == 0) {
@@ -43,12 +43,12 @@ static int build_note_from_args(int argc, char *argv[], struct note *note) {
         return R_ERROR;
     }
 
-    if(create_note_from_markdown(buffer, time(NULL), note) != R_OK) {
+    if(create_note_from_markdown(buffer, time(nullptr), note) != R_OK) {
         log_critical("Error creating note.\n");
         return R_ERROR;
     }
 
-    if(topic != NULL) {
+    if(topic != nullptr) {
         if(strcpy_s(note->topic, sizeof(note->topic), topic) != 0) {
             log_error("Topic name is too long.\n");
             return R_ERROR;
@@ -59,7 +59,7 @@ static int build_note_from_args(int argc, char *argv[], struct note *note) {
 }
 
 static int add_note_to_markdown(struct note *note, const char *filename, const char *heading) {
-    if(note == NULL) {
+    if(note == nullptr) {
         return R_ERROR;
     }
 
@@ -95,7 +95,7 @@ static int add_note_to_markdown(struct note *note, const char *filename, const c
 }
 
 static int next_note_id_sequence_for(const struct note_list *notes, unsigned int *result) {
-    if(notes == NULL || result == NULL) {
+    if(notes == nullptr || result == nullptr) {
         return R_ERROR;
     }
 
@@ -112,7 +112,7 @@ static int next_note_id_sequence_for(const struct note_list *notes, unsigned int
 
         const char *dash = strrchr(id, '-');
 
-        if(dash == NULL) {
+        if(dash == nullptr) {
             log_warning("Ignoring note with invalid id '%s'.\n", id);
             continue;
         }
@@ -133,7 +133,7 @@ static int next_note_id_sequence_for(const struct note_list *notes, unsigned int
 }
 
 static int assign_note_id(struct note *note) {
-    if(note == NULL) {
+    if(note == nullptr) {
         return R_ERROR;
     }
 

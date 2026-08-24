@@ -96,7 +96,7 @@ insert_codepoint_utf8(char *buffer, size_t buffer_size, size_t *length, size_t *
 }
 
 static size_t completion_common_prefix_length(const struct completion_result *completions) {
-    if(completions == NULL || completions->count == 0) {
+    if(completions == nullptr || completions->count == 0) {
         return 0;
     }
 
@@ -122,7 +122,7 @@ static size_t completion_common_prefix_length(const struct completion_result *co
 }
 
 static size_t current_token_start(const char *buffer) {
-    if(buffer == NULL) {
+    if(buffer == nullptr) {
         return 0;
     }
 
@@ -146,14 +146,14 @@ static struct completion_result
 visible_completions(const struct completion_result *completions, const char *current_token) {
     struct completion_result visible = {};
 
-    if(completions == NULL || current_token == NULL) {
+    if(completions == nullptr || current_token == nullptr) {
         return visible;
     }
 
     for(size_t i = 0; i < completions->count && visible.count < MAX_COMPLETIONS; ++i) {
         const char *candidate = completions->items[i];
 
-        if(candidate == NULL || strcmp(candidate, current_token) == 0) {
+        if(candidate == nullptr || strcmp(candidate, current_token) == 0) {
             continue;
         }
 
@@ -165,7 +165,7 @@ visible_completions(const struct completion_result *completions, const char *cur
 
 static bool
 accept_completion(char *buffer, size_t buffer_size, size_t *length, size_t *cursor, const char *completion) {
-    if(buffer == NULL || length == NULL || cursor == NULL || completion == NULL || *cursor != *length) {
+    if(buffer == nullptr || length == nullptr || cursor == nullptr || completion == nullptr || *cursor != *length) {
         return false;
     }
 
@@ -186,7 +186,7 @@ accept_completion(char *buffer, size_t buffer_size, size_t *length, size_t *curs
 }
 
 static void add_history_item(struct command_history *history, const char *line) {
-    if(history == NULL || line == NULL || line[0] == '\0') {
+    if(history == nullptr || line == nullptr || line[0] == '\0') {
         return;
     }
 
@@ -219,13 +219,13 @@ enum interactive_read_result read_interactive_line(
     completion_fn complete,
     struct command_history *history
 ) {
-    if(prompt == NULL || buffer == NULL || buffer_size == 0) {
+    if(prompt == nullptr || buffer == nullptr || buffer_size == 0) {
         return INTERACTIVE_READ_FAILED;
     }
 
     size_t length = 0;
     size_t cursor = 0;
-    size_t history_position = history != NULL ? history->count : 0;
+    size_t history_position = history != nullptr ? history->count : 0;
     char draft[DEFAULT_BUFFER_SIZE] = "";
     bool has_completion_selection = false;
     size_t completion_selection = 0;
@@ -235,7 +235,7 @@ enum interactive_read_result read_interactive_line(
     while(true) {
         struct completion_result raw_completions = {};
 
-        if(complete != NULL && length > 0 && cursor == length) {
+        if(complete != nullptr && length > 0 && cursor == length) {
             raw_completions = complete(buffer);
         }
 
@@ -384,7 +384,7 @@ enum interactive_read_result read_interactive_line(
                 }
 
                 has_completion_selection = true;
-            } else if(history != NULL && history_position > 0) {
+            } else if(history != nullptr && history_position > 0) {
                 if(history_position == history->count) {
                     strcpy_s(draft, sizeof(draft), buffer);
                 }
@@ -403,7 +403,7 @@ enum interactive_read_result read_interactive_line(
                 }
 
                 has_completion_selection = true;
-            } else if(history != NULL && history_position < history->count) {
+            } else if(history != nullptr && history_position < history->count) {
                 history_position++;
 
                 recall_history_item(
@@ -425,7 +425,7 @@ enum interactive_read_result read_interactive_line(
 struct completion_result find_completions(const char *input, const char *options[], size_t option_count) {
     struct completion_result result = {};
 
-    if(input == NULL || input[0] == '\0') {
+    if(input == nullptr || input[0] == '\0') {
         return result;
     }
 

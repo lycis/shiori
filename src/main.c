@@ -90,7 +90,7 @@ int shiori_main(int argc, char *argv[]) {
 int wmain(int argc, wchar_t *wargv[]) {
     char **argv = convert_wargv_to_utf8(argc, wargv);
 
-    if(argv == NULL) {
+    if(argv == nullptr) {
         return SHIORI_EXIT_COMMAND_FAILED;
     }
 

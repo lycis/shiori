@@ -25,15 +25,15 @@ int command_init(int argc, char *argv[]) {
         log_info("Reinitializing config in current directory.\n");
     }
 
-    FILE *config_file = NULL;
+    FILE *config_file = nullptr;
     int err = file_open_utf8(&config_file, CONFIG_FILE_NAME, "w");
-    if(err != 0 || config_file == NULL) {
+    if(err != 0 || config_file == nullptr) {
         log_error("Error creating config file in current directory\n");
         return R_ERROR;
     }
 
     // write comment with generation date to file
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     char date_str[26]; // ctime_s requires a buffer of at least 26 bytes
     ctime_s(date_str, 26, &now);
     fprintf(config_file, "# Initialized: %s", date_str);

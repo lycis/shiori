@@ -45,19 +45,19 @@ int get_base_dir_filepath(const char *filename, char *buffer, size_t bufferSize)
 FILE *open_base_dir_file(const char *filename, const char *mode) {
     char file_path[DEFAULT_BUFFER_SIZE];
     if(get_base_dir_filepath(filename, file_path, sizeof(file_path)) != R_OK) {
-        return NULL;
+        return nullptr;
     }
 
     if(create_file_if_not_exists(file_path) != R_OK) {
-        return NULL;
+        return nullptr;
     }
 
-    FILE *source = NULL;
+    FILE *source = nullptr;
 
     int err = file_open_utf8(&source, file_path, mode);
-    if(err != 0 || source == NULL) {
+    if(err != 0 || source == nullptr) {
         log_error("Failed opening %s.\n", filename);
-        return NULL;
+        return nullptr;
     }
 
     return source;
@@ -70,7 +70,7 @@ FILE *open_notes_file(const char *mode) {
 int add_markdown_item(int argc, char *argv[], const char *filename, const char *prefix, const char *heading) {
     log_debug("Writing markdown item (c=%d)\n", argc);
     FILE *source = open_base_dir_file(filename, "r");
-    if(source == NULL) {
+    if(source == nullptr) {
         log_critical("failed to open base dir file %s\n", filename);
         return R_ERROR;
     }
@@ -79,7 +79,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
      * No heading means that we don't need to insert anything
      * into the middle of the file. We can simply append.
      */
-    if(heading == NULL) {
+    if(heading == nullptr) {
         fclose(source);
         FILE *file = open_base_dir_file(filename, "a");
         write_item_to_file(argc, argv, file, prefix);
@@ -106,7 +106,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
     }
 
     FILE *temp = open_base_dir_file(temp_path, "w");
-    if(temp == NULL) {
+    if(temp == nullptr) {
         log_error("Failed opening temporary file.\n");
         fclose(source);
         return R_ERROR;
@@ -117,7 +117,7 @@ int add_markdown_item(int argc, char *argv[], const char *filename, const char *
 
     char line[DEFAULT_BUFFER_SIZE];
 
-    while(fgets(line, sizeof(line), source) != NULL) {
+    while(fgets(line, sizeof(line), source) != nullptr) {
         if(!found_heading) {
             if(heading_matches(line, heading)) {
                 log_debug("Found heading: %s\n", heading);
@@ -225,7 +225,7 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
     const char *created_tag = strstr(markdown, "#shiori/created/");
     const char *due_tag = strstr(markdown, "#shiori/due/");
 
-    if(id_tag == NULL || created_tag == NULL) {
+    if(id_tag == nullptr || created_tag == nullptr) {
         log_error("Missing TODO metadata (id or creation date).\n");
         return R_ERROR;
     }
@@ -257,7 +257,7 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
      */
     const char *id_value = id_tag + strlen("#shiori/id/");
 
-    char *id_end = NULL;
+    char *id_end = nullptr;
 
     item->id = strtoull(id_value, &id_end, 10);
 
@@ -297,7 +297,7 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
      */
     item->due = 0;
 
-    if(due_tag != NULL) {
+    if(due_tag != nullptr) {
         const char *due_value = due_tag + strlen("#shiori/due/");
 
         char due_date[11];
@@ -322,7 +322,7 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
 
 int read_todos(const char *filename, struct todo_list *list) {
     FILE *file = open_base_dir_file(filename, "r");
-    if(file == NULL) {
+    if(file == nullptr) {
         log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }
@@ -331,7 +331,7 @@ int read_todos(const char *filename, struct todo_list *list) {
     unsigned int lnr = 0;
     bool in_metadata = false;
     bool metadata_skipped = false;
-    while(fgets(line, sizeof(line), file) != NULL) {
+    while(fgets(line, sizeof(line), file) != nullptr) {
         lnr++;
 
         // skip meta data section
@@ -430,7 +430,7 @@ static bool parse_absolute_date(const char *value, struct tm *parsed) {
 }
 
 int parse_date_arg(const char *value, time_t *result) {
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
 
     struct tm date;
 

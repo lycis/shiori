@@ -62,7 +62,7 @@ int command_today(int argc, char *argv[]) {
     }
 
     // get the selected day
-    time_t selected_date = time(NULL);
+    time_t selected_date = time(nullptr);
 
     for(int i = 0; i < argc; ++i) {
         if(strcmp(argv[i], "--date") == 0) {

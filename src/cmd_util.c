@@ -27,7 +27,7 @@ print_powershell_command_arrays(const char *path, const struct command_definitio
     }
 
     for(size_t i = 0; i < command_count; ++i) {
-        if(commands[i].subcommands == NULL || commands[i].subcommand_count == 0) {
+        if(commands[i].subcommands == nullptr || commands[i].subcommand_count == 0) {
             continue;
         }
 
@@ -53,7 +53,7 @@ static int print_powershell_routes(
     size_t depth
 ) {
     for(size_t i = 0; i < command_count; ++i) {
-        if(commands[i].subcommands == NULL || commands[i].subcommand_count == 0) {
+        if(commands[i].subcommands == nullptr || commands[i].subcommand_count == 0) {
             continue;
         }
 
@@ -228,7 +228,7 @@ static int migrate_notes_v0_to_v1(void) {
         if(n->id[0] != '\0') {
             const char *dash = strrchr(n->id, '-');
 
-            if(dash != NULL) {
+            if(dash != nullptr) {
                 unsigned int existing_seq = 0;
 
                 if(sscanf_s(dash + 1, "%u", &existing_seq) == 1 && existing_seq >= seqnr) {
@@ -323,19 +323,19 @@ static int command_util_migrate(int argc, char *argv[]) {
 static int command_util_help(int argc, char *argv[]);
 
 static const struct command_definition util_commands[] = {
-    {"help", "", "Display help about the available commands", command_util_help, NULL, 0, false},
-    {"completion", "<shell>", "Generate shell completion definitions", command_util_completion, NULL, 0, false},
+    {"help", "", "Display help about the available commands", command_util_help, nullptr, 0, false},
+    {"completion", "<shell>", "Generate shell completion definitions", command_util_completion, nullptr, 0, false},
     {"migrate",
      "",
      "Run necessary migrations to bring your workspace to the latest version",
      command_util_migrate,
-     NULL,
+     nullptr,
      0,
      false}
 };
 
 const struct command_definition *get_util_commands(size_t *count) {
-    if(count != NULL) {
+    if(count != nullptr) {
         *count = sizeof(util_commands) / sizeof(util_commands[0]);
     }
 

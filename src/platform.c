@@ -14,24 +14,24 @@
 
 #ifdef _WIN32
 static wchar_t *utf8_path_to_wide(const char *value) {
-    if(value == NULL) {
-        return NULL;
+    if(value == nullptr) {
+        return nullptr;
     }
 
-    int required = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value, -1, NULL, 0);
+    int required = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value, -1, nullptr, 0);
 
     if(required <= 0) {
-        return NULL;
+        return nullptr;
     }
 
     wchar_t *wide = malloc((size_t)required * sizeof(wchar_t));
-    if(wide == NULL) {
-        return NULL;
+    if(wide == nullptr) {
+        return nullptr;
     }
 
     if(MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, value, -1, wide, required) <= 0) {
         free(wide);
-        return NULL;
+        return nullptr;
     }
 
     return wide;
@@ -41,7 +41,7 @@ static wchar_t *utf8_path_to_wide(const char *value) {
 int file_access_utf8(const char *path, int mode) {
 #ifdef _WIN32
     wchar_t *wide_path = utf8_path_to_wide(path);
-    if(wide_path == NULL) {
+    if(wide_path == nullptr) {
         return -1;
     }
 
@@ -54,17 +54,17 @@ int file_access_utf8(const char *path, int mode) {
 }
 
 int file_open_utf8(FILE **file, const char *path, const char *mode) {
-    if(file == NULL) {
+    if(file == nullptr) {
         return EINVAL;
     }
 
-    *file = NULL;
+    *file = nullptr;
 
 #ifdef _WIN32
     wchar_t *wide_path = utf8_path_to_wide(path);
     wchar_t *wide_mode = utf8_path_to_wide(mode);
 
-    if(wide_path == NULL || wide_mode == NULL) {
+    if(wide_path == nullptr || wide_mode == nullptr) {
         free(wide_path);
         free(wide_mode);
         return EINVAL;
@@ -76,14 +76,14 @@ int file_open_utf8(FILE **file, const char *path, const char *mode) {
     return result;
 #else
     *file = fopen(path, mode);
-    return *file == NULL ? errno : 0;
+    return *file == nullptr ? errno : 0;
 #endif
 }
 
 int file_remove_utf8(const char *path) {
 #ifdef _WIN32
     wchar_t *wide_path = utf8_path_to_wide(path);
-    if(wide_path == NULL) {
+    if(wide_path == nullptr) {
         return -1;
     }
 
@@ -100,7 +100,7 @@ int file_rename_utf8(const char *old_path, const char *new_path) {
     wchar_t *wide_old_path = utf8_path_to_wide(old_path);
     wchar_t *wide_new_path = utf8_path_to_wide(new_path);
 
-    if(wide_old_path == NULL || wide_new_path == NULL) {
+    if(wide_old_path == nullptr || wide_new_path == nullptr) {
         free(wide_old_path);
         free(wide_new_path);
         return -1;
@@ -182,13 +182,13 @@ int set_environment_variable(const char *name, const char *value) {
 bool environment_variable_nonempty(const char *name) {
 #ifdef _WIN32
     size_t required = 0;
-    if(getenv_s(&required, NULL, 0, name) != 0) {
+    if(getenv_s(&required, nullptr, 0, name) != 0) {
         return false;
     }
     return required > 1;
 #else
     const char *value = getenv(name);
-    return value != NULL && value[0] != '\0';
+    return value != nullptr && value[0] != '\0';
 #endif
 }
 
@@ -215,7 +215,7 @@ int run_process(const char *path, const char *working_dir) {
     }
 
     BOOL success =
-        CreateProcessA(NULL, command_line, NULL, NULL, FALSE, 0, NULL, working_dir, &startup_info, &process_info);
+        CreateProcessA(nullptr, command_line, nullptr, nullptr, FALSE, 0, nullptr, working_dir, &startup_info, &process_info);
 
     if(!success) {
         log_error("Failed starting process '%s' (error %lu).\n", path, GetLastError());
@@ -242,14 +242,14 @@ int run_process(const char *path, const char *working_dir) {
 }
 
 int run_script_basedir(const char *path) {
-    if(path == NULL || path[0] == '\0') {
+    if(path == nullptr || path[0] == '\0') {
         return -1;
     }
 
     char working_dir[DEFAULT_BUFFER_SIZE];
 
 #ifdef _WIN32
-    if(_fullpath(working_dir, g_config.base_dir, sizeof(working_dir)) == NULL) {
+    if(_fullpath(working_dir, g_config.base_dir, sizeof(working_dir)) == nullptr) {
         log_error("Could not resolve base directory '%s'.\n", g_config.base_dir);
         return -1;
     }
@@ -291,8 +291,8 @@ static DWORD g_original_console_output_mode = 0;
 
 static struct terminal_lifecycle g_terminal_lifecycle = {};
 
-static HANDLE g_console_input = NULL;
-static HANDLE g_console_output = NULL;
+static HANDLE g_console_input = nullptr;
+static HANDLE g_console_output = nullptr;
 
 static size_t g_previous_suggestion_lines = 0;
 static size_t g_input_viewport_start = 0;
@@ -302,7 +302,7 @@ static bool g_console_handler_registered = false;
 static BOOL WINAPI terminal_control_handler(DWORD control_type);
 
 static void terminal_clear_input_display(void) {
-    if(g_console_output == NULL || g_console_output == INVALID_HANDLE_VALUE) {
+    if(g_console_output == nullptr || g_console_output == INVALID_HANDLE_VALUE) {
         return;
     }
 
@@ -391,13 +391,13 @@ int terminal_enter_interactive_mode(void) {
     g_console_input = GetStdHandle(STD_INPUT_HANDLE);
     g_console_output = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    if(g_console_input == INVALID_HANDLE_VALUE || g_console_input == NULL) {
+    if(g_console_input == INVALID_HANDLE_VALUE || g_console_input == nullptr) {
         log_error("Failed getting console input handle.\n");
         terminal_fail_first_entry();
         return R_ERROR;
     }
 
-    if(g_console_output == INVALID_HANDLE_VALUE || g_console_output == NULL) {
+    if(g_console_output == INVALID_HANDLE_VALUE || g_console_output == nullptr) {
         log_error("Failed getting console output handle.\n");
         terminal_fail_first_entry();
         return R_ERROR;
@@ -492,7 +492,7 @@ void terminal_cancel_input_line(void) {
 }
 
 static const char *current_token(const char *buffer) {
-    if(buffer == NULL) {
+    if(buffer == nullptr) {
         return "";
     }
 
@@ -509,7 +509,7 @@ static const char *current_token(const char *buffer) {
 
 static size_t terminal_visible_width(void) {
     CONSOLE_SCREEN_BUFFER_INFO info;
-    if(g_console_output == NULL || g_console_output == INVALID_HANDLE_VALUE ||
+    if(g_console_output == nullptr || g_console_output == INVALID_HANDLE_VALUE ||
        !GetConsoleScreenBufferInfo(g_console_output, &info)) {
         return 1;
     }
@@ -580,11 +580,11 @@ void terminal_render_input(
 
     size_t rendered_suggestions = 0;
 
-    if(completions != NULL) {
+    if(completions != nullptr) {
         for(size_t i = 0; i < completions->count; ++i) {
             const char *suggestion = completions->items[i];
 
-            if(suggestion == NULL) {
+            if(suggestion == nullptr) {
                 continue;
             }
 
@@ -656,7 +656,7 @@ void terminal_render_input(
 }
 
 int terminal_read_key(struct key_event *event) {
-    if(event == NULL) {
+    if(event == nullptr) {
         return R_ERROR;
     }
 

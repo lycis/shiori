@@ -21,7 +21,7 @@ static int create_note(
     size_t text_size,
     struct note *result
 ) {
-    if(text == NULL || result == NULL) {
+    if(text == nullptr || result == nullptr) {
         return R_ERROR;
     }
 

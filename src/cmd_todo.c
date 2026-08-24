@@ -35,7 +35,7 @@ int initialize_todo_front_matter(const char *filename) {
 
 int read_todo_metadata(char *filename, struct todo_metadata *md) {
     FILE *file = open_base_dir_file(filename, "r");
-    if(file == NULL) {
+    if(file == nullptr) {
         log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }
@@ -46,7 +46,7 @@ int read_todo_metadata(char *filename, struct todo_metadata *md) {
     char line[DEFAULT_BUFFER_SIZE];
 
     // Front matter must start with ---
-    if(fgets(line, sizeof(line), file) == NULL) {
+    if(fgets(line, sizeof(line), file) == nullptr) {
         fclose(file);
         initialize_todo_front_matter(filename);
         return read_todo_metadata(filename, md);
@@ -67,7 +67,7 @@ int read_todo_metadata(char *filename, struct todo_metadata *md) {
 
     bool found_end = false;
 
-    while(fgets(line, sizeof(line), file) != NULL) {
+    while(fgets(line, sizeof(line), file) != nullptr) {
         char *current = trim(line);
 
         if(strcmp(current, "---") == 0) {
@@ -82,7 +82,7 @@ int read_todo_metadata(char *filename, struct todo_metadata *md) {
 
         char *colon = strchr(current, ':');
 
-        if(colon == NULL) {
+        if(colon == nullptr) {
             log_error("Invalid TODO metadata entry: %s\n", current);
             fclose(file);
             return R_ERROR;
@@ -100,7 +100,7 @@ int read_todo_metadata(char *filename, struct todo_metadata *md) {
                 return R_ERROR;
             }
         } else if(strcmp(key, "last_id") == 0) {
-            md->last_id = strtoull(value, NULL, 10);
+            md->last_id = strtoull(value, nullptr, 10);
         } else {
             log_debug("Ignoring unknown TODO metadata key: %s\n", key);
         }
@@ -122,10 +122,10 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md) {
         return R_ERROR;
     }
 
-    FILE *source = NULL;
+    FILE *source = nullptr;
     int err = file_open_utf8(&source, file_path, "r");
 
-    if(err != 0 || source == NULL) {
+    if(err != 0 || source == nullptr) {
         log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }
@@ -146,11 +146,11 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md) {
     /*
      * Open temporary file.
      */
-    FILE *temp = NULL;
+    FILE *temp = nullptr;
 
     err = file_open_utf8(&temp, temp_path, "w");
 
-    if(err != 0 || temp == NULL) {
+    if(err != 0 || temp == nullptr) {
         log_error("Failed opening temporary file %s.\n", temp_path);
         fclose(source);
         return R_ERROR;
@@ -181,7 +181,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md) {
     char line[DEFAULT_BUFFER_SIZE];
     bool has_front_matter = false;
 
-    if(fgets(line, sizeof(line), source) != NULL) {
+    if(fgets(line, sizeof(line), source) != nullptr) {
         if(strcmp(trim(line), "---") == 0) {
             has_front_matter = true;
         }
@@ -195,7 +195,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md) {
     if(has_front_matter) {
         bool found_end = false;
 
-        while(fgets(line, sizeof(line), source) != NULL) {
+        while(fgets(line, sizeof(line), source) != nullptr) {
             if(strcmp(trim(line), "---") == 0) {
                 found_end = true;
                 break;
@@ -221,7 +221,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md) {
          */
         long position = ftell(source);
 
-        if(fgets(line, sizeof(line), source) != NULL) {
+        if(fgets(line, sizeof(line), source) != nullptr) {
             char *current = trim(line);
 
             if(*current != '\0') {
@@ -259,7 +259,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md) {
     /*
      * Copy the remaining Markdown content unchanged.
      */
-    while(fgets(line, sizeof(line), source) != NULL) {
+    while(fgets(line, sizeof(line), source) != nullptr) {
         if(fputs(line, temp) == EOF) {
             log_error("Failed writing temporary TODO file.\n");
 
@@ -407,7 +407,7 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     }
 
     item->id = md.last_id++;
-    item->created = time(NULL);
+    item->created = time(nullptr);
     item->status = OPEN;
 
     log_debug("Updating todo metadata with last_id change.");
@@ -466,11 +466,11 @@ int write_todo(char *filename, struct todo *item) {
         return R_ERROR;
     }
 
-    FILE *file = NULL;
+    FILE *file = nullptr;
 
     int err = file_open_utf8(&file, file_path, "a");
 
-    if(err != 0 || file == NULL) {
+    if(err != 0 || file == nullptr) {
         log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }
@@ -529,7 +529,7 @@ static bool todo_has_tag(const struct todo *item, const char *tag) {
 
     log_debug("Checking tag: text='%s' needle='%s'\n", item->text, needle);
 
-    return strstr(item->text, needle) != NULL;
+    return strstr(item->text, needle) != nullptr;
 }
 
 static bool todo_matches_filter(const struct todo *item, const struct todo_filter *filter) {
@@ -602,7 +602,7 @@ static int initialize_date_filter(struct todo_filter *filter, int argc, char *ar
         return R_ERROR;
     }
 
-    time_t now = time(NULL);
+    time_t now = time(nullptr);
     if(now == (time_t)-1 || parse_date_arg("today", &filter->today) != R_OK) {
         log_error("Failed to determine today's date.\n");
         return R_ERROR;
@@ -799,7 +799,7 @@ static int parse_todo_id(const char *value, unsigned long long *id) {
         return R_ERROR;
     }
 
-    char *end = NULL;
+    char *end = nullptr;
 
     errno = 0;
     unsigned long long parsed = strtoull(value, &end, 10);
@@ -886,7 +886,7 @@ static int command_todo_show(int argc, char *argv[]) {
 
     struct todo *item = todo_list_find_by_id(&todos, id);
 
-    if(item == NULL) {
+    if(item == nullptr) {
         log_error("Todo %llu not found.\n", id);
         todo_list_free(&todos);
         return R_ERROR;
@@ -993,11 +993,11 @@ int write_todo_list(const char *filename, const struct todo_list *list, const st
         return R_ERROR;
     }
 
-    FILE *temp = NULL;
+    FILE *temp = nullptr;
 
     int err = file_open_utf8(&temp, temp_path, "w");
 
-    if(err != 0 || temp == NULL) {
+    if(err != 0 || temp == nullptr) {
         log_error("Failed opening temporary TODO file.\n");
         return R_ERROR;
     }
@@ -1097,7 +1097,7 @@ static int set_todo_status(unsigned long long id, todo_status status) {
     }
 
     struct todo *item = todo_list_find_by_id(&todos, id);
-    if(item == NULL) {
+    if(item == nullptr) {
         log_error("ID not found\n");
         todo_list_free(&todos);
         return R_ERROR;
@@ -1249,7 +1249,7 @@ static int command_todo_rewrite(int argc, char *argv[]) {
      */
     struct todo *item = todo_list_find_by_id(&todos, id);
 
-    if(item == NULL) {
+    if(item == nullptr) {
         log_error("Todo %llu not found.\n", id);
 
         todo_list_free(&todos);
@@ -1369,7 +1369,7 @@ static int command_todo_remove(int argc, char *argv[]) {
 
     struct todo *item = todo_list_find_by_id(&todos, id);
 
-    if(item == NULL) {
+    if(item == nullptr) {
         log_error("Todo %llu not found.\n", id);
         todo_list_free(&todos);
         return R_ERROR;
@@ -1506,20 +1506,20 @@ int command_todo(int argc, char *argv[]) {
 static int command_todo_help(int argc, char *argv[]);
 
 static const struct command_definition todo_commands[] = {
-    {"help", "", "Display help and info for the `todo` commands", command_todo_help, NULL, 0, true},
-    {"add", "<text>", "Add a new todo", command_todo_add, NULL, 0, true},
-    {"list", "", "List todos", command_todo_list, NULL, 0, true},
-    {"show", "<id>", "Show one todo", command_todo_show, NULL, 0, true},
-    {"start", "<id>", "Mark a todo as in progress", command_todo_start, NULL, 0, true},
-    {"done", "<id>", "Mark a todo as completed", command_todo_done, NULL, 0, true},
-    {"reopen", "<id>", "Reopen a todo", command_todo_reopen, NULL, 0, true},
-    {"rewrite", "<id> <new_text> [--due <date>]", "Rewrite a todo", command_todo_rewrite, NULL, 0, true},
-    {"remove", "<id>", "Remove a todo", command_todo_remove, NULL, 0, true},
-    {"prune", "", "Remove completed todos", command_todo_prune, NULL, 0, true}
+    {"help", "", "Display help and info for the `todo` commands", command_todo_help, nullptr, 0, true},
+    {"add", "<text>", "Add a new todo", command_todo_add, nullptr, 0, true},
+    {"list", "", "List todos", command_todo_list, nullptr, 0, true},
+    {"show", "<id>", "Show one todo", command_todo_show, nullptr, 0, true},
+    {"start", "<id>", "Mark a todo as in progress", command_todo_start, nullptr, 0, true},
+    {"done", "<id>", "Mark a todo as completed", command_todo_done, nullptr, 0, true},
+    {"reopen", "<id>", "Reopen a todo", command_todo_reopen, nullptr, 0, true},
+    {"rewrite", "<id> <new_text> [--due <date>]", "Rewrite a todo", command_todo_rewrite, nullptr, 0, true},
+    {"remove", "<id>", "Remove a todo", command_todo_remove, nullptr, 0, true},
+    {"prune", "", "Remove completed todos", command_todo_prune, nullptr, 0, true}
 };
 
 const struct command_definition *get_todo_commands(size_t *count) {
-    if(count != NULL) {
+    if(count != nullptr) {
         *count = sizeof(todo_commands) / sizeof(todo_commands[0]);
     }
 

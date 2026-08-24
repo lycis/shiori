@@ -10,7 +10,7 @@
 #include "platform.h"
 
 void note_list_init(struct note_list *list) {
-    list->items = NULL;
+    list->items = nullptr;
     list->count = 0;
     list->capacity = 0;
 }
@@ -18,7 +18,7 @@ void note_list_init(struct note_list *list) {
 void note_list_free(struct note_list *list) {
     free(list->items);
 
-    list->items = NULL;
+    list->items = nullptr;
     list->count = 0;
     list->capacity = 0;
 }
@@ -29,7 +29,7 @@ int note_list_add(struct note_list *list, const struct note *item) {
 
         struct note *new_items = realloc(list->items, new_capacity * sizeof(struct note));
 
-        if(new_items == NULL) {
+        if(new_items == nullptr) {
             log_error("Failed allocating note list.\n");
             return R_ERROR;
         }
@@ -45,8 +45,8 @@ int note_list_add(struct note_list *list, const struct note *item) {
 }
 
 struct note *note_list_find_by_id(const struct note_list *list, const char *id) {
-    if(list == NULL || id == NULL) {
-        return NULL;
+    if(list == nullptr || id == nullptr) {
+        return nullptr;
     }
 
     for(size_t i = 0; i < list->count; ++i) {
@@ -55,11 +55,11 @@ struct note *note_list_find_by_id(const struct note_list *list, const char *id) 
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 int note_list_remove_by_id(struct note_list *list, const char *id) {
-    if(list == NULL || id == NULL) {
+    if(list == nullptr || id == nullptr) {
         return R_ERROR;
     }
 
@@ -80,7 +80,7 @@ int note_list_remove_by_id(struct note_list *list, const char *id) {
 }
 
 int create_note_from_markdown(const char *markdown, time_t created, struct note *item) {
-    if(markdown == NULL || item == NULL) {
+    if(markdown == nullptr || item == nullptr) {
         return R_ERROR;
     }
 
@@ -91,17 +91,17 @@ int create_note_from_markdown(const char *markdown, time_t created, struct note 
     item->topic[0] = '\0';
     item->id[0] = '\0';
 
-    const char *metadata_start = NULL;
+    const char *metadata_start = nullptr;
 
-    if(topic_tag != NULL) {
+    if(topic_tag != nullptr) {
         metadata_start = topic_tag;
     }
 
-    if(id_tag != NULL && (metadata_start == NULL || id_tag < metadata_start)) {
+    if(id_tag != nullptr && (metadata_start == nullptr || id_tag < metadata_start)) {
         metadata_start = id_tag;
     }
 
-    size_t text_len = metadata_start != NULL ? (size_t)(metadata_start - markdown) : strlen(markdown);
+    size_t text_len = metadata_start != nullptr ? (size_t)(metadata_start - markdown) : strlen(markdown);
 
     while(text_len > 0 && (markdown[text_len - 1] == ' ' || markdown[text_len - 1] == '\t')) {
         text_len--;
@@ -115,7 +115,7 @@ int create_note_from_markdown(const char *markdown, time_t created, struct note 
     memcpy(item->text, markdown, text_len);
     item->text[text_len] = '\0';
 
-    if(topic_tag != NULL) {
+    if(topic_tag != nullptr) {
         const char *topic = topic_tag + strlen("#shiori/topic/");
         size_t topic_len = 0;
 
@@ -133,7 +133,7 @@ int create_note_from_markdown(const char *markdown, time_t created, struct note 
         item->topic[topic_len] = '\0';
     }
 
-    if(id_tag != NULL) {
+    if(id_tag != nullptr) {
         const char *id = id_tag + strlen("<!-- shiori:id=");
         size_t id_len = 0;
 
@@ -157,7 +157,7 @@ int create_note_from_markdown(const char *markdown, time_t created, struct note 
 }
 
 static int parse_daily_heading(const char *heading, time_t *date) {
-    if(heading == NULL || date == NULL) {
+    if(heading == nullptr || date == nullptr) {
         return R_ERROR;
     }
 
@@ -199,7 +199,7 @@ int read_notes(const char *filename, struct note_list *list) {
     }
 
     FILE *file = open_base_dir_file(filename, "r");
-    if(file == NULL) {
+    if(file == nullptr) {
         log_critical("Failed opening %s.\n", filename);
         return R_ERROR;
     }
@@ -210,7 +210,7 @@ int read_notes(const char *filename, struct note_list *list) {
     time_t current_date = 0;
     bool have_date = false;
 
-    while(fgets(line, sizeof(line), file) != NULL) {
+    while(fgets(line, sizeof(line), file) != nullptr) {
         line_number++;
 
         char *current = trim(line);
@@ -326,7 +326,7 @@ int read_notes_metadata(const char *filename, struct notes_metadata *md) {
 
     if(file_access_utf8(file_path, F_OK) != 0) {
         FILE *file = open_base_dir_file(filename, "w");
-        if(file == NULL) {
+        if(file == nullptr) {
             log_error("Failed opening %s for write.\n", filename);
             return R_ERROR;
         }
@@ -339,7 +339,7 @@ int read_notes_metadata(const char *filename, struct notes_metadata *md) {
     }
 
     FILE *file = open_base_dir_file(filename, "r");
-    if(file == NULL) {
+    if(file == nullptr) {
         log_error("Failed opening %s.\n", filename);
         return R_ERROR;
     }
@@ -349,7 +349,7 @@ int read_notes_metadata(const char *filename, struct notes_metadata *md) {
     char line[DEFAULT_BUFFER_SIZE];
 
     // Front matter must start with ---
-    if(fgets(line, sizeof(line), file) == NULL) {
+    if(fgets(line, sizeof(line), file) == nullptr) {
         fclose(file);
         return R_OK;
     }
@@ -361,7 +361,7 @@ int read_notes_metadata(const char *filename, struct notes_metadata *md) {
 
     bool found_end = false;
 
-    while(fgets(line, sizeof(line), file) != NULL) {
+    while(fgets(line, sizeof(line), file) != nullptr) {
         char *current = trim(line);
 
         if(strcmp(current, "---") == 0) {
@@ -376,7 +376,7 @@ int read_notes_metadata(const char *filename, struct notes_metadata *md) {
 
         char *colon = strchr(current, ':');
 
-        if(colon == NULL) {
+        if(colon == nullptr) {
             log_error("Invalid NOTE metadata entry: %s\n", current);
             fclose(file);
             return R_ERROR;
@@ -411,7 +411,7 @@ int read_notes_metadata(const char *filename, struct notes_metadata *md) {
 }
 
 int write_note(FILE *file, const struct note *note) {
-    if(file == NULL || note == NULL) {
+    if(file == nullptr || note == nullptr) {
         return R_ERROR;
     }
 
@@ -465,7 +465,7 @@ int restore_notes_backup(void) {
 }
 
 int rewrite_notes(struct note_list *notes, struct notes_metadata *md, bool allow_note_removal) {
-    if(notes == NULL || md == NULL) {
+    if(notes == nullptr || md == nullptr) {
         return R_ERROR;
     }
 
@@ -514,7 +514,7 @@ int rewrite_notes(struct note_list *notes, struct notes_metadata *md, bool allow
     }
 
     FILE *temp = open_base_dir_file(temp_file, "w");
-    if(temp == NULL) {
+    if(temp == nullptr) {
         log_error("Failed opening temporary notes file.\n");
         return R_ERROR;
     }

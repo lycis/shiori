@@ -11,13 +11,13 @@ struct completion_result
 complete_command_definitions(const char *input, const struct command_definition *commands, size_t command_count) {
     struct completion_result result = {};
 
-    if(commands == NULL) {
+    if(commands == nullptr) {
         return result;
     }
 
     size_t input_length = 0;
 
-    if(input != NULL) {
+    if(input != nullptr) {
         input_length = strlen(input);
     }
 
@@ -40,7 +40,7 @@ static void add_console_special_completions(struct completion_result *result, co
 
     size_t input_length = 0;
 
-    if(input != NULL) {
+    if(input != nullptr) {
         input_length = strlen(input);
     }
 
@@ -62,7 +62,7 @@ static struct completion_result console_completion(const char *input) {
     size_t command_count = 0;
     const struct command_definition *current_commands = get_commands(&command_count);
 
-    if(input == NULL) {
+    if(input == nullptr) {
         return result;
     }
 
@@ -77,12 +77,12 @@ static struct completion_result console_completion(const char *input) {
     char *argv[32];
     int argc = 0;
 
-    char *context = NULL;
+    char *context = nullptr;
     char *token = strtok_s(buffer, " \t", &context);
 
-    while(token != NULL && argc < 32) {
+    while(token != nullptr && argc < 32) {
         argv[argc++] = token;
-        token = strtok_s(NULL, " \t", &context);
+        token = strtok_s(nullptr, " \t", &context);
     }
 
     /*
@@ -111,7 +111,7 @@ static struct completion_result console_completion(const char *input) {
             const struct command_definition *definition =
                 find_command_definition(current_commands, command_count, argv[i]);
 
-            if(definition == NULL) {
+            if(definition == nullptr) {
                 return result;
             }
 
@@ -133,7 +133,7 @@ static struct completion_result console_completion(const char *input) {
     for(int i = 0; i < argc - 1; ++i) {
         const struct command_definition *definition = find_command_definition(current_commands, command_count, argv[i]);
 
-        if(definition == NULL || definition->subcommands == NULL || definition->subcommand_count == 0) {
+        if(definition == nullptr || definition->subcommands == nullptr || definition->subcommand_count == 0) {
             return result;
         }
 
@@ -217,13 +217,13 @@ int command_console(int argc, char *argv[]) {
         char *command_argv[64];
         int command_argc = 0;
 
-        char *context = NULL;
+        char *context = nullptr;
 
         char *token = strtok_s(command, " \t", &context);
 
-        while(token != NULL && command_argc < 64) {
+        while(token != nullptr && command_argc < 64) {
             command_argv[command_argc++] = token;
-            token = strtok_s(NULL, " \t", &context);
+            token = strtok_s(nullptr, " \t", &context);
         }
 
         if(command_argc == 0) {

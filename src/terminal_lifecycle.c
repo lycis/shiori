@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 enum terminal_lifecycle_enter_result terminal_lifecycle_enter(struct terminal_lifecycle *lifecycle) {
-    if(lifecycle == NULL) {
+    if(lifecycle == nullptr) {
         return TERMINAL_LIFECYCLE_ENTER_FAILED;
     }
 
@@ -29,7 +29,7 @@ enum terminal_lifecycle_enter_result terminal_lifecycle_enter(struct terminal_li
 }
 
 bool terminal_lifecycle_claim_cleanup(struct terminal_lifecycle *lifecycle) {
-    if(lifecycle == NULL) {
+    if(lifecycle == nullptr) {
         return false;
     }
 
@@ -38,7 +38,7 @@ bool terminal_lifecycle_claim_cleanup(struct terminal_lifecycle *lifecycle) {
 }
 
 bool terminal_lifecycle_leave(struct terminal_lifecycle *lifecycle) {
-    if(lifecycle == NULL || atomic_load(&lifecycle->phase) != TERMINAL_LIFECYCLE_ACTIVE) {
+    if(lifecycle == nullptr || atomic_load(&lifecycle->phase) != TERMINAL_LIFECYCLE_ACTIVE) {
         return false;
     }
 
@@ -54,7 +54,7 @@ bool terminal_lifecycle_leave(struct terminal_lifecycle *lifecycle) {
 }
 
 void terminal_lifecycle_complete_cleanup(struct terminal_lifecycle *lifecycle) {
-    if(lifecycle == NULL) {
+    if(lifecycle == nullptr) {
         return;
     }
 

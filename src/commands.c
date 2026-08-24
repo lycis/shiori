@@ -25,14 +25,14 @@ static void init_commands() {
     const struct command_definition *note_commands = get_note_commands(&note_commands_count);
 
     commands[0] =
-        (struct command_definition){"init", "", "Initialize a new configuration", command_init, NULL, 0, false};
+        (struct command_definition){"init", "", "Initialize a new configuration", command_init, nullptr, 0, false};
 
     commands[1] = (struct command_definition){
         "config",
         "<command>",
         "Show or modify configuration",
         command_config,
-        NULL,
+        nullptr,
         0,
         true
     };
@@ -42,7 +42,7 @@ static void init_commands() {
         "[--topic <topic>] <note>",
         "Add a new note or thought to the day",
         command_add,
-        NULL,
+        nullptr,
         0,
         true
     };
@@ -52,16 +52,16 @@ static void init_commands() {
         "",
         "Interactively capture notes and todos",
         command_capture,
-        NULL,
+        nullptr,
         0,
         true
     };
 
     commands[4] =
-        (struct command_definition){"topic", "<topic>", "Browse notes by topic", command_topic, NULL, 0, true};
+        (struct command_definition){"topic", "<topic>", "Browse notes by topic", command_topic, nullptr, 0, true};
 
     commands[5] =
-        (struct command_definition){"tag", "<tag>", "Find notes and todos by tag", command_tag, NULL, 0, true};
+        (struct command_definition){"tag", "<tag>", "Find notes and todos by tag", command_tag, nullptr, 0, true};
 
     commands[6] = (struct command_definition){
         "todo",
@@ -74,10 +74,10 @@ static void init_commands() {
     };
 
     commands[7] =
-        (struct command_definition){"today", "", "Your overview for the current day", command_today, NULL, 0, true};
+        (struct command_definition){"today", "", "Your overview for the current day", command_today, nullptr, 0, true};
 
     commands[8] =
-        (struct command_definition){"console", "", "Start the interactive console", command_console, NULL, 0, true};
+        (struct command_definition){"console", "", "Start the interactive console", command_console, nullptr, 0, true};
 
     commands[9] = (struct command_definition){
         "util",
@@ -89,14 +89,14 @@ static void init_commands() {
         true
     };
 
-    commands[10] = (struct command_definition){"help", "", "Show this help", command_help, NULL, 0, false};
+    commands[10] = (struct command_definition){"help", "", "Show this help", command_help, nullptr, 0, false};
 
     commands[11] = (struct command_definition){
         "version",
         "",
         "Display current version information",
         command_version,
-        NULL,
+        nullptr,
         0,
         false
     };
@@ -119,7 +119,7 @@ const struct command_definition *get_commands(size_t *count) {
         init_commands();
     }
 
-    if(count != NULL) {
+    if(count != nullptr) {
         *count = COMMAND_COUNT;
     }
 
@@ -134,26 +134,26 @@ find_command_definition(const struct command_definition *commands, size_t comman
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 const struct command_definition *find_subcommand(const struct command_definition *parent, const char *name) {
-    if(parent == NULL) {
-        return NULL;
+    if(parent == nullptr) {
+        return nullptr;
     }
 
     return find_command_definition(parent->subcommands, parent->subcommand_count, name);
 }
 
 static int execute_command(const struct command_definition *command, int argc, char *argv[]) {
-    if(command == NULL) {
+    if(command == nullptr) {
         return R_ERROR;
     }
 
-    if(command->subcommand_count > 0 && command->subcommands != NULL && argc > 0) {
+    if(command->subcommand_count > 0 && command->subcommands != nullptr && argc > 0) {
         const struct command_definition *subcommand =
             find_command_definition(command->subcommands, command->subcommand_count, argv[0]);
-        if(subcommand == NULL) {
+        if(subcommand == nullptr) {
             log_error("No such subcommand '%s'.\n", argv[0]);
             return R_ERROR;
         }
@@ -162,7 +162,7 @@ static int execute_command(const struct command_definition *command, int argc, c
     }
 
     // no subcommand
-    if(command->handler == NULL) {
+    if(command->handler == nullptr) {
         log_critical("No command handler registered for command '%s'\n", command->name);
         return R_ERROR;
     }
@@ -175,7 +175,7 @@ int run_command(char *command, int argc, char *argv[]) {
     const struct command_definition *commands = get_commands(&command_count);
     const struct command_definition *current_command = find_command_definition(commands, command_count, command);
 
-    if(current_command == NULL) {
+    if(current_command == nullptr) {
         log_error("Unknown command: %s\n", command);
         return R_ERROR;
     }
@@ -202,7 +202,7 @@ int print_subcommand_help(
     const struct command_definition *commands,
     size_t command_count
 ) {
-    if(command_name == NULL || description == NULL || commands == NULL) {
+    if(command_name == nullptr || description == nullptr || commands == nullptr) {
         return R_ERROR;
     }
 
@@ -213,7 +213,7 @@ int print_subcommand_help(
     for(size_t i = 0; i < command_count; ++i) {
         char usage[DEFAULT_BUFFER_SIZE];
 
-        if(commands[i].args != NULL && commands[i].args[0] != '\0') {
+        if(commands[i].args != nullptr && commands[i].args[0] != '\0') {
             int written = snprintf(usage, sizeof(usage), "%s %s", commands[i].name, commands[i].args);
 
             if(written < 0 || (size_t)written >= sizeof(usage)) {

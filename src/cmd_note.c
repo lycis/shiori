@@ -26,7 +26,7 @@ struct tag_list {
 };
 
 int extract_note_tags(const struct note *note, struct tag_list *tags) {
-    if(note == NULL || tags == NULL) {
+    if(note == nullptr || tags == nullptr) {
         return R_ERROR;
     }
 
@@ -105,7 +105,7 @@ int command_note_show(int argc, char *argv[]) {
     }
 
     struct note *note = note_list_find_by_id(&list, argv[0]);
-    if(note == NULL) {
+    if(note == nullptr) {
         log_error("Note not found.");
         note_list_free(&list);
         return R_ERROR;
@@ -211,7 +211,7 @@ int command_note_retopic(int argc, char *argv[]) {
 
     struct note *note = note_list_find_by_id(&notes, argv[0]);
 
-    if(note == NULL) {
+    if(note == nullptr) {
         log_error("Note '%s' not found.\n", argv[0]);
         note_list_free(&notes);
         return R_ERROR;
@@ -256,15 +256,15 @@ int command_note_retopic(int argc, char *argv[]) {
 }
 
 static const struct command_definition note_commands[] = {
-    {"help", "", "display help to the `note` command", command_note_help, NULL, 0, true},
-    {"add", "[--topic <topic>] <text>", "Add a new note or thought to the day", command_add, NULL, 0, true},
-    {"show", "<id>", "Show the details of a note", command_note_show, NULL, 0, true},
-    {"remove", "<id>", "Remove note from the log", command_note_remove, NULL, 0, true},
-    {"retopic", "<id> <topic>", "Change the topic of an existing note", command_note_retopic, NULL, 0, true}
+    {"help", "", "display help to the `note` command", command_note_help, nullptr, 0, true},
+    {"add", "[--topic <topic>] <text>", "Add a new note or thought to the day", command_add, nullptr, 0, true},
+    {"show", "<id>", "Show the details of a note", command_note_show, nullptr, 0, true},
+    {"remove", "<id>", "Remove note from the log", command_note_remove, nullptr, 0, true},
+    {"retopic", "<id> <topic>", "Change the topic of an existing note", command_note_retopic, nullptr, 0, true}
 };
 
 const struct command_definition *get_note_commands(size_t *count) {
-    if(count != NULL) {
+    if(count != nullptr) {
         *count = sizeof(note_commands) / sizeof(note_commands[0]);
     }
 

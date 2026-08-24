@@ -44,7 +44,7 @@ int main(void) {
     terminal_lifecycle_complete_cleanup(&lifecycle);
 
     return expect(
-        terminal_lifecycle_enter(NULL) == TERMINAL_LIFECYCLE_ENTER_FAILED,
+        terminal_lifecycle_enter(nullptr) == TERMINAL_LIFECYCLE_ENTER_FAILED,
         "null lifecycle entry did not fail"
     );
 }

@@ -22,7 +22,7 @@ static int command_topic_list() {
         return R_ERROR;
     }
 
-    struct topic_count *topics = NULL;
+    struct topic_count *topics = nullptr;
     size_t topic_count = 0;
     size_t topic_capacity = 0;
 
@@ -51,7 +51,7 @@ static int command_topic_list() {
 
             struct topic_count *new_topics = realloc(topics, new_capacity * sizeof(struct topic_count));
 
-            if(new_topics == NULL) {
+            if(new_topics == nullptr) {
                 log_error("Failed allocating topic list.\n");
                 free(topics);
                 note_list_free(&notes);

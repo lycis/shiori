@@ -38,16 +38,16 @@ int read_config_file() {
         }
     }
 
-    FILE *config_file = NULL;
+    FILE *config_file = nullptr;
     int err = file_open_utf8(&config_file, config_path, "r");
-    if(err != 0 || config_file == NULL) {
+    if(err != 0 || config_file == nullptr) {
         log_error("Error opening %s file\n", CONFIG_FILE_NAME);
         return R_ERROR;
     }
 
     char line[DEFAULT_BUFFER_SIZE];
     int lnr = 0;
-    while(fgets(line, sizeof(line), config_file) != NULL) {
+    while(fgets(line, sizeof(line), config_file) != nullptr) {
         lnr++;
         if(line[0] == '#') {
             continue; // comment
@@ -56,7 +56,7 @@ int read_config_file() {
             continue; // empty line
         }
 
-        if(strstr(line, ":") == NULL) {
+        if(strstr(line, ":") == nullptr) {
             log_error("Invalid config entry at line %d\n", lnr);
             fclose(config_file);
             return R_ERROR;
@@ -64,7 +64,7 @@ int read_config_file() {
 
         char *colon = strchr(line, ':');
 
-        if(colon == NULL) {
+        if(colon == nullptr) {
             log_error("Invalid config entry at line %d\n", lnr);
             return R_ERROR;
         }

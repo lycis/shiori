@@ -28,7 +28,7 @@ struct input_layout calculate_input_layout(
     size_t preferred_input_start
 ) {
     struct input_layout layout = {};
-    if(prompt == NULL || input == NULL || terminal_width == 0) {
+    if(prompt == nullptr || input == nullptr || terminal_width == 0) {
         return layout;
     }
 

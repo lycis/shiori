@@ -6,7 +6,7 @@
 #include "todo.h"
 
 void todo_list_init(struct todo_list *list) {
-    list->items = NULL;
+    list->items = nullptr;
     list->count = 0;
     list->capacity = 0;
 }
@@ -14,7 +14,7 @@ void todo_list_init(struct todo_list *list) {
 void todo_list_free(struct todo_list *list) {
     free(list->items);
 
-    list->items = NULL;
+    list->items = nullptr;
     list->count = 0;
     list->capacity = 0;
 }
@@ -25,7 +25,7 @@ int todo_list_add(struct todo_list *list, const struct todo *item) {
 
         struct todo *new_items = realloc(list->items, new_capacity * sizeof(struct todo));
 
-        if(new_items == NULL) {
+        if(new_items == nullptr) {
             log_error("Failed allocating TODO list.\n");
             return R_ERROR;
         }
@@ -47,7 +47,7 @@ struct todo *todo_list_find_by_id(struct todo_list *list, unsigned long long id)
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 int todo_list_remove_by_id(struct todo_list *list, unsigned long long id) {

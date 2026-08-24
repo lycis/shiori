@@ -39,10 +39,10 @@ int create_file_if_not_exists(char *fname) {
     }
 
     log_debug("File does not exist. Creating it now.\n");
-    FILE *f = NULL;
+    FILE *f = nullptr;
     log_debug("Opening daily note at: %s\n", fname);
     int err = file_open_utf8(&f, fname, "w");
-    if(err != 0 || f == NULL) {
+    if(err != 0 || f == nullptr) {
         log_error("Failed creating file: %s\n", fname);
         return R_ERROR;
     }
@@ -110,7 +110,7 @@ int build_daily_heading(char *buffer, size_t size, time_t date) {
 }
 
 bool str_ends_with(const char *str, const char *suffix) {
-    if(str == NULL || suffix == NULL) {
+    if(str == nullptr || suffix == nullptr) {
         return false;
     }
 
@@ -136,7 +136,7 @@ bool dates_equal(time_t a, time_t b) {
 }
 
 int format_date(time_t date, char *buffer, size_t buffer_size) {
-    if(buffer == NULL || buffer_size == 0) {
+    if(buffer == nullptr || buffer_size == 0) {
         return R_ERROR;
     }
 
@@ -179,12 +179,12 @@ int compare_dates(time_t a, time_t b) {
 }
 
 int parse_int(const char *text, int *result) {
-    if(text == NULL || result == NULL || *text == '\0') {
+    if(text == nullptr || result == nullptr || *text == '\0') {
         return R_ERROR;
     }
 
     errno = 0;
-    char *end = NULL;
+    char *end = nullptr;
     long value = strtol(text, &end, 10);
 
     if(errno == ERANGE || value < INT_MIN || value > INT_MAX || *end != '\0') {
@@ -196,7 +196,7 @@ int parse_int(const char *text, int *result) {
 }
 
 int join_array(int argc, char *argv[], char *buffer, size_t buffer_size) {
-    if(buffer == NULL || buffer_size == 0) {
+    if(buffer == nullptr || buffer_size == 0) {
         return R_ERROR;
     }
 
@@ -206,7 +206,7 @@ int join_array(int argc, char *argv[], char *buffer, size_t buffer_size) {
         return R_OK;
     }
 
-    if(argv == NULL) {
+    if(argv == nullptr) {
         return R_ERROR;
     }
 
@@ -228,7 +228,7 @@ int join_array(int argc, char *argv[], char *buffer, size_t buffer_size) {
 bool ends_with_whitespace(const char *text) {
     size_t len;
 
-    if(text == NULL) {
+    if(text == nullptr) {
         return false;
     }
 

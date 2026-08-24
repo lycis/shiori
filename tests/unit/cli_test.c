@@ -10,7 +10,7 @@ static int leave_calls = 0;
 static int finish_calls = 0;
 static int cancel_calls = 0;
 static size_t event_index = 0;
-static const struct key_event *scripted_events = NULL;
+static const struct key_event *scripted_events = nullptr;
 static size_t scripted_event_count = 0;
 static size_t selection_render_count = 0;
 static size_t selected_indices[16];
@@ -63,7 +63,7 @@ void terminal_cancel_input_line(void) {
 }
 
 int terminal_read_key(struct key_event *event) {
-    if(event == NULL) {
+    if(event == nullptr) {
         return R_ERROR;
     }
 
@@ -114,7 +114,7 @@ int main(void) {
 
     use_events(accepted_events, sizeof(accepted_events) / sizeof(accepted_events[0]));
 
-    enum interactive_read_result result = read_interactive_line("> ", buffer, sizeof(buffer), NULL, &history);
+    enum interactive_read_result result = read_interactive_line("> ", buffer, sizeof(buffer), nullptr, &history);
 
     if(result != INTERACTIVE_READ_ACCEPTED) {
         fprintf(stderr, "read_interactive_line returned %d\n", result);
@@ -151,7 +151,7 @@ int main(void) {
     finish_calls = 0;
     cancel_calls = 0;
 
-    result = read_interactive_line("> ", buffer, sizeof(buffer), NULL, &history);
+    result = read_interactive_line("> ", buffer, sizeof(buffer), nullptr, &history);
 
     if(result != INTERACTIVE_READ_CANCELLED || finish_calls != 0 || cancel_calls != 1) {
         fprintf(stderr, "Escape did not cancel and clear the active line\n");
@@ -172,14 +172,14 @@ int main(void) {
     };
     char limited_buffer[8];
     use_events(limit_events, sizeof(limit_events) / sizeof(limit_events[0]));
-    result = read_interactive_line("> ", limited_buffer, sizeof(limited_buffer), NULL, NULL);
+    result = read_interactive_line("> ", limited_buffer, sizeof(limited_buffer), nullptr, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(limited_buffer, "abcdefg") != 0) {
         fprintf(stderr, "input near the buffer limit was not safely bounded\n");
         return 1;
     }
 
     struct key_event *stress_events = calloc(DEFAULT_BUFFER_SIZE + 1, sizeof(*stress_events));
-    if(stress_events == NULL) {
+    if(stress_events == nullptr) {
         fprintf(stderr, "failed allocating buffer-limit stress events\n");
         return 1;
     }
@@ -190,7 +190,7 @@ int main(void) {
 
     char stress_buffer[DEFAULT_BUFFER_SIZE];
     use_events(stress_events, DEFAULT_BUFFER_SIZE + 1);
-    result = read_interactive_line("> ", stress_buffer, sizeof(stress_buffer), NULL, NULL);
+    result = read_interactive_line("> ", stress_buffer, sizeof(stress_buffer), nullptr, nullptr);
     free(stress_events);
     if(result != INTERACTIVE_READ_ACCEPTED || strlen(stress_buffer) != DEFAULT_BUFFER_SIZE - 1) {
         fprintf(stderr, "configured input buffer limit was not preserved\n");
@@ -207,7 +207,7 @@ int main(void) {
     };
     char unicode_buffer[8];
     use_events(unicode_events, sizeof(unicode_events) / sizeof(unicode_events[0]));
-    result = read_interactive_line("> ", unicode_buffer, sizeof(unicode_buffer), NULL, NULL);
+    result = read_interactive_line("> ", unicode_buffer, sizeof(unicode_buffer), nullptr, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(unicode_buffer, "\xF0\x9F\x98\x80") != 0) {
         fprintf(stderr, "UTF-8 editing or resize handling corrupted the input\n");
         return 1;
@@ -221,7 +221,7 @@ int main(void) {
     };
     reset_render_observations();
     use_events(down_enter_events, sizeof(down_enter_events) / sizeof(down_enter_events[0]));
-    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, NULL);
+    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(buffer, "capture") != 0 || selection_render_count != 1 ||
        strcmp(first_selected_buffer, "c") != 0 || selected_indices[0] != 0) {
         fprintf(stderr, "Down/Enter did not select without editing and then accept the first completion\n");
@@ -236,7 +236,7 @@ int main(void) {
     };
     reset_render_observations();
     use_events(up_tab_events, sizeof(up_tab_events) / sizeof(up_tab_events[0]));
-    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, NULL);
+    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(buffer, "config") != 0 || selection_render_count != 1 ||
        selected_indices[0] != 1) {
         fprintf(stderr, "Up/Tab did not select and accept the last completion\n");
@@ -253,7 +253,7 @@ int main(void) {
     };
     reset_render_observations();
     use_events(wrap_events, sizeof(wrap_events) / sizeof(wrap_events[0]));
-    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, NULL);
+    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(buffer, "capture") != 0 || selection_render_count != 3 ||
        selected_indices[0] != 0 || selected_indices[1] != 1 || selected_indices[2] != 0) {
         fprintf(stderr, "completion selection did not wrap with repeated Down keys\n");
@@ -269,7 +269,7 @@ int main(void) {
     };
     reset_render_observations();
     use_events(edit_events, sizeof(edit_events) / sizeof(edit_events[0]));
-    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, NULL);
+    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(buffer, "capture") != 0 || !selection_was_cleared_after_edit) {
         fprintf(stderr, "editing did not clear completion selection\n");
         return 1;
@@ -282,7 +282,7 @@ int main(void) {
     };
     char tiny_buffer[5];
     use_events(oversized_events, sizeof(oversized_events) / sizeof(oversized_events[0]));
-    result = read_interactive_line("> ", tiny_buffer, sizeof(tiny_buffer), long_completion, NULL);
+    result = read_interactive_line("> ", tiny_buffer, sizeof(tiny_buffer), long_completion, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(tiny_buffer, "a") != 0) {
         fprintf(stderr, "oversized completion partially modified the input\n");
         return 1;
@@ -294,7 +294,7 @@ int main(void) {
         {KEY_ENTER, 0},
     };
     use_events(prefix_events, sizeof(prefix_events) / sizeof(prefix_events[0]));
-    result = read_interactive_line("> ", buffer, sizeof(buffer), common_prefix_completion, NULL);
+    result = read_interactive_line("> ", buffer, sizeof(buffer), common_prefix_completion, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(buffer, "ca") != 0) {
         fprintf(stderr, "Tab no longer extends multiple matches to their common prefix\n");
         return 1;
@@ -313,7 +313,7 @@ int main(void) {
     };
     reset_render_observations();
     use_events(exact_events, sizeof(exact_events) / sizeof(exact_events[0]));
-    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, NULL);
+    result = read_interactive_line("> ", buffer, sizeof(buffer), test_completion, nullptr);
     if(result != INTERACTIVE_READ_ACCEPTED || strcmp(buffer, "capture") != 0 || last_rendered_completion_count != 0) {
         fprintf(stderr, "exact completion remained visible or navigable\n");
         return 1;

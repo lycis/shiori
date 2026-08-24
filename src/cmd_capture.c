@@ -10,14 +10,14 @@
 
 static int split_args(char *input, char *argv[], int max_args) {
     int argc = 0;
-    char *context = NULL;
+    char *context = nullptr;
 
     char *token = strtok_s(input, " \t", &context);
 
-    while(token != NULL && argc < max_args) {
+    while(token != nullptr && argc < max_args) {
         argv[argc++] = token;
 
-        token = strtok_s(NULL, " \t", &context);
+        token = strtok_s(nullptr, " \t", &context);
     }
 
     return argc;
@@ -72,7 +72,7 @@ int command_capture(int argc, char *argv[]) {
     }
 
     log_info("Entering long form capture mode.\n");
-    const char *topic = NULL;
+    const char *topic = nullptr;
 
     for(int i = 0; i < argc; ++i) {
         if(strcmp(argv[i], "--topic") == 0 || strcmp(argv[i], "-t") == 0) {
@@ -87,7 +87,7 @@ int command_capture(int argc, char *argv[]) {
         }
     }
 
-    if(topic == NULL) {
+    if(topic == nullptr) {
         topic = "";
     } else {
         printf(
@@ -110,7 +110,7 @@ int command_capture(int argc, char *argv[]) {
     while(true) {
         char prompt[DEFAULT_BUFFER_SIZE];
 
-        if(topic != NULL && topic[0] != '\0') {
+        if(topic != nullptr && topic[0] != '\0') {
             snprintf(prompt, sizeof(prompt), "~%s> ", topic);
         } else {
             snprintf(prompt, sizeof(prompt), "~> ");

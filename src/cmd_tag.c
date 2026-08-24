@@ -13,7 +13,7 @@
 #include "todo_list.h"
 
 bool text_has_tag(const char *text, const char *tag) {
-    if(text == NULL || tag == NULL || *tag == '\0') {
+    if(text == nullptr || tag == nullptr || *tag == '\0') {
         return false;
     }
 
@@ -28,7 +28,7 @@ bool text_has_tag(const char *text, const char *tag) {
     size_t needle_len = strlen(needle);
     const char *current = text;
 
-    while((current = strstr(current, needle)) != NULL) {
+    while((current = strstr(current, needle)) != nullptr) {
         /*
          * A tag must start at the beginning of the text
          * or after whitespace.
@@ -81,7 +81,7 @@ static struct tag_count *find_tag_count(struct tag_count *tags, size_t count, co
         }
     }
 
-    return NULL;
+    return nullptr;
 }
 
 static int count_tags_in_text(
@@ -126,12 +126,12 @@ static int count_tags_in_text(
 
         struct tag_count *entry = find_tag_count(*tags, *tag_count, name);
 
-        if(entry == NULL) {
+        if(entry == nullptr) {
             if(*tag_count == *tag_capacity) {
                 size_t new_capacity = *tag_capacity == 0 ? 8 : *tag_capacity * 2;
                 struct tag_count *new_tags = realloc(*tags, new_capacity * sizeof(struct tag_count));
 
-                if(new_tags == NULL) {
+                if(new_tags == nullptr) {
                     log_error("Failed allocating tag list.\n");
                     return R_ERROR;
                 }
@@ -194,7 +194,7 @@ static int command_tag_list() {
         return R_ERROR;
     }
 
-    struct tag_count *tags = NULL;
+    struct tag_count *tags = nullptr;
     size_t tag_count = 0;
     size_t tag_capacity = 0;
 

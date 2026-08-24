@@ -4,7 +4,7 @@
 #include <wchar.h>
 
 bool utf8_decode(const char *text, size_t length, size_t offset, unsigned int *codepoint, size_t *next_offset) {
-    if(text == NULL || codepoint == NULL || next_offset == NULL || offset >= length) {
+    if(text == nullptr || codepoint == nullptr || next_offset == nullptr || offset >= length) {
         return false;
     }
 
@@ -52,7 +52,7 @@ bool utf8_decode(const char *text, size_t length, size_t offset, unsigned int *c
 }
 
 size_t utf8_next_boundary(const char *text, size_t length, size_t offset) {
-    if(text == NULL || offset >= length) {
+    if(text == nullptr || offset >= length) {
         return length;
     }
 
@@ -66,7 +66,7 @@ size_t utf8_next_boundary(const char *text, size_t length, size_t offset) {
 }
 
 size_t utf8_previous_boundary(const char *text, size_t offset) {
-    if(text == NULL || offset == 0) {
+    if(text == nullptr || offset == 0) {
         return 0;
     }
 
@@ -122,7 +122,7 @@ size_t utf8_codepoint_cell_width(unsigned int codepoint) {
 }
 
 size_t utf8_range_cell_width(const char *text, size_t start, size_t end) {
-    if(text == NULL || start >= end) {
+    if(text == nullptr || start >= end) {
         return 0;
     }
 
@@ -144,7 +144,7 @@ size_t utf8_range_cell_width(const char *text, size_t start, size_t end) {
 
 enum utf16_decode_result
 utf16_decode_code_unit(struct utf16_decoder *decoder, unsigned int code_unit, unsigned int *codepoint) {
-    if(decoder == NULL || codepoint == NULL || code_unit > 0xFFFF) {
+    if(decoder == nullptr || codepoint == nullptr || code_unit > 0xFFFF) {
         return UTF16_DECODE_INVALID;
     }
 
@@ -172,44 +172,44 @@ utf16_decode_code_unit(struct utf16_decoder *decoder, unsigned int code_unit, un
 #include <windows.h>
 
 char **convert_wargv_to_utf8(int argc, wchar_t *wargv[]) {
-    if(argc <= 0 || wargv == NULL) {
-        return NULL;
+    if(argc <= 0 || wargv == nullptr) {
+        return nullptr;
     }
 
     char **argv = calloc((size_t)argc + 1, sizeof(char *));
-    if(argv == NULL) {
-        return NULL;
+    if(argv == nullptr) {
+        return nullptr;
     }
 
     for(int i = 0; i < argc; ++i) {
-        int required = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, NULL, 0, NULL, NULL);
+        int required = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, nullptr, 0, nullptr, nullptr);
 
         if(required <= 0) {
             free_utf8_argv(argc, argv);
-            return NULL;
+            return nullptr;
         }
 
         argv[i] = malloc((size_t)required);
-        if(argv[i] == NULL) {
+        if(argv[i] == nullptr) {
             free_utf8_argv(argc, argv);
-            return NULL;
+            return nullptr;
         }
 
-        int written = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, argv[i], required, NULL, NULL);
+        int written = WideCharToMultiByte(CP_UTF8, 0, wargv[i], -1, argv[i], required, nullptr, nullptr);
 
         if(written <= 0) {
             free_utf8_argv(argc, argv);
-            return NULL;
+            return nullptr;
         }
     }
 
-    argv[argc] = NULL;
+    argv[argc] = nullptr;
 
     return argv;
 }
 
 void free_utf8_argv(int argc, char *argv[]) {
-    if(argv == NULL) {
+    if(argv == nullptr) {
         return;
     }
 
