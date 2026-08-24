@@ -1,8 +1,8 @@
 #include <ctype.h>
 #include <errno.h>
+#include <stdckdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdckdint.h>
 #include <string.h>
 #include <time.h>
 
@@ -407,11 +407,14 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
         return R_ERROR;
     }
 
-    item->id = md.last_id;
-    if(ckd_add(&md.last_id, md.last_id, 1ULL)) {
-        log_critical("Todo ID speace exhausted. You cannot log more todos. Please prune.\n");
+    unsigned long long next_id;
+    if(ckd_add(&next_id, md.last_id, 1ULL)) {
+        log_critical("Todo ID space exhausted. You cannot log more todos.\n");
         return R_ERROR;
     }
+
+    item->id = md.last_id;
+    md.last_id = next_id;
 
     item->created = time(nullptr);
     item->status = OPEN;

@@ -216,6 +216,7 @@ static int migrate_notes_v0_to_v1(void) {
     size_t migrated_count = 0;
     time_t last_date = 0;
     unsigned int seqnr = 0;
+    bool sequence_exhausted = false;
 
     for(size_t i = 0; i < all_notes.count; ++i) {
         struct note *n = &all_notes.items[i];
@@ -223,6 +224,7 @@ static int migrate_notes_v0_to_v1(void) {
         if(i == 0 || !dates_equal(n->created, last_date)) {
             last_date = n->created;
             seqnr = 1;
+            sequence_exhausted = false;
         }
 
         // preserve existing ID
@@ -234,18 +236,20 @@ static int migrate_notes_v0_to_v1(void) {
 
                 if(sscanf_s(dash + 1, "%u", &existing_seq) == 1 && existing_seq >= seqnr) {
                     unsigned int next_sequence;
-
-                    if(ckd_add(&next_sequence, existing_seq, 1U)) {
-                        log_critical("Note ID sequence exhausted during migration.\n");
-                        note_list_free(&all_notes);
-                        return R_ERROR;
+                    sequence_exhausted = ckd_add(&next_sequence, existing_seq, 1U);
+                    if(!sequence_exhausted) {
+                        seqnr = next_sequence;
                     }
-
-                    seqnr = next_sequence;
                 }
             }
 
             continue;
+        }
+
+        if(sequence_exhausted) {
+            note_list_free(&all_notes);
+            log_critical("Note ID sequence exhausted during migration.\n");
+            return R_ERROR;
         }
 
         char date_buffer[16];
@@ -265,10 +269,10 @@ static int migrate_notes_v0_to_v1(void) {
         }
 
         unsigned int current_sequence = seqnr;
-        if(ckd_add(&seqnr, seqnr, 1U)) {
-            note_list_free(&all_notes);
-            log_critical("Sequence number exhausted.\n");
-            return R_ERROR;
+        unsigned int next_sequence;
+        sequence_exhausted = ckd_add(&next_sequence, seqnr, 1U);
+        if(!sequence_exhausted) {
+            seqnr = next_sequence;
         }
 
         written = snprintf(n->id, sizeof(n->id), "%s-%04u", id_date, current_sequence);
