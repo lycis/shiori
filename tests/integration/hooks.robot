@@ -24,7 +24,7 @@ Successful Command Invokes Hook With Environment
     Shiori Should Succeed    ${result}
     File Should Exist    ${TEST_DATA}${/}hook-result.txt
     ${hook_result}=    Get File    ${TEST_DATA}${/}hook-result.txt    encoding=UTF-8
-    Should Contain    ${hook_result}    version=0.2.0
+    Should Contain    ${hook_result}    version=0.3.0
     Should Contain    ${hook_result}    command=add
     Should Contain    ${hook_result}    args=Hook argument with spaces
 
