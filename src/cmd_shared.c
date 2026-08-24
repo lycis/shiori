@@ -389,6 +389,8 @@ static bool is_leap_year(int year) {
 static int days_in_month(int year, int month) {
     static const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 
+    static_assert(sizeof(days) / sizeof(days[0]) == 12);
+
     if(month == 2 && is_leap_year(year)) {
         return 29;
     }
