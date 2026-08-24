@@ -214,8 +214,18 @@ int run_process(const char *path, const char *working_dir) {
         return -1;
     }
 
-    BOOL success =
-        CreateProcessA(nullptr, command_line, nullptr, nullptr, FALSE, 0, nullptr, working_dir, &startup_info, &process_info);
+    BOOL success = CreateProcessA(
+        nullptr,
+        command_line,
+        nullptr,
+        nullptr,
+        FALSE,
+        0,
+        nullptr,
+        working_dir,
+        &startup_info,
+        &process_info
+    );
 
     if(!success) {
         log_error("Failed starting process '%s' (error %lu).\n", path, GetLastError());

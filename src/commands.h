@@ -1,7 +1,6 @@
 #ifndef SHIORI_COMMAND_H
 #define SHIORI_COMMAND_H
 
-
 typedef int (*command_handler_fn)(int argc, char *argv[]);
 
 struct command_definition {
