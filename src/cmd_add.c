@@ -1,3 +1,4 @@
+#include <stdckdint.h>
 #include <string.h>
 #include <time.h>
 
@@ -127,7 +128,10 @@ static int next_note_id_sequence_for(const struct note_list *notes, unsigned int
         }
     }
 
-    *result = max_sequence + 1;
+    if(ckd_add(result, max_sequence, 1U)) {
+        log_critical("Note ID sequence exhausted.\n");
+        return R_ERROR;
+    }
 
     return R_OK;
 }

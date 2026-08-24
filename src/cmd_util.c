@@ -1,3 +1,4 @@
+#include <stdckdint.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -232,7 +233,15 @@ static int migrate_notes_v0_to_v1(void) {
                 unsigned int existing_seq = 0;
 
                 if(sscanf_s(dash + 1, "%u", &existing_seq) == 1 && existing_seq >= seqnr) {
-                    seqnr = existing_seq + 1;
+                    unsigned int next_sequence;
+
+                    if(ckd_add(&next_sequence, existing_seq, 1U)) {
+                        log_critical("Note ID sequence exhausted during migration.\n");
+                        note_list_free(&all_notes);
+                        return R_ERROR;
+                    }
+
+                    seqnr = next_sequence;
                 }
             }
 
@@ -255,7 +264,14 @@ static int migrate_notes_v0_to_v1(void) {
             return R_ERROR;
         }
 
-        written = snprintf(n->id, sizeof(n->id), "%s-%04u", id_date, seqnr++);
+        unsigned int current_sequence = seqnr;
+        if(ckd_add(&seqnr, seqnr, 1U)) {
+            note_list_free(&all_notes);
+            log_critical("Sequence number exhausted.\n");
+            return R_ERROR;
+        }
+
+        written = snprintf(n->id, sizeof(n->id), "%s-%04u", id_date, current_sequence);
         if(written < 0 || (size_t)written >= sizeof(n->id)) {
             note_list_free(&all_notes);
             log_error("Generated note ID is too long.\n");

@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdckdint.h>
 #include <string.h>
 #include <time.h>
 
@@ -406,7 +407,12 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
         return R_ERROR;
     }
 
-    item->id = md.last_id++;
+    item->id = md.last_id;
+    if(ckd_add(&md.last_id, md.last_id, 1ULL)) {
+        log_critical("Todo ID speace exhausted. You cannot log more todos. Please prune.\n");
+        return R_ERROR;
+    }
+
     item->created = time(nullptr);
     item->status = OPEN;
 
