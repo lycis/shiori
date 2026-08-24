@@ -50,6 +50,8 @@ int command_init(int argc, char *argv[]) {
     }
     fprintf(config_file, "base_dir: %s\n", buffer);
     fprintf(config_file, "color: true\n");
+    fprintf(config_file, "notes_filename: NOTES.md\n");
+    fprintf(config_file, "todo_filename: TODOS.md\n");
 
     fclose(config_file);
 

@@ -11,6 +11,80 @@
 
 struct configuration g_config;
 
+static bool is_path_separator(char value) {
+    return value == '/' || value == '\\';
+}
+
+static int validate_relative_filename(const char *key, char *filename) {
+    if(filename[0] == '\0') {
+        log_error("invalid configuration: %s must not be empty.\n", key);
+        return R_ERROR;
+    }
+
+    if(is_path_separator(filename[0]) || strchr(filename, ':') != nullptr) {
+        log_error("invalid configuration: %s must be relative to base_dir.\n", key);
+        return R_ERROR;
+    }
+
+    size_t component_start = 0;
+    size_t length = strlen(filename);
+
+    for(size_t index = 0; index <= length; ++index) {
+        if(index < length && !is_path_separator(filename[index])) {
+            continue;
+        }
+
+        size_t component_length = index - component_start;
+        bool dot_component = component_length == 1 && filename[component_start] == '.';
+        bool parent_component =
+            component_length == 2 && filename[component_start] == '.' && filename[component_start + 1] == '.';
+
+        if(component_length == 0 || dot_component || parent_component) {
+            log_error("invalid configuration: %s contains an invalid path component.\n", key);
+            return R_ERROR;
+        }
+
+        if(index < length) {
+            filename[index] = get_path_separator()[0];
+            component_start = index + 1;
+        }
+    }
+
+    char full_path[DEFAULT_BUFFER_SIZE];
+    return get_base_dir_file_path(filename, full_path, sizeof(full_path));
+}
+
+static bool filenames_equal(const char *left, const char *right) {
+#ifdef _WIN32
+    return _stricmp(left, right) == 0;
+#else
+    return strcmp(left, right) == 0;
+#endif
+}
+
+static bool filename_conflicts_with(const char *filename, const char *other) {
+    char artifact[DEFAULT_BUFFER_SIZE];
+
+    return filenames_equal(filename, other) ||
+           (snprintf(artifact, sizeof(artifact), "%s.tmp", other) > 0 && filenames_equal(filename, artifact)) ||
+           (snprintf(artifact, sizeof(artifact), "%s.bak", other) > 0 && filenames_equal(filename, artifact));
+}
+
+static int validate_storage_filenames(void) {
+    if(validate_relative_filename("todo_filename", g_config.todo_filename) != R_OK ||
+       validate_relative_filename("notes_filename", g_config.notes_filename) != R_OK) {
+        return R_ERROR;
+    }
+
+    if(filename_conflicts_with(g_config.todo_filename, g_config.notes_filename) ||
+       filename_conflicts_with(g_config.notes_filename, g_config.todo_filename)) {
+        log_error("invalid configuration: todo and notes storage paths conflict.\n");
+        return R_ERROR;
+    }
+
+    return R_OK;
+}
+
 int read_config_file(void) {
     log_debug("Reading config file.\n");
 
@@ -112,25 +186,35 @@ int read_config_file(void) {
                 }
             }
         } else if(strcmp(key, "todo_filename") == 0) {
-            if(strlen(value) > 0) {
-                if(strcpy_s(g_config.todo_filename, sizeof(g_config.todo_filename), value) != 0) {
-                    log_error("invalid configuration file (line %d): todo_filename is too long.\n", lnr);
-                    fclose(config_file);
-                    return R_ERROR;
-                }
+            if(strlen(value) == 0) {
+                log_error("invalid configuration file (line %d): todo_filename must not be empty.\n", lnr);
+                fclose(config_file);
+                return R_ERROR;
+            }
+            if(strcpy_s(g_config.todo_filename, sizeof(g_config.todo_filename), value) != 0) {
+                log_error("invalid configuration file (line %d): todo_filename is too long.\n", lnr);
+                fclose(config_file);
+                return R_ERROR;
             }
         } else if(strcmp(key, "notes_filename") == 0) {
-            if(strlen(value) > 0) {
-                if(strcpy_s(g_config.notes_filename, sizeof(g_config.notes_filename), value) != 0) {
-                    log_error("invalid configuration file (line %d): notes_filename is too long.\n", lnr);
-                    fclose(config_file);
-                    return R_ERROR;
-                }
+            if(strlen(value) == 0) {
+                log_error("invalid configuration file (line %d): notes_filename must not be empty.\n", lnr);
+                fclose(config_file);
+                return R_ERROR;
+            }
+            if(strcpy_s(g_config.notes_filename, sizeof(g_config.notes_filename), value) != 0) {
+                log_error("invalid configuration file (line %d): notes_filename is too long.\n", lnr);
+                fclose(config_file);
+                return R_ERROR;
             }
         }
     }
 
     fclose(config_file);
+
+    if(validate_storage_filenames() != R_OK) {
+        return R_ERROR;
+    }
 
     if(!g_config.color) {
         color_set_enabled(false);
