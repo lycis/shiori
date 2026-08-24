@@ -5,6 +5,7 @@
 #include <wchar.h>
 
 static_assert(UINT_MAX >= 0x10FFFF, "unsigned int must represent every Unicode code point");
+static_assert(CHAR_BIT == 8, "UTF-8 processing requires 8-bit bytes");
 
 bool utf8_decode(const char *text, size_t length, size_t offset, unsigned int *codepoint, size_t *next_offset) {
     if(text == nullptr || codepoint == nullptr || next_offset == nullptr || offset >= length) {
