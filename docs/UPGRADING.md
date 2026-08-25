@@ -41,12 +41,13 @@ storage:
   todo: TODOS.md
 ```
 
-The legacy storage keys remain accepted. Do not configure a legacy key and its
-corresponding nested key in the same file.
+The legacy storage keys remain accepted with a deprecation warning. Do not
+configure a legacy key and its corresponding nested key in the same file.
 
-Do not configure both forms in one file. To disable the hook, remove the
-setting or use an explicit empty string. A bare `hook_after_command:` is now
-interpreted as the beginning of a map and is rejected when no child follows.
+Do not configure both forms in one file. The legacy hook key remains accepted
+with a deprecation warning. To disable the hook, remove the setting or use an
+explicit empty string. A bare `hook_after_command:` is now interpreted as the
+beginning of a map and is rejected when no child follows.
 
 The new parser also rejects unknown keys, duplicate keys, tabs in indentation,
 inconsistent nesting, and unsupported YAML constructs that older versions may

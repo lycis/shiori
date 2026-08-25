@@ -187,6 +187,12 @@ static int load_application_config(const struct config_document *document) {
         log_error("invalid configuration: todo_filename and storage.todo cannot both be configured.\n");
         return R_ERROR;
     }
+    if(legacy_notes != nullptr) {
+        log_warning("configuration key 'notes_filename' is deprecated; use 'storage.notes' instead.\n");
+    }
+    if(legacy_todo != nullptr) {
+        log_warning("configuration key 'todo_filename' is deprecated; use 'storage.todo' instead.\n");
+    }
 
     const char *notes_path = nested_notes != nullptr ? "storage.notes" : "notes_filename";
     const char *todo_path = nested_todo != nullptr ? "storage.todo" : "todo_filename";
@@ -208,6 +214,9 @@ static int load_application_config(const struct config_document *document) {
     if(legacy_hook != nullptr && nested_hook != nullptr) {
         log_error("invalid configuration: hook_after_command and hooks.after_command cannot both be configured.\n");
         return R_ERROR;
+    }
+    if(legacy_hook != nullptr) {
+        log_warning("configuration key 'hook_after_command' is deprecated; use 'hooks.after_command' instead.\n");
     }
     const char *hook_path = nested_hook != nullptr ? "hooks.after_command" : "hook_after_command";
     if(copy_config_string(

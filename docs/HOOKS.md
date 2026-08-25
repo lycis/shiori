@@ -37,7 +37,8 @@ hooks:
 
 `hooks.after_command` is optional. An empty or absent value disables it. The
 legacy top-level key `hook_after_command` is still accepted for compatibility,
-but new configurations should use the nested form.
+but produces a deprecation warning. New configurations should use the nested
+form.
 
 The hook path is resolved relative to `base_dir`, not relative to the directory containing `.shiori` or the shell's current directory. With the configuration above, Shiori runs:
 

@@ -117,6 +117,12 @@ Legacy Flat Storage Configuration Remains Supported
     Shiori Should Succeed    ${result}
     Should Contain    ${result.stdout}    notes: legacy-notes.md
     Should Contain    ${result.stdout}    todo: legacy-todos.md
+    Combined Output Should Contain
+    ...    ${result}
+    ...    configuration key 'notes_filename' is deprecated; use 'storage.notes' instead
+    Combined Output Should Contain
+    ...    ${result}
+    ...    configuration key 'todo_filename' is deprecated; use 'storage.todo' instead
 
 Legacy And Nested Storage Keys Conflict
     Create File
@@ -141,6 +147,9 @@ Legacy Flat Hook Configuration Remains Supported
     ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hook_after_command: ""${\n}
     ${result}=    Run Shiori    config    show
     Shiori Should Succeed    ${result}
+    Combined Output Should Contain
+    ...    ${result}
+    ...    configuration key 'hook_after_command' is deprecated; use 'hooks.after_command' instead
 
 Legacy And Nested Hook Keys Conflict
     Create File

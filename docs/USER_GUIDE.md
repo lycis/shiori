@@ -121,7 +121,8 @@ comparison is case-insensitive. The extension is not restricted, although the
 files contain Markdown regardless of their names. Existing configurations that
 omit these settings continue to use `NOTES.md` and `TODOS.md`. The legacy
 top-level keys `notes_filename` and `todo_filename` remain accepted, but must
-not be combined with their corresponding nested keys.
+not be combined with their corresponding nested keys. Shiori prints a
+deprecation warning when either legacy key is loaded.
 
 To intentionally recreate an existing local configuration:
 
