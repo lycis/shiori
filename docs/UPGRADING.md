@@ -26,6 +26,24 @@ hooks:
   after_command: hooks\after_command.bat
 ```
 
+Storage filenames likewise move from the legacy top-level keys:
+
+```text
+notes_filename: NOTES.md
+todo_filename: TODOS.md
+```
+
+to the canonical nested form:
+
+```text
+storage:
+  notes: NOTES.md
+  todo: TODOS.md
+```
+
+The legacy storage keys remain accepted. Do not configure a legacy key and its
+corresponding nested key in the same file.
+
 Do not configure both forms in one file. To disable the hook, remove the
 setting or use an explicit empty string. A bare `hook_after_command:` is now
 interpreted as the beginning of a map and is rejected when no child follows.

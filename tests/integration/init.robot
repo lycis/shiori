@@ -12,8 +12,9 @@ Init Creates Local Configuration
     Should Contain    ${config}    version: 1
     Should Contain    ${config}    base_dir: ${TEST_CWD}
     Should Contain    ${config}    color: true
-    Should Contain    ${config}    notes_filename: NOTES.md
-    Should Contain    ${config}    todo_filename: TODOS.md
+    Should Contain    ${config}    storage:
+    Should Contain    ${config}    notes: NOTES.md
+    Should Contain    ${config}    todo: TODOS.md
 
 Init Refuses To Overwrite Configuration
     ${first}=     Run Shiori    init
@@ -73,8 +74,8 @@ Relative Storage Filenames Are Accepted
     Write Shiori Config    notes=journal\\notes.markdown    todos=tasks.txt
     ${result}=    Run Shiori    config    show
     Shiori Should Succeed    ${result}
-    Should Contain    ${result.stdout}    notes_filename: journal\\notes.markdown
-    Should Contain    ${result.stdout}    todo_filename: tasks.txt
+    Should Contain    ${result.stdout}    notes: journal\\notes.markdown
+    Should Contain    ${result.stdout}    todo: tasks.txt
 
 Equivalent Storage Paths Are Rejected
     Write Shiori Config    notes=data.md    todos=DATA.md
@@ -103,10 +104,27 @@ Storage Paths Cannot Conflict With Rewrite Artifacts
 Explicitly Empty Storage Filename Is Rejected
     Create File
     ...    ${TEST_CWD}${/}.shiori
-    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}notes_filename: ""${\n}
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}storage:${\n}${SPACE}${SPACE}notes: ""${\n}
     ${result}=    Run Shiori    config    show
     Shiori Should Fail    ${result}
-    Combined Output Should Contain    ${result}    notes_filename must not be empty
+    Combined Output Should Contain    ${result}    storage.notes must not be empty
+
+Legacy Flat Storage Configuration Remains Supported
+    Create File
+    ...    ${TEST_CWD}${/}.shiori
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}notes_filename: legacy-notes.md${\n}todo_filename: legacy-todos.md${\n}
+    ${result}=    Run Shiori    config    show
+    Shiori Should Succeed    ${result}
+    Should Contain    ${result.stdout}    notes: legacy-notes.md
+    Should Contain    ${result.stdout}    todo: legacy-todos.md
+
+Legacy And Nested Storage Keys Conflict
+    Create File
+    ...    ${TEST_CWD}${/}.shiori
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}notes_filename: old.md${\n}storage:${\n}${SPACE}${SPACE}notes: new.md${\n}
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    cannot both be configured
 
 Nested Configuration Accepts Flexible Indentation
     Create File

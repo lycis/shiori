@@ -72,8 +72,8 @@ static bool filename_conflicts_with(const char *filename, const char *other) {
 }
 
 static int validate_storage_filenames(void) {
-    if(validate_relative_filename("todo_filename", g_config.todo_filename) != R_OK ||
-       validate_relative_filename("notes_filename", g_config.notes_filename) != R_OK) {
+    if(validate_relative_filename("storage.todo", g_config.todo_filename) != R_OK ||
+       validate_relative_filename("storage.notes", g_config.notes_filename) != R_OK) {
         return R_ERROR;
     }
 
@@ -93,6 +93,8 @@ static bool is_known_config_path(const char *path) {
         "color",
         "notes_filename",
         "todo_filename",
+        "storage.notes",
+        "storage.todo",
         "hook_after_command",
         "hooks.after_command",
     };
@@ -173,22 +175,31 @@ static int load_application_config(const struct config_document *document) {
         g_config.color = color->value.boolean_value;
     }
 
+    const struct config_entry *legacy_notes = config_get(document, "notes_filename");
+    const struct config_entry *nested_notes = config_get(document, "storage.notes");
+    const struct config_entry *legacy_todo = config_get(document, "todo_filename");
+    const struct config_entry *nested_todo = config_get(document, "storage.todo");
+    if(legacy_notes != nullptr && nested_notes != nullptr) {
+        log_error("invalid configuration: notes_filename and storage.notes cannot both be configured.\n");
+        return R_ERROR;
+    }
+    if(legacy_todo != nullptr && nested_todo != nullptr) {
+        log_error("invalid configuration: todo_filename and storage.todo cannot both be configured.\n");
+        return R_ERROR;
+    }
+
+    const char *notes_path = nested_notes != nullptr ? "storage.notes" : "notes_filename";
+    const char *todo_path = nested_todo != nullptr ? "storage.todo" : "todo_filename";
     if(copy_config_string(
            document,
-           "notes_filename",
+           notes_path,
            g_config.notes_filename,
            sizeof(g_config.notes_filename),
            false,
            false
        ) != R_OK ||
-       copy_config_string(
-           document,
-           "todo_filename",
-           g_config.todo_filename,
-           sizeof(g_config.todo_filename),
-           false,
-           false
-       ) != R_OK) {
+       copy_config_string(document, todo_path, g_config.todo_filename, sizeof(g_config.todo_filename), false, false) !=
+           R_OK) {
         return R_ERROR;
     }
 

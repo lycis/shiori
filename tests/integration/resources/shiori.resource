@@ -39,11 +39,14 @@ Write Shiori Config
     IF    $hook
         ${content}=    Catenate    SEPARATOR=\n    ${content}    hooks:    ${SPACE}${SPACE}${SPACE}${SPACE}after_command: ${hook}
     END
-    IF    $notes
-        ${content}=    Catenate    SEPARATOR=\n    ${content}    notes_filename: ${notes}
-    END
-    IF    $todos
-        ${content}=    Catenate    SEPARATOR=\n    ${content}    todo_filename: ${todos}
+    IF    $notes or $todos
+        ${content}=    Catenate    SEPARATOR=\n    ${content}    storage:
+        IF    $notes
+            ${content}=    Catenate    SEPARATOR=\n    ${content}    ${SPACE}${SPACE}notes: ${notes}
+        END
+        IF    $todos
+            ${content}=    Catenate    SEPARATOR=\n    ${content}    ${SPACE}${SPACE}todo: ${todos}
+        END
     END
     Create File    ${TEST_CWD}${/}.shiori    ${content}${\n}    encoding=UTF-8
 

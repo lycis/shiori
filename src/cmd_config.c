@@ -24,8 +24,9 @@ int command_config(int argc, char *argv[]) {
         printf("version: %d\n", g_config.version);
         printf("base_dir: %s\n", g_config.base_dir);
         printf("color: %s\n", g_config.color ? "true" : "false");
-        printf("todo_filename: %s\n", g_config.todo_filename);
-        printf("notes_filename: %s\n", g_config.notes_filename);
+        printf("storage:\n");
+        printf("  notes: %s\n", g_config.notes_filename);
+        printf("  todo: %s\n", g_config.todo_filename);
         printf("\n");
         printf("hooks:\n");
         printf(
