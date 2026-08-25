@@ -29,7 +29,7 @@ int command_config(int argc, char *argv[]) {
         printf("\n");
         printf("hooks:\n");
         printf(
-            "  after_command: %s",
+            "  after_command: %s\n",
             g_config.hooks.after_command[0] != '\0' ? g_config.hooks.after_command : "(not configured)"
         );
     } else {

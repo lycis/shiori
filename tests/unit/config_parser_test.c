@@ -88,6 +88,8 @@ static void test_malformed_input(void) {
     assert_parse_error("value: \"unterminated\n", "unterminated");
     assert_parse_error("value: \"bad\\q\"\n", "unsupported escape");
     assert_parse_error("value: \"done\" trailing\n", "unexpected text");
+    assert_parse_error("value: [one, two]\n", "unsupported YAML-style");
+    assert_parse_error("value: |\n", "unsupported YAML-style");
 }
 
 int main(void) {

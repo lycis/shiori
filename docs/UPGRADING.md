@@ -7,6 +7,35 @@ the new executable against an existing workspace.
 Shiori is alpha software. Keep an independent backup of your workspace when
 upgrading, even when a release provides an automatic migration.
 
+## Upgrade from 0.2.0 to 0.3.0
+
+Shiori 0.3.0 formalizes the `.shiori` configuration syntax and adds nested
+maps. Normal 0.2.0 configuration files remain valid and the format version
+stays at 1; no automatic rewrite is performed.
+
+The existing top-level hook setting remains accepted:
+
+```text
+hook_after_command: hooks\after_command.bat
+```
+
+The canonical form for new and manually updated configurations is:
+
+```text
+hooks:
+  after_command: hooks\after_command.bat
+```
+
+Do not configure both forms in one file. To disable the hook, remove the
+setting or use an explicit empty string. A bare `hook_after_command:` is now
+interpreted as the beginning of a map and is rejected when no child follows.
+
+The new parser also rejects unknown keys, duplicate keys, tabs in indentation,
+inconsistent nesting, and unsupported YAML constructs that older versions may
+have silently ignored or interpreted as plain text. Errors identify the source
+line and column. See the [configuration syntax reference](USER_GUIDE.md#configuration-file-syntax)
+when adjusting a hand-edited file.
+
 ## Upgrade from 0.1.0 to 0.2.0
 
 Shiori 0.2.0 introduces notes format version 1 and stable note IDs. Existing

@@ -101,7 +101,7 @@ shiori init
 
 This creates a `.shiori` file similar to:
 
-```yaml
+```text
 # Initialized: ...
 version: 1
 base_dir: C:\path\to\your\notes
@@ -139,16 +139,51 @@ Shiori searches for `.shiori` in this order:
 
 A project-specific configuration therefore takes precedence over a user-level fallback.
 
+### Configuration file syntax
+
+The `.shiori` format is intentionally YAML-like, but it is not YAML. It supports
+scalar `key: value` entries and nested maps. Nested keys are indented farther
+than their parent; no particular indentation width is required, but siblings
+must begin in the same column:
+
+```text
+hooks:
+    after_command: hooks\after_command.bat
+```
+
+Indentation must use spaces, not tabs. Blank lines and lines whose first
+non-space character is `#` are ignored. Inline comments are not supported, so
+`#` in a value is preserved as text.
+
+Keys begin with an ASCII letter or underscore and may then contain ASCII
+letters, digits, underscores, and hyphens. A key without a value introduces a
+non-empty nested map. Dots are not permitted in keys because Shiori internally
+addresses nested values with paths such as `hooks.after_command`.
+
+Values may be unquoted strings, signed base-10 integers, lowercase `true` or
+`false`, single-quoted strings, or double-quoted strings. Use `''` for a single
+quote inside a single-quoted string. Double-quoted strings recognize `\"`,
+`\\`, `\n`, `\r`, and `\t`; other escapes are errors. Single quotes are often
+the clearest choice for a quoted Windows path because backslashes remain
+literal. Use `""` when an explicitly empty string is needed.
+
+Duplicate keys, inconsistent indentation, empty maps, unknown Shiori settings,
+and malformed quoted values are errors. YAML lists, flow maps, anchors, tags,
+multiline scalars, and document directives are not supported. Quote a value if
+it begins with syntax such as `[`, `{`, `|`, `>`, `&`, `*`, or `!` and is
+intended as ordinary text.
+
 ## Hooks and automation
 
 Shiori can run a local script after a command, making it possible to trigger backups, version-control workflows, notifications, or other personal automation.
 
 Configure the current `after_command` hook in `.shiori` with a path relative to `base_dir`:
 
-```yaml
+```text
 version: 1
 base_dir: C:\Users\you\Notes
-hook_after_command: hooks\after_command.bat
+hooks:
+  after_command: hooks\after_command.bat
 ```
 
 The hook runs synchronously after recognized commands and receives command information through environment variables. Hook scripts are executable code, so only configure scripts you trust.
@@ -174,7 +209,7 @@ shiori [options] <command> [options] [subcommand] ...
 
 Shiori colors output when the destination is an interactive terminal and color is enabled in `.shiori`:
 
-```yaml
+```text
 color: true
 ```
 
@@ -715,7 +750,7 @@ Checkbox markers represent open (`[ ]`), in progress (`[/]`), and done (`[x]`). 
 
 Set `base_dir` to a directory inside your Obsidian vault:
 
-```yaml
+```text
 version: 1
 base_dir: C:\Users\you\Documents\Obsidian\MyVault
 ```

@@ -46,13 +46,16 @@ static char *copy_text(const char *text, size_t length) {
 }
 
 static bool valid_key(const char *key) {
-    if(!(isalpha((unsigned char)key[0]) || key[0] == '_')) {
+    bool starts_with_letter = (key[0] >= 'A' && key[0] <= 'Z') || (key[0] >= 'a' && key[0] <= 'z');
+    if(!(starts_with_letter || key[0] == '_')) {
         return false;
     }
 
     for(size_t index = 1; key[index] != '\0'; ++index) {
-        unsigned char character = (unsigned char)key[index];
-        if(!(isalnum(character) || character == '_' || character == '-')) {
+        char character = key[index];
+        bool letter = (character >= 'A' && character <= 'Z') || (character >= 'a' && character <= 'z');
+        bool digit = character >= '0' && character <= '9';
+        if(!(letter || digit || character == '_' || character == '-')) {
             return false;
         }
     }
@@ -230,6 +233,15 @@ static int parse_scalar(char *text, struct config_entry *entry, struct config_pa
         entry->type = CONFIG_VALUE_BOOLEAN;
         entry->value.boolean_value = strcmp(text, "true") == 0;
         return R_OK;
+    }
+
+    if(strchr("[{}]|>&*!", text[0]) != nullptr) {
+        return set_error(
+            error,
+            entry->line,
+            entry->column,
+            "unsupported YAML-style scalar syntax; quote the value to use it as text"
+        );
     }
 
     bool looks_integer =

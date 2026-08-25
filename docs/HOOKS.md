@@ -28,13 +28,16 @@ Only configure hook scripts that you trust and have reviewed. Pay particular att
 
 Configure hooks in the same `.shiori` file as `base_dir`:
 
-```yaml
+```text
 version: 1
 base_dir: C:\Users\you\Notes
-hook_after_command: hooks\after_command.bat
+hooks:
+  after_command: hooks\after_command.bat
 ```
 
-`hook_after_command` is optional. An empty or absent value disables it.
+`hooks.after_command` is optional. An empty or absent value disables it. The
+legacy top-level key `hook_after_command` is still accepted for compatibility,
+but new configurations should use the nested form.
 
 The hook path is resolved relative to `base_dir`, not relative to the directory containing `.shiori` or the shell's current directory. With the configuration above, Shiori runs:
 
@@ -77,8 +80,9 @@ Hook execution does not change the originating command's result. A nonzero hook 
 
 Configuration key:
 
-```yaml
-hook_after_command: path\relative\to\base_dir.bat
+```text
+hooks:
+  after_command: path\relative\to\base_dir.bat
 ```
 
 Timing: after a recognized, configuration-dependent command completes.
@@ -126,8 +130,9 @@ exit /b 0
 
 Then add it to `.shiori`:
 
-```yaml
-hook_after_command: hooks\after_command.bat
+```text
+hooks:
+  after_command: hooks\after_command.bat
 ```
 
 Run a command and inspect the resulting log:
@@ -160,8 +165,9 @@ The Git example is intentionally powerful: it runs `git add .` and `git push`. R
 
 To use an included example when this repository is also your `base_dir`:
 
-```yaml
-hook_after_command: example-hooks\after_command_hello.bat
+```text
+hooks:
+  after_command: example-hooks\after_command_hello.bat
 ```
 
 ## Troubleshooting

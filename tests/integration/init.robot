@@ -114,6 +114,8 @@ Nested Configuration Accepts Flexible Indentation
     ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hooks:${\n} after_command: ""${\n}
     ${result}=    Run Shiori    config    show
     Shiori Should Succeed    ${result}
+    Should Contain    ${result.stdout}    hooks:
+    Should Contain    ${result.stdout}    after_command: (not configured)
 
 Legacy Flat Hook Configuration Remains Supported
     Create File
