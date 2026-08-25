@@ -222,13 +222,10 @@ int create_note_from_markdown(const char *markdown, time_t created, struct note 
             topic_len++;
         }
 
-        if(topic_len >= sizeof(item->topic)) {
-            log_error("Topic name is too long.\n");
+        if(decode_topic(topic, topic_len, item->topic, sizeof(item->topic)) != R_OK) {
+            log_error("Invalid encoded topic.\n");
             return R_ERROR;
         }
-
-        memcpy(item->topic, topic, topic_len);
-        item->topic[topic_len] = '\0';
     }
 
     if(id_tag != nullptr) {
@@ -513,12 +510,18 @@ int write_note(FILE *file, const struct note *note) {
         return R_ERROR;
     }
 
+    char encoded_topic[DEFAULT_BUFFER_SIZE * 3];
+    if(note->topic[0] != '\0' && encode_topic(note->topic, encoded_topic, sizeof(encoded_topic)) != R_OK) {
+        log_error("Topic encoding failed.\n");
+        return R_ERROR;
+    }
+
     if(fprintf(file, "* %s", note->text) < 0) {
         return R_ERROR;
     }
 
     if(note->topic[0] != '\0') {
-        if(fprintf(file, " #%s/topic/%s", APP_NAME, note->topic) < 0) {
+        if(fprintf(file, " #%s/topic/%s", APP_NAME, encoded_topic) < 0) {
             return R_ERROR;
         }
     }

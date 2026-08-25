@@ -65,7 +65,8 @@ static int add_note_to_markdown(struct note *note, const char *filename, const c
         return R_ERROR;
     }
 
-    char topic_buffer[DEFAULT_BUFFER_SIZE];
+    char encoded_topic[DEFAULT_BUFFER_SIZE * 3];
+    char topic_buffer[DEFAULT_BUFFER_SIZE * 3 + 32];
     char id_buffer[DEFAULT_BUFFER_SIZE];
 
     char *argv[3];
@@ -74,7 +75,12 @@ static int add_note_to_markdown(struct note *note, const char *filename, const c
     argv[argc++] = note->text;
 
     if(note->topic[0] != '\0') {
-        int written = snprintf(topic_buffer, sizeof(topic_buffer), "#%s/topic/%s", APP_NAME, note->topic);
+        if(encode_topic(note->topic, encoded_topic, sizeof(encoded_topic)) != R_OK) {
+            log_error("Topic encoding failed.\n");
+            return R_ERROR;
+        }
+
+        int written = snprintf(topic_buffer, sizeof(topic_buffer), "#%s/topic/%s", APP_NAME, encoded_topic);
         if(written < 0 || (size_t)written >= sizeof(topic_buffer)) {
             log_error("Topic title is too long.\n");
             return R_ERROR;
