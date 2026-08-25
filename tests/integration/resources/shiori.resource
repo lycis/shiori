@@ -37,7 +37,7 @@ Write Shiori Config
         ${content}=    Catenate    SEPARATOR=\n    ${content}    color: ${color}
     END
     IF    $hook
-        ${content}=    Catenate    SEPARATOR=\n    ${content}    hook_after_command: ${hook}
+        ${content}=    Catenate    SEPARATOR=\n    ${content}    hooks:    ${SPACE}${SPACE}${SPACE}${SPACE}after_command: ${hook}
     END
     IF    $notes
         ${content}=    Catenate    SEPARATOR=\n    ${content}    notes_filename: ${notes}

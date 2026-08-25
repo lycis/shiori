@@ -6,6 +6,7 @@
 
 #include "color.h"
 #include "common.h"
+#include "config_parser.h"
 #include "logging.h"
 #include "platform.h"
 
@@ -85,6 +86,133 @@ static int validate_storage_filenames(void) {
     return R_OK;
 }
 
+static bool is_known_config_path(const char *path) {
+    static const char *known_paths[] = {
+        "version",
+        "base_dir",
+        "color",
+        "notes_filename",
+        "todo_filename",
+        "hook_after_command",
+        "hooks.after_command",
+    };
+
+    for(size_t index = 0; index < sizeof(known_paths) / sizeof(known_paths[0]); ++index) {
+        if(strcmp(path, known_paths[index]) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static int copy_config_string(
+    const struct config_document *document,
+    const char *path,
+    char *destination,
+    size_t destination_size,
+    bool required,
+    bool allow_empty
+) {
+    const struct config_entry *entry = config_get(document, path);
+    if(entry == nullptr) {
+        if(required) {
+            log_error("invalid configuration: required key '%s' is missing.\n", path);
+            return R_ERROR;
+        }
+        return R_OK;
+    }
+    if(entry->type != CONFIG_VALUE_STRING) {
+        log_error("invalid configuration (line %zu): %s must be a string.\n", entry->line, path);
+        return R_ERROR;
+    }
+    if(!allow_empty && entry->value.string_value[0] == '\0') {
+        log_error("invalid configuration (line %zu): %s must not be empty.\n", entry->line, path);
+        return R_ERROR;
+    }
+    if(strcpy_s(destination, destination_size, entry->value.string_value) != 0) {
+        log_error("invalid configuration (line %zu): %s is too long.\n", entry->line, path);
+        return R_ERROR;
+    }
+    return R_OK;
+}
+
+static int load_application_config(const struct config_document *document) {
+    for(size_t index = 0; index < document->count; ++index) {
+        const struct config_entry *entry = &document->entries[index];
+        if(!is_known_config_path(entry->path)) {
+            log_error("invalid configuration (line %zu): unknown key '%s'.\n", entry->line, entry->path);
+            return R_ERROR;
+        }
+    }
+
+    const struct config_entry *version = config_get(document, "version");
+    if(version == nullptr) {
+        log_error("invalid configuration: required key 'version' is missing.\n");
+        return R_ERROR;
+    }
+    if(version->type != CONFIG_VALUE_INTEGER || version->value.integer_value != CONFIG_VERSION) {
+        log_error("invalid configuration (line %zu): version must be %d.\n", version->line, CONFIG_VERSION);
+        return R_ERROR;
+    }
+    g_config.version = (int)version->value.integer_value;
+
+    if(copy_config_string(document, "base_dir", g_config.base_dir, sizeof(g_config.base_dir), true, false) != R_OK) {
+        return R_ERROR;
+    }
+    size_t base_dir_length = strlen(g_config.base_dir);
+    if(base_dir_length > 1 && is_path_separator(g_config.base_dir[base_dir_length - 1])) {
+        g_config.base_dir[base_dir_length - 1] = '\0';
+    }
+
+    const struct config_entry *color = config_get(document, "color");
+    if(color != nullptr) {
+        if(color->type != CONFIG_VALUE_BOOLEAN) {
+            log_error("invalid configuration (line %zu): color must be true or false.\n", color->line);
+            return R_ERROR;
+        }
+        g_config.color = color->value.boolean_value;
+    }
+
+    if(copy_config_string(
+           document,
+           "notes_filename",
+           g_config.notes_filename,
+           sizeof(g_config.notes_filename),
+           false,
+           false
+       ) != R_OK ||
+       copy_config_string(
+           document,
+           "todo_filename",
+           g_config.todo_filename,
+           sizeof(g_config.todo_filename),
+           false,
+           false
+       ) != R_OK) {
+        return R_ERROR;
+    }
+
+    const struct config_entry *legacy_hook = config_get(document, "hook_after_command");
+    const struct config_entry *nested_hook = config_get(document, "hooks.after_command");
+    if(legacy_hook != nullptr && nested_hook != nullptr) {
+        log_error("invalid configuration: hook_after_command and hooks.after_command cannot both be configured.\n");
+        return R_ERROR;
+    }
+    const char *hook_path = nested_hook != nullptr ? "hooks.after_command" : "hook_after_command";
+    if(copy_config_string(
+           document,
+           hook_path,
+           g_config.hooks.after_command,
+           sizeof(g_config.hooks.after_command),
+           false,
+           true
+       ) != R_OK) {
+        return R_ERROR;
+    }
+
+    return validate_storage_filenames();
+}
+
 int read_config_file(void) {
     log_debug("Reading config file.\n");
 
@@ -121,98 +249,18 @@ int read_config_file(void) {
         return R_ERROR;
     }
 
-    char line[DEFAULT_BUFFER_SIZE];
-    int lnr = 0;
-    while(fgets(line, sizeof(line), config_file) != nullptr) {
-        lnr++;
-        if(line[0] == '#') {
-            continue; // comment
-        }
-        if(strlen(line) == 0 || line[0] == '\n') {
-            continue; // empty line
-        }
-
-        if(strstr(line, ":") == nullptr) {
-            log_error("Invalid config entry at line %d\n", lnr);
-            fclose(config_file);
-            return R_ERROR;
-        }
-
-        char *colon = strchr(line, ':');
-
-        if(colon == nullptr) {
-            log_error("Invalid config entry at line %d\n", lnr);
-            return R_ERROR;
-        }
-
-        *colon = '\0';
-
-        char *key = trim(line);
-        char *value = trim(colon + 1);
-
-        if(strcmp(key, "version") == 0) {
-            if(parse_int(value, &g_config.version) != R_OK || g_config.version == 0) {
-                log_error("Invalid config version at line %d\n", lnr);
-                fclose(config_file);
-                return R_ERROR;
-            }
-        } else if(strcmp(key, "base_dir") == 0) {
-            size_t len = strlen(value);
-            if(len > 0) {
-                char lc = value[strlen(value) - 1];
-                if(lc == '\\' || lc == '/') {
-                    value[strlen(value) - 1] = '\0';
-                }
-                strcpy_s(g_config.base_dir, sizeof(g_config.base_dir), value);
-            } else {
-                log_error("invalid configuration (line %d): Empty base directory is not permitted.\n", lnr);
-            }
-        } else if(strcmp(key, "color") == 0) {
-            if(strcmp(value, "true") == 0) {
-                g_config.color = true;
-            } else if(strcmp(value, "false") == 0) {
-                g_config.color = false;
-            } else {
-                log_error("invalid configuration (line %d): color must be true or false.\n", lnr);
-                fclose(config_file);
-                return R_ERROR;
-            }
-        } else if(strcmp(key, "hook_after_command") == 0) {
-            if(strlen(value) > 0) {
-                if(strcpy_s(g_config.hooks.after_command, sizeof(g_config.hooks.after_command), value) != 0) {
-                    log_error("invalid configuration (line %d): hook_after_command path is too long\n", lnr);
-                    fclose(config_file);
-                    return R_ERROR;
-                }
-            }
-        } else if(strcmp(key, "todo_filename") == 0) {
-            if(strlen(value) == 0) {
-                log_error("invalid configuration file (line %d): todo_filename must not be empty.\n", lnr);
-                fclose(config_file);
-                return R_ERROR;
-            }
-            if(strcpy_s(g_config.todo_filename, sizeof(g_config.todo_filename), value) != 0) {
-                log_error("invalid configuration file (line %d): todo_filename is too long.\n", lnr);
-                fclose(config_file);
-                return R_ERROR;
-            }
-        } else if(strcmp(key, "notes_filename") == 0) {
-            if(strlen(value) == 0) {
-                log_error("invalid configuration file (line %d): notes_filename must not be empty.\n", lnr);
-                fclose(config_file);
-                return R_ERROR;
-            }
-            if(strcpy_s(g_config.notes_filename, sizeof(g_config.notes_filename), value) != 0) {
-                log_error("invalid configuration file (line %d): notes_filename is too long.\n", lnr);
-                fclose(config_file);
-                return R_ERROR;
-            }
-        }
+    struct config_document document;
+    struct config_parse_error parse_error;
+    int parse_result = config_parse_file(config_file, &document, &parse_error);
+    fclose(config_file);
+    if(parse_result != R_OK) {
+        log_error("%s:%zu:%zu: %s.\n", config_path, parse_error.line, parse_error.column, parse_error.message);
+        return R_ERROR;
     }
 
-    fclose(config_file);
-
-    if(validate_storage_filenames() != R_OK) {
+    int load_result = load_application_config(&document);
+    config_document_destroy(&document);
+    if(load_result != R_OK) {
         return R_ERROR;
     }
 

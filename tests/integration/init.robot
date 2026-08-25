@@ -103,7 +103,45 @@ Storage Paths Cannot Conflict With Rewrite Artifacts
 Explicitly Empty Storage Filename Is Rejected
     Create File
     ...    ${TEST_CWD}${/}.shiori
-    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}notes_filename:${\n}
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}notes_filename: ""${\n}
     ${result}=    Run Shiori    config    show
     Shiori Should Fail    ${result}
     Combined Output Should Contain    ${result}    notes_filename must not be empty
+
+Nested Configuration Accepts Flexible Indentation
+    Create File
+    ...    ${TEST_CWD}${/}.shiori
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hooks:${\n} after_command: ""${\n}
+    ${result}=    Run Shiori    config    show
+    Shiori Should Succeed    ${result}
+
+Legacy Flat Hook Configuration Remains Supported
+    Create File
+    ...    ${TEST_CWD}${/}.shiori
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hook_after_command: ""${\n}
+    ${result}=    Run Shiori    config    show
+    Shiori Should Succeed    ${result}
+
+Legacy And Nested Hook Keys Conflict
+    Create File
+    ...    ${TEST_CWD}${/}.shiori
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hook_after_command: old.cmd${\n}hooks:${\n}  after_command: new.cmd${\n}
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    cannot both be configured
+
+Unknown Configuration Key Is Rejected
+    Create File
+    ...    ${TEST_CWD}${/}.shiori
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}colro: false${\n}
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    unknown key 'colro'
+
+Malformed Configuration Reports Its Location
+    Create File
+    ...    ${TEST_CWD}${/}.shiori
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hooks:${\n}  missing colon${\n}
+    ${result}=    Run Shiori    config    show
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    .shiori:4:3
