@@ -25,6 +25,7 @@ FORMAT_FILES := $(SOURCES) $(HEADERS) $(TOOLCHAIN_CHECK_SOURCE)
 DEBUG_OBJECTS := $(patsubst $(SOURCE_DIR)/%.c,$(DEBUG_DIR)/%.o,$(SOURCES))
 RELEASE_OBJECTS := $(patsubst $(SOURCE_DIR)/%.c,$(RELEASE_DIR)/%.o,$(SOURCES))
 SANITIZE_OBJECTS := $(patsubst $(SOURCE_DIR)/%.c,$(SANITIZE_DIR)/%.o,$(SOURCES))
+UNIT_APP_OBJECTS := $(filter-out $(DEBUG_DIR)/main.o,$(DEBUG_OBJECTS))
 DEPENDENCIES := $(DEBUG_OBJECTS:.o=.d) $(RELEASE_OBJECTS:.o=.d) $(SANITIZE_OBJECTS:.o=.d)
 
 ifeq ($(OS),Windows_NT)
@@ -71,6 +72,7 @@ TERMINAL_LIFECYCLE_UNIT_TEST := $(UNIT_TEST_DIR)/terminal_lifecycle_test$(EXE)
 COLOR_UNIT_TEST := $(UNIT_TEST_DIR)/color_test$(EXE)
 INPUT_LAYOUT_UNIT_TEST := $(UNIT_TEST_DIR)/input_layout_test$(EXE)
 CONFIG_PARSER_UNIT_TEST := $(UNIT_TEST_DIR)/config_parser_test$(EXE)
+TOPIC_CODEC_UNIT_TEST := $(UNIT_TEST_DIR)/topic_codec_test$(EXE)
 
 .PHONY: all debug release sanitize clean run test test-unit test-integration test-sanitize format format-check tidy toolchain-check check check-sanitize
 
@@ -125,12 +127,13 @@ PYTHON ?= python
 
 test: test-unit test-integration
 
-test-unit: $(CLI_UNIT_TEST) $(TERMINAL_LIFECYCLE_UNIT_TEST) $(COLOR_UNIT_TEST) $(INPUT_LAYOUT_UNIT_TEST) $(CONFIG_PARSER_UNIT_TEST)
+test-unit: $(CLI_UNIT_TEST) $(TERMINAL_LIFECYCLE_UNIT_TEST) $(COLOR_UNIT_TEST) $(INPUT_LAYOUT_UNIT_TEST) $(CONFIG_PARSER_UNIT_TEST) $(TOPIC_CODEC_UNIT_TEST)
 	$(call RUN_BINARY,$(CLI_UNIT_TEST))
 	$(call RUN_BINARY,$(TERMINAL_LIFECYCLE_UNIT_TEST))
 	$(call RUN_BINARY,$(COLOR_UNIT_TEST))
 	$(call RUN_BINARY,$(INPUT_LAYOUT_UNIT_TEST))
 	$(call RUN_BINARY,$(CONFIG_PARSER_UNIT_TEST))
+	$(call RUN_BINARY,$(TOPIC_CODEC_UNIT_TEST))
 
 $(CLI_UNIT_TEST): tests/unit/cli_test.c $(DEBUG_DIR)/cli.o $(DEBUG_DIR)/color.o $(DEBUG_DIR)/utf8.o
 	@$(call MKDIR,$(@D))
@@ -149,6 +152,10 @@ $(INPUT_LAYOUT_UNIT_TEST): tests/unit/input_layout_test.c $(DEBUG_DIR)/input_lay
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
 
 $(CONFIG_PARSER_UNIT_TEST): tests/unit/config_parser_test.c $(DEBUG_DIR)/config_parser.o
+	@$(call MKDIR,$(@D))
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
+
+$(TOPIC_CODEC_UNIT_TEST): tests/unit/topic_codec_test.c $(UNIT_APP_OBJECTS)
 	@$(call MKDIR,$(@D))
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@
 

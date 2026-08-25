@@ -10,6 +10,98 @@
 #include "logging.h"
 #include "platform.h"
 
+static bool is_topic_unreserved(unsigned char c) {
+    return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_' ||
+           c == '.' || c == '~';
+}
+
+int encode_topic(const char *topic, char *output, size_t output_size) {
+    if(topic == nullptr || output == nullptr || output_size == 0) {
+        return R_ERROR;
+    }
+
+    static const char hex_digits[] = "0123456789ABCDEF";
+    size_t output_pos = 0;
+
+    for(size_t input_pos = 0; topic[input_pos] != '\0'; ++input_pos) {
+        unsigned char c = (unsigned char)topic[input_pos];
+
+        if(is_topic_unreserved(c)) {
+            if(output_pos + 1 >= output_size) {
+                output[0] = '\0';
+                return R_ERROR;
+            }
+
+            output[output_pos++] = (char)c;
+        } else {
+            if(output_pos + 3 >= output_size) {
+                output[0] = '\0';
+                return R_ERROR;
+            }
+
+            output[output_pos++] = '%';
+            output[output_pos++] = hex_digits[c >> 4];
+            output[output_pos++] = hex_digits[c & 0x0F];
+        }
+    }
+
+    output[output_pos] = '\0';
+    return R_OK;
+}
+
+static int topic_hex_value(unsigned char c) {
+    if(c >= '0' && c <= '9') {
+        return c - '0';
+    }
+    if(c >= 'A' && c <= 'F') {
+        return c - 'A' + 10;
+    }
+    if(c >= 'a' && c <= 'f') {
+        return c - 'a' + 10;
+    }
+
+    return -1;
+}
+
+int decode_topic(const char *encoded, size_t encoded_length, char *output, size_t output_size) {
+    if(encoded == nullptr || output == nullptr || output_size == 0) {
+        return R_ERROR;
+    }
+
+    size_t output_pos = 0;
+
+    for(size_t input_pos = 0; input_pos < encoded_length; ++input_pos) {
+        unsigned char decoded = (unsigned char)encoded[input_pos];
+
+        if(decoded == '%') {
+            if(encoded_length - input_pos < 3) {
+                output[0] = '\0';
+                return R_ERROR;
+            }
+
+            int high = topic_hex_value((unsigned char)encoded[input_pos + 1]);
+            int low = topic_hex_value((unsigned char)encoded[input_pos + 2]);
+            if(high < 0 || low < 0) {
+                output[0] = '\0';
+                return R_ERROR;
+            }
+
+            decoded = (unsigned char)((high << 4) | low);
+            input_pos += 2;
+        }
+
+        if(decoded == '\0' || output_pos + 1 >= output_size) {
+            output[0] = '\0';
+            return R_ERROR;
+        }
+
+        output[output_pos++] = (char)decoded;
+    }
+
+    output[output_pos] = '\0';
+    return R_OK;
+}
+
 void note_list_init(struct note_list *list) {
     list->items = nullptr;
     list->count = 0;

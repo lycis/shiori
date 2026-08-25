@@ -38,4 +38,8 @@ struct note *note_list_find_by_id(const struct note_list *list, const char *id);
 [[nodiscard]] int rewrite_notes(struct note_list *notes, struct notes_metadata *md, bool allow_note_removal);
 int restore_notes_backup(void);
 
+
+[[nodiscard]] int encode_topic(const char *topic, char *output, size_t output_size);
+[[nodiscard]] int decode_topic(const char *encoded, size_t encoded_length, char *output, size_t output_size);
+
 #endif
