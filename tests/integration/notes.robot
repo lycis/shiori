@@ -32,6 +32,25 @@ Topic Is Persisted With Note
     Shiori Should Succeed    ${result}
     Data File Should Contain    NOTES.md    Topic note #shiori/topic/testing
 
+Multi Word Topic Round Trips Through Storage And Display
+    ${result}=    Run Shiori    add    --topic    Project Alpha    Multi-word topic note
+    Shiori Should Succeed    ${result}
+    Data File Should Contain    NOTES.md    Multi-word topic note #shiori/topic/Project%20Alpha
+    ${today}=    Evaluate    datetime.date.today().strftime("%Y%m%d")    modules=datetime
+    ${show}=    Run Shiori    note    show    ${today}-0001
+    Shiori Should Succeed    ${show}
+    Should Contain    ${show.stdout}    Project Alpha
+    Should Not Contain    ${show.stdout}    Project%20Alpha
+
+UTF-8 Multi Word Topic Round Trips Through Storage And Display
+    ${result}=    Run Shiori    add    --topic    Café Planning    UTF-8 topic note
+    Shiori Should Succeed    ${result}
+    Data File Should Contain    NOTES.md    UTF-8 topic note #shiori/topic/Caf%C3%A9%20Planning
+    ${today}=    Evaluate    datetime.date.today().strftime("%Y%m%d")    modules=datetime
+    ${show}=    Run Shiori    note    show    ${today}-0001
+    Shiori Should Succeed    ${show}
+    Should Contain    ${show.stdout}    Café Planning
+
 Unicode Note Survives Round Trip
     ${result}=    Run Shiori    add    Grüße from 🦊 東京
     Shiori Should Succeed    ${result}
@@ -77,6 +96,19 @@ Note Retopic Changes An Existing Topic
     Data File Should Contain    NOTES.md    * Retopic this note #shiori/topic/changed
     Data File Should Not Contain    NOTES.md    \#shiori/topic/original
     Data File Should Contain    NOTES.md    <!-- shiori:id=${today}-0001 -->
+    No Rewrite Artifacts Should Remain
+
+Note Retopic Preserves A Multi Word Topic
+    ${add}=    Run Shiori    note    add    --topic    original    Retopic with spaces
+    Shiori Should Succeed    ${add}
+    ${today}=    Evaluate    datetime.date.today().strftime("%Y%m%d")    modules=datetime
+    ${result}=    Run Shiori    note    retopic    ${today}-0001    Release Planning
+    Shiori Should Succeed    ${result}
+    Data File Should Contain    NOTES.md    * Retopic with spaces #shiori/topic/Release%20Planning
+    Data File Should Not Contain    NOTES.md    Release%2520Planning
+    ${show}=    Run Shiori    note    show    ${today}-0001
+    Shiori Should Succeed    ${show}
+    Should Contain    ${show.stdout}    Release Planning
     No Rewrite Artifacts Should Remain
 
 Note Retopic None Removes An Existing Topic
