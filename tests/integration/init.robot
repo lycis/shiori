@@ -127,7 +127,7 @@ Legacy Flat Hook Configuration Remains Supported
 Legacy And Nested Hook Keys Conflict
     Create File
     ...    ${TEST_CWD}${/}.shiori
-    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hook_after_command: old.cmd${\n}hooks:${\n}  after_command: new.cmd${\n}
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hook_after_command: old.cmd${\n}hooks:${\n}${SPACE}${SPACE}after_command: new.cmd${\n}
     ${result}=    Run Shiori    config    show
     Shiori Should Fail    ${result}
     Combined Output Should Contain    ${result}    cannot both be configured
@@ -143,7 +143,7 @@ Unknown Configuration Key Is Rejected
 Malformed Configuration Reports Its Location
     Create File
     ...    ${TEST_CWD}${/}.shiori
-    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hooks:${\n}  missing colon${\n}
+    ...    version: 1${\n}base_dir: ${TEST_DATA}${\n}hooks:${\n}${SPACE}${SPACE}missing colon${\n}
     ${result}=    Run Shiori    config    show
     Shiori Should Fail    ${result}
     Combined Output Should Contain    ${result}    .shiori:4:3

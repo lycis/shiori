@@ -81,13 +81,11 @@ static char *build_path(const char *parent, const char *key) {
         return nullptr;
     }
 
-    size_t used = 0;
-    if(parent_length > 0) {
-        memcpy(path, parent, parent_length);
-        used = parent_length;
-        path[used++] = '.';
+    int written = snprintf(path, allocation_size, "%s%s%s", parent, parent_length > 0 ? "." : "", key);
+    if(written < 0 || (size_t)written != length) {
+        free(path);
+        return nullptr;
     }
-    memcpy(path + used, key, key_length + 1);
     return path;
 }
 

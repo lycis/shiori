@@ -16,7 +16,14 @@ static int failures = 0;
     } while(false)
 
 static int parse_text(const char *text, struct config_document *document, struct config_parse_error *error) {
-    FILE *file = tmpfile();
+    FILE *file = nullptr;
+#ifdef _WIN32
+    if(tmpfile_s(&file) != 0) {
+        return R_ERROR;
+    }
+#else
+    file = tmpfile();
+#endif
     if(file == nullptr) {
         return R_ERROR;
     }
