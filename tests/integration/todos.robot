@@ -29,6 +29,24 @@ Todo Can Move Through Lifecycle
     Data File Should Contain    TODOS.md    * [ ] Ship release
     No Rewrite Artifacts Should Remain
 
+Todo Topic Is Stored Displayed And Preserved
+    ${add}=    Run Shiori    todo    add    --topic    Release Planning    Ship release
+    Shiori Should Succeed    ${add}
+    Data File Should Contain    TODOS.md    Ship release \#shiori/id/0
+    Data File Should Contain    TODOS.md    \#shiori/topic/Release%20Planning
+
+    ${show}=    Run Shiori    todo    show    0
+    Shiori Should Succeed    ${show}
+    Should Contain    ${show.stdout}    Topic: Release Planning
+
+    ${start}=    Run Shiori    todo    start    0
+    Shiori Should Succeed    ${start}
+    Data File Should Contain    TODOS.md    \#shiori/topic/Release%20Planning
+
+    ${rewrite}=    Run Shiori    todo    rewrite    0    Ship final release
+    Shiori Should Succeed    ${rewrite}
+    Data File Should Contain    TODOS.md    \#shiori/topic/Release%20Planning
+
 Todo Show Prints Complete Script Friendly Details
     ${today}=    Evaluate    str(datetime.date.today())    modules=datetime
     ${add}=    Run Shiori    todo    add    --due    2030-04-05    Ship release #work #urgent

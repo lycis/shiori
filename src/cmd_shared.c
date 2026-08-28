@@ -5,6 +5,7 @@
 #include "common.h"
 #include "config.h"
 #include "logging.h"
+#include "note.h"
 #include "platform.h"
 #include "todo.h"
 #include "todo_list.h"
@@ -224,6 +225,7 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
     const char *id_tag = strstr(markdown, "#shiori/id/");
     const char *created_tag = strstr(markdown, "#shiori/created/");
     const char *due_tag = strstr(markdown, "#shiori/due/");
+    const char *topic_tag = strstr(markdown, "#shiori/topic/");
 
     if(id_tag == nullptr || created_tag == nullptr) {
         log_error("Missing TODO metadata (id or creation date).\n");
@@ -296,6 +298,7 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
      * Due date is optional.
      */
     item->due = 0;
+    item->topic[0] = '\0';
 
     if(due_tag != nullptr) {
         const char *due_value = due_tag + strlen("#shiori/due/");
@@ -313,6 +316,19 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
 
         if(parse_date_arg(due_date, &item->due) != R_OK) {
             log_error("Invalid TODO due date '%s'.\n", due_date);
+            return R_ERROR;
+        }
+    }
+
+    if(topic_tag != nullptr) {
+        const char *topic_value = topic_tag + strlen("#shiori/topic/");
+        size_t topic_length = 0;
+        while(topic_value[topic_length] != '\0' && !isspace((unsigned char)topic_value[topic_length])) {
+            topic_length++;
+        }
+
+        if(decode_topic(topic_value, topic_length, item->topic, sizeof(item->topic)) != R_OK) {
+            log_error("Invalid encoded TODO topic.\n");
             return R_ERROR;
         }
     }

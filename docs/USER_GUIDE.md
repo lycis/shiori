@@ -361,7 +361,7 @@ The prompt shows the active topic:
 ~Rail4Climate> /done
 ```
 
-The session topic applies to captured notes. Todos retain their entered text and optional due date; they are not assigned the note topic metadata.
+The session topic applies to both captured notes and todos. Todos also retain their entered text and optional due date.
 
 End the session with any of:
 
@@ -455,9 +455,10 @@ Todos live in `TODOS.md`. Add one with:
 
 ```console
 shiori todo add prepare release notes "#work"
+shiori todo add --topic releases prepare release notes
 ```
 
-Each todo receives a stable numeric ID, a creation date, and an initial status of open. Shiori prints the assigned ID after creation; use it for status changes, rewrites, and removal.
+Each todo receives a stable numeric ID, a creation date, and an initial status of open. Assign a topic with `--topic` or `-t`; topic names use the same encoding and display rules as note topics. Shiori prints the assigned ID after creation; use it for status changes, rewrites, and removal.
 
 Quote tags when using PowerShell because an unquoted `#` starts a comment.
 

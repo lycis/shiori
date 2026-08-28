@@ -13,6 +13,7 @@
 #include "common.h"
 #include "config.h"
 #include "logging.h"
+#include "note.h"
 #include "platform.h"
 #include "todo.h"
 #include "todo_list.h"
@@ -371,6 +372,7 @@ int write_todo_metadata(const char *filename, const struct todo_metadata *md) {
 
 int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     item->text[0] = '\0';
+    item->topic[0] = '\0';
     item->due = 0;
 
     size_t used = 0;
@@ -388,6 +390,21 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
             }
 
             log_debug("Due date detected: %s\n", due_date);
+
+            i++;
+            continue;
+        }
+
+        if(strcmp(argv[i], "--topic") == 0 || strcmp(argv[i], "-t") == 0) {
+            if(i == argc - 1) {
+                log_error("--topic requires a topic name.\n");
+                return R_ERROR;
+            }
+
+            if(strcpy_s(item->topic, sizeof(item->topic), argv[i + 1]) != 0) {
+                log_error("Topic name is too long.\n");
+                return R_ERROR;
+            }
 
             i++;
             continue;
@@ -458,6 +475,19 @@ static int write_todo_markdown(FILE *file, const struct todo *item) {
 
         if(fprintf(file, " #%s/due/%s", APP_NAME, due_date) < 0) {
             log_error("Failed writing due date for todo %llu.\n", item->id);
+            return R_ERROR;
+        }
+    }
+
+    if(item->topic[0] != '\0') {
+        char encoded_topic[DEFAULT_BUFFER_SIZE * 3];
+        if(encode_topic(item->topic, encoded_topic, sizeof(encoded_topic)) != R_OK) {
+            log_error("Failed encoding topic for todo %llu.\n", item->id);
+            return R_ERROR;
+        }
+
+        if(fprintf(file, " #%s/topic/%s", APP_NAME, encoded_topic) < 0) {
+            log_error("Failed writing topic for todo %llu.\n", item->id);
             return R_ERROR;
         }
     }
@@ -968,6 +998,14 @@ static int command_todo_show(int argc, char *argv[]) {
         color_style_sequence(COLOR_STYLE_RESET),
         color_style_sequence(item->due != 0 ? COLOR_STYLE_DUE_DATE : COLOR_STYLE_METADATA),
         due,
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
+    printf(
+        "  %s🪧 Topic:%s %s%s%s\n",
+        color_style_sequence(COLOR_STYLE_METADATA),
+        color_style_sequence(COLOR_STYLE_RESET),
+        color_style_sequence(item->topic[0] != '\0' ? COLOR_STYLE_TOPIC : COLOR_STYLE_METADATA),
+        item->topic[0] != '\0' ? item->topic : "none",
         color_style_sequence(COLOR_STYLE_RESET)
     );
     printf("  %s🏷️ Tags:%s ", color_style_sequence(COLOR_STYLE_METADATA), color_style_sequence(COLOR_STYLE_RESET));
@@ -1517,7 +1555,7 @@ static int command_todo_help(int argc, char *argv[]);
 
 static const struct command_definition todo_commands[] = {
     {"help", "", "Display help and info for the `todo` commands", command_todo_help, nullptr, 0, true},
-    {"add", "<text>", "Add a new todo", command_todo_add, nullptr, 0, true},
+    {"add", "[--topic <topic>] <text>", "Add a new todo", command_todo_add, nullptr, 0, true},
     {"list", "", "List todos", command_todo_list, nullptr, 0, true},
     {"show", "<id>", "Show one todo", command_todo_show, nullptr, 0, true},
     {"start", "<id>", "Mark a todo as in progress", command_todo_start, nullptr, 0, true},

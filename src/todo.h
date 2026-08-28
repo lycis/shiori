@@ -15,6 +15,7 @@ typedef enum {
 
 struct todo {
     char text[DEFAULT_BUFFER_SIZE * 2];
+    char topic[DEFAULT_BUFFER_SIZE];
     time_t created;
     time_t due;
     unsigned long long id;
