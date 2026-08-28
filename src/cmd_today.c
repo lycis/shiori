@@ -225,13 +225,15 @@ int command_today(int argc, char *argv[]) {
         for(size_t i = 0; i < overdue_todos.count; ++i) {
             struct todo *item = &overdue_todos.items[i];
             printf(
-                "    %s%s %4llu%s  %s\n",
+                "    %s%s %4llu%s  %s",
                 color_style_sequence(COLOR_STYLE_ERROR),
                 todo_status_simple_icon(item->status),
                 item->id,
                 color_style_sequence(COLOR_STYLE_RESET),
                 item->text
             );
+            print_todo_topic_suffix(item);
+            printf("\n");
         }
         printf("\n");
     }
@@ -248,13 +250,15 @@ int command_today(int argc, char *argv[]) {
         for(size_t i = 0; i < today_todos.count; ++i) {
             struct todo *item = &today_todos.items[i];
             printf(
-                "    %s%s %4llu%s  %s\n",
+                "    %s%s %4llu%s  %s",
                 color_style_sequence(COLOR_STYLE_TODOS),
                 todo_status_simple_icon(item->status),
                 item->id,
                 color_style_sequence(COLOR_STYLE_RESET),
                 item->text
             );
+            print_todo_topic_suffix(item);
+            printf("\n");
         }
     } else {
         printf(
@@ -278,12 +282,14 @@ int command_today(int argc, char *argv[]) {
         struct todo *item = &in_progress_todos.items[i];
 
         printf(
-            "    %s› %4llu%s  %s\n",
+            "    %s› %4llu%s  %s",
             color_style_sequence(COLOR_STYLE_BOLD),
             item->id,
             color_style_sequence(COLOR_STYLE_RESET),
             item->text
         );
+        print_todo_topic_suffix(item);
+        printf("\n");
     }
     todo_list_free(&in_progress_todos);
     printf("\n");
@@ -300,12 +306,14 @@ int command_today(int argc, char *argv[]) {
         struct todo *item = &open_todos.items[i];
 
         printf(
-            "    %s· %4llu%s  %s\n",
+            "    %s· %4llu%s  %s",
             color_style_sequence(COLOR_STYLE_OPEN),
             item->id,
             color_style_sequence(COLOR_STYLE_RESET),
             item->text
         );
+        print_todo_topic_suffix(item);
+        printf("\n");
     }
     todo_list_free(&open_todos);
 

@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 
+#include "color.h"
 #include "common.h"
 #include "config.h"
 #include "logging.h"
@@ -9,6 +10,14 @@
 #include "platform.h"
 #include "todo.h"
 #include "todo_list.h"
+
+void print_todo_topic_suffix(const struct todo *item) {
+    if(item->topic[0] == '\0') {
+        return;
+    }
+
+    printf(" %s🪧 %s%s", color_style_sequence(COLOR_STYLE_TOPIC), item->topic, color_style_sequence(COLOR_STYLE_RESET));
+}
 
 bool is_heading(const char *line) {
     return line[0] == '#' && line[1] == ' ';

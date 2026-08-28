@@ -12,5 +12,6 @@
 [[nodiscard]] FILE *open_base_dir_file(const char *filename, const char *mode);
 [[nodiscard]] int read_todos(const char *filename, struct todo_list *list);
 [[nodiscard]] int parse_date_arg(const char *value, time_t *result);
+void print_todo_topic_suffix(const struct todo *item);
 
 #endif

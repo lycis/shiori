@@ -39,6 +39,11 @@ Todo Topic Is Stored Displayed And Preserved
     Shiori Should Succeed    ${show}
     Should Contain    ${show.stdout}    Topic: Release Planning
 
+    ${list}=    Run Shiori    todo    list
+    Shiori Should Succeed    ${list}
+    Should Contain    ${list.stdout}    Ship release
+    Should Contain    ${list.stdout}    🪧 Release Planning
+
     ${start}=    Run Shiori    todo    start    0
     Shiori Should Succeed    ${start}
     Data File Should Contain    TODOS.md    \#shiori/topic/Release%20Planning

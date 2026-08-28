@@ -486,7 +486,7 @@ shiori todo add --due 2026-08-20 prepare release notes
 shiori todo add -d tomorrow verify the Windows artifact
 ```
 
-`shiori todo list` shows the creation date for every task and an additional due date for tasks that have one.
+`shiori todo list` shows the creation date for every task, its topic when assigned, and an additional due date for tasks that have one. `todo show` includes the topic in its detailed view.
 
 ### Change status
 
@@ -601,7 +601,7 @@ The **Notes** section follows the selected date and displays assigned topics. Ac
 - **Due Today** contains unfinished todos due on the selected date, or an “all clear” message when empty.
 - **In Progress** and **Open** contain the remaining active todos.
 
-Completed todos are not shown in the dashboard.
+Completed todos are not shown in the dashboard. Assigned todo topics appear beside their task text in every dashboard section.
 
 Use `shiori today --help` for the built-in reference.
 

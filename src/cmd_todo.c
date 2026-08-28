@@ -825,7 +825,9 @@ static int command_todo_list(int argc, char *argv[]) {
                 sprintf(due_buffer, "");
             }
 
-            printf("%s %-4llu %-40s ➕ %s%s\n", todo_status_icon(item->status), item->id, item->text, date, due_buffer);
+            printf("%s %-4llu %-40s ➕ %s%s", todo_status_icon(item->status), item->id, item->text, date, due_buffer);
+            print_todo_topic_suffix(item);
+            printf("\n");
         }
     }
 
