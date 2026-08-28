@@ -72,8 +72,15 @@ static void init_commands() {
         true
     };
 
-    commands[COMMAND_TOPIC] =
-        (struct command_definition){"topic", "<topic>", "Browse notes by topic", command_topic, nullptr, 0, true};
+    commands[COMMAND_TOPIC] = (struct command_definition){
+        "topic",
+        "<topic>",
+        "Browse notes and todos by topic",
+        command_topic,
+        nullptr,
+        0,
+        true
+    };
 
     commands[COMMAND_TAG] =
         (struct command_definition){"tag", "<tag>", "Find notes and todos by tag", command_tag, nullptr, 0, true};

@@ -113,7 +113,7 @@ shiori [options] <command> [options] [subcommand] ...
 | `add` | Add a note to today's section (short form of `note add`). |
 | `note` | Add, inspect, retopic, and remove notes by ID. |
 | `capture` | Start an interactive session for rapidly capturing notes and todos. |
-| `topic` | Browse notes by topic or list topic statistics. |
+| `topic` | Browse notes and todos by topic or list topic statistics. |
 | `tag` | Find notes and todos containing all specified tags. |
 | `todo` | Add, list, update, and remove todos. |
 | `today` | Show notes and active todos in a daily dashboard. |

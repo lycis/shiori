@@ -242,7 +242,7 @@ No-color output retains Unicode symbols and layout; it removes ANSI styling only
 | `add` | Add a note to today's section (short form of `note add`). |
 | `note` | Add, inspect, retopic, and remove notes by ID. |
 | `capture` | Start an interactive session for capturing notes and todos. |
-| `topic` | Show notes for a topic or list topic statistics. |
+| `topic` | Show notes and todos for a topic or list topic statistics. |
 | `tag` | Find notes and todos containing all specified tags. |
 | `todo` | Add, list, update, and remove todos. |
 | `today` | Show notes and active todos in a daily dashboard. |
@@ -392,13 +392,13 @@ Shiori keeps the topic in the note as a metadata tag while showing the readable 
 * review the proposal #shiori/topic/Rail4Climate <!-- shiori:id=20260822-0002 -->
 ```
 
-Show all notes assigned to a topic, grouped under their daily headings:
+Show all notes and todos assigned to a topic. Notes are grouped under their daily headings, and todos include their status and due date when present:
 
 ```console
 shiori topic Rail4Climate
 ```
 
-List every topic with its number of notes:
+List every topic with its total usage and separate note and todo counts:
 
 ```console
 shiori topic --list

@@ -4,16 +4,82 @@
 #include <time.h>
 
 #include "cli.h"
+#include "cmd_shared.h"
 #include "color.h"
 #include "common.h"
 #include "config.h"
 #include "logging.h"
 #include "note.h"
+#include "todo.h"
+#include "todo_list.h"
 
 struct topic_count {
     char name[DEFAULT_BUFFER_SIZE];
-    size_t count;
+    size_t note_count;
+    size_t todo_count;
 };
+
+static int register_topic(
+    const char *topic,
+    bool is_todo,
+    struct topic_count **topics,
+    size_t *topic_count,
+    size_t *topic_capacity
+) {
+    if(topic[0] == '\0') {
+        return R_OK;
+    }
+
+    for(size_t i = 0; i < *topic_count; ++i) {
+        if(strcmp((*topics)[i].name, topic) == 0) {
+            if(is_todo) {
+                (*topics)[i].todo_count++;
+            } else {
+                (*topics)[i].note_count++;
+            }
+            return R_OK;
+        }
+    }
+
+    if(*topic_count == *topic_capacity) {
+        size_t new_capacity;
+        size_t allocation_size;
+        if(calculate_array_growth(*topic_capacity, sizeof(**topics), &new_capacity, &allocation_size) != R_OK) {
+            log_critical("Topic list is too large.\n");
+            return R_ERROR;
+        }
+
+        struct topic_count *new_topics = realloc(*topics, allocation_size);
+        if(new_topics == nullptr) {
+            log_error("Failed allocating topic list.\n");
+            return R_ERROR;
+        }
+
+        *topics = new_topics;
+        *topic_capacity = new_capacity;
+    }
+
+    struct topic_count *entry = &(*topics)[*topic_count];
+    memset(entry, 0, sizeof(*entry));
+    if(strcpy_s(entry->name, sizeof(entry->name), topic) != 0) {
+        log_error("Topic name is too long.\n");
+        return R_ERROR;
+    }
+
+    if(is_todo) {
+        entry->todo_count = 1;
+    } else {
+        entry->note_count = 1;
+    }
+    (*topic_count)++;
+    return R_OK;
+}
+
+static int compare_topic_counts_by_name(const void *left, const void *right) {
+    const struct topic_count *left_topic = left;
+    const struct topic_count *right_topic = right;
+    return strcmp(left_topic->name, right_topic->name);
+}
 
 static int command_topic_list() {
     struct note_list notes;
@@ -23,72 +89,46 @@ static int command_topic_list() {
         return R_ERROR;
     }
 
+    struct todo_list todos;
+    todo_list_init(&todos);
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
+        note_list_free(&notes);
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
     struct topic_count *topics = nullptr;
     size_t topic_count = 0;
     size_t topic_capacity = 0;
 
     for(size_t i = 0; i < notes.count; ++i) {
-        const char *topic = notes.items[i].topic;
-        if(topic[0] == '\0') {
-            continue; // ignore notes witout topic for now
-        }
-
-        bool found = false;
-        for(size_t j = 0; j < topic_count; ++j) {
-            if(strcmp(topics[j].name, topic) == 0) {
-                topics[j].count++;
-                found = true;
-                break;
-            }
-        }
-
-        if(found) {
-            continue;
-        }
-
-        // new topic to register
-        if(topic_count == topic_capacity) {
-            size_t new_capacity;
-            size_t allocation_size;
-            if(calculate_array_growth(topic_capacity, sizeof(*topics), &new_capacity, &allocation_size) != R_OK) {
-                log_critical("Topic list is too large.\n");
-                free(topics);
-                note_list_free(&notes);
-                return R_ERROR;
-            }
-
-            struct topic_count *new_topics = realloc(topics, allocation_size);
-
-            if(new_topics == nullptr) {
-                log_error("Failed allocating topic list.\n");
-                free(topics);
-                note_list_free(&notes);
-                return R_ERROR;
-            }
-
-            topics = new_topics;
-            topic_capacity = new_capacity;
-        }
-
-        struct topic_count *entry = &topics[topic_count];
-
-        if(strcpy_s(entry->name, sizeof(entry->name), topic) != 0) {
-            log_error("Topic name is too long.\n");
+        if(register_topic(notes.items[i].topic, false, &topics, &topic_count, &topic_capacity) != R_OK) {
             free(topics);
             note_list_free(&notes);
+            todo_list_free(&todos);
             return R_ERROR;
         }
-
-        entry->count = 1;
-        topic_count++;
     }
+
+    for(size_t i = 0; i < todos.count; ++i) {
+        if(register_topic(todos.items[i].topic, true, &topics, &topic_count, &topic_capacity) != R_OK) {
+            free(topics);
+            note_list_free(&notes);
+            todo_list_free(&todos);
+            return R_ERROR;
+        }
+    }
+
+    note_list_free(&notes);
+    todo_list_free(&todos);
 
     if(topic_capacity == 0) {
         log_info("No topics found.\n");
         free(topics);
-        note_list_free(&notes);
         return R_OK;
     }
+
+    qsort(topics, topic_count, sizeof(*topics), compare_topic_counts_by_name);
 
     printf(
         "%s%s🏷️ Topics%s\n",
@@ -99,11 +139,20 @@ static int command_topic_list() {
     print_divider(60);
 
     for(size_t i = 0; i < topic_count; ++i) {
-        printf("  %-45s %zu note%s\n", topics[i].name, topics[i].count, topics[i].count == 1 ? "" : "s");
+        size_t total = topics[i].note_count + topics[i].todo_count;
+        printf(
+            "  %-31s %3zu item%s  (%zu note%s, %zu todo%s)\n",
+            topics[i].name,
+            total,
+            total == 1 ? "" : "s",
+            topics[i].note_count,
+            topics[i].note_count == 1 ? "" : "s",
+            topics[i].todo_count,
+            topics[i].todo_count == 1 ? "" : "s"
+        );
     }
 
     free(topics);
-    note_list_free(&notes);
     return R_OK;
 }
 
@@ -114,7 +163,7 @@ int command_topic(int argc, char *argv[]) {
             "Usage:\n"
             "  %s topic <name>\n"
             "\n"
-            "Shows all notes assigned to a topic.\n"
+            "Shows all notes and todos assigned to a topic.\n"
             "\n"
             "Options:\n"
             "  %-20s List all topics and their stats\n"
@@ -153,16 +202,18 @@ int command_topic(int argc, char *argv[]) {
     print_divider(60);
     printf("\n");
 
+    printf(
+        "  %s%s%s%s\n",
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(COLOR_STYLE_NOTES),
+        "🗒️ Notes",
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
+
     struct note_list list;
     note_list_init(&list);
     if(read_notes(g_config.notes_filename, &list) != R_OK) {
         return R_ERROR;
-    }
-
-    if(list.count < 1) {
-        log_info("No notes found for this topic.");
-        note_list_free(&list);
-        return R_OK;
     }
 
     time_t last_date = 0;
@@ -197,9 +248,49 @@ int command_topic(int argc, char *argv[]) {
         );
     }
 
+    note_list_free(&list);
+
     printf("\n");
     print_divider(60);
+    printf("\n");
+    printf("  %s%s%s\n", color_style_sequence(COLOR_STYLE_TODOS), "📌 Todos", color_style_sequence(COLOR_STYLE_RESET));
 
-    note_list_free(&list);
+    struct todo_list todos;
+    todo_list_init(&todos);
+    if(read_todos(g_config.todo_filename, &todos) != R_OK) {
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
+    for(size_t i = 0; i < todos.count; ++i) {
+        if(strcmp(todos.items[i].topic, topic) != 0) {
+            continue;
+        }
+
+        printf(
+            "    %s %4llu  %s",
+            todo_status_simple_icon(todos.items[i].status),
+            todos.items[i].id,
+            todos.items[i].text
+        );
+
+        if(todos.items[i].due != 0) {
+            char due_date[11];
+            if(format_date(todos.items[i].due, due_date, sizeof(due_date)) != R_OK) {
+                todo_list_free(&todos);
+                return R_ERROR;
+            }
+            printf(
+                "  %s📅 %s%s",
+                color_style_sequence(COLOR_STYLE_DUE_DATE),
+                due_date,
+                color_style_sequence(COLOR_STYLE_RESET)
+            );
+        }
+
+        printf("\n");
+    }
+
+    todo_list_free(&todos);
     return R_OK;
 }
