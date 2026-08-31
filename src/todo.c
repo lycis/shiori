@@ -11,6 +11,12 @@ const char *todo_status_icon(todo_status status) {
     case DONE:
         return "✅";
 
+    case CANCELLED:
+        return "🚫";
+
+    case DEFERRED:
+        return "⏸️";
+
     default:
         return "❓";
     }
@@ -41,6 +47,12 @@ const char *todo_status_mark(todo_status status) {
     case DONE:
         return "x";
 
+    case CANCELLED:
+        return "-";
+
+    case DEFERRED:
+        return ">";
+
     default:
         return "?";
     }
@@ -57,6 +69,12 @@ const char *todo_status_string(todo_status status) {
     case DONE:
         return "DONE";
 
+    case CANCELLED:
+        return "CANCELLED";
+
+    case DEFERRED:
+        return "DEFERRED";
+
     default:
         return "????";
     }
@@ -72,6 +90,12 @@ const char *todo_status_simple_icon(todo_status status) {
 
     case DONE:
         return "✓";
+
+    case CANCELLED:
+        return "×";
+
+    case DEFERRED:
+        return "»";
 
     default:
         return "????";

@@ -546,6 +546,8 @@ struct todo_filter {
     bool show_open;
     bool show_in_progress;
     bool show_done;
+    bool show_cancelled;
+    bool show_deferred;
 
     const char **tags;
     size_t tag_count;
@@ -587,9 +589,17 @@ static bool todo_matches_filter(const struct todo *item, const struct todo_filte
     case DONE:
         status_matches = filter->show_done;
         break;
+
+    case CANCELLED:
+        status_matches = filter->show_cancelled;
+        break;
+
+    case DEFERRED:
+        status_matches = filter->show_deferred;
+        break;
     }
 
-    log_debug("Status filter: item %d (%d) -> %d\n", item->id, item->status, status_matches);
+    log_debug("Status filter: item %llu (%d) -> %d\n", item->id, item->status, status_matches);
 
     if(!status_matches) {
         return false;
@@ -683,12 +693,14 @@ static int command_todo_list(int argc, char *argv[]) {
             "\n"
             "Lists todos from %s.\n"
             "\n"
-            "By default, open and in-progress todos are shown.\n"
+            "By default, open, in-progress, and deferred todos are shown.\n"
             "\n"
             "Options:\n"
             "  %-18s Show open todos\n"
             "  %-18s Show in-progress todos\n"
             "  %-18s Show completed todos\n"
+            "  %-18s Show cancelled todos\n"
+            "  %-18s Show deferred todos\n"
             "  %-18s Show todos of all statuses\n"
             "  %-18s Filter by tag; may be specified multiple times\n"
             "  %-18s Show todos due before today\n"
@@ -710,6 +722,8 @@ static int command_todo_list(int argc, char *argv[]) {
             "--open",
             "--in-progress",
             "--done",
+            "--cancelled",
+            "--deferred",
             "--all",
             "--tag <tag>",
             "--overdue",
@@ -739,8 +753,14 @@ static int command_todo_list(int argc, char *argv[]) {
         return R_ERROR;
     }
 
-    // default filter is open and in progress
-    struct todo_filter filter = {.show_open = true, .show_in_progress = true, .show_done = false};
+    // Default filter is open, in progress, and deferred.
+    struct todo_filter filter = {
+        .show_open = true,
+        .show_in_progress = true,
+        .show_done = false,
+        .show_cancelled = false,
+        .show_deferred = true
+    };
 
     if(initialize_date_filter(&filter, argc, argv) != R_OK) {
         todo_list_free(&todos);
@@ -749,12 +769,15 @@ static int command_todo_list(int argc, char *argv[]) {
 
     bool has_status_filter = has_switch(argc, argv, "--open", false) ||
                              has_switch(argc, argv, "--in-progress", false) ||
-                             has_switch(argc, argv, "--done", false) || has_switch(argc, argv, "--all", false);
+                             has_switch(argc, argv, "--done", false) || has_switch(argc, argv, "--cancelled", false) ||
+                             has_switch(argc, argv, "--deferred", false) || has_switch(argc, argv, "--all", false);
 
     if(has_status_filter) {
         filter.show_open = false;
         filter.show_in_progress = false;
         filter.show_done = false;
+        filter.show_cancelled = false;
+        filter.show_deferred = false;
     }
 
     if(has_switch(argc, argv, "--open", false)) {
@@ -766,10 +789,18 @@ static int command_todo_list(int argc, char *argv[]) {
     if(has_switch(argc, argv, "--done", false)) {
         filter.show_done = true;
     }
+    if(has_switch(argc, argv, "--cancelled", false)) {
+        filter.show_cancelled = true;
+    }
+    if(has_switch(argc, argv, "--deferred", false)) {
+        filter.show_deferred = true;
+    }
     if(has_switch(argc, argv, "--all", false)) {
         filter.show_open = true;
         filter.show_in_progress = true;
         filter.show_done = true;
+        filter.show_cancelled = true;
+        filter.show_deferred = true;
     }
 
     // tag filters
@@ -901,6 +932,10 @@ static enum color_style todo_status_color(todo_status status) {
         return COLOR_STYLE_WARNING;
     case DONE:
         return COLOR_STYLE_SUCCESS;
+    case CANCELLED:
+        return COLOR_STYLE_METADATA;
+    case DEFERRED:
+        return COLOR_STYLE_INFO;
     default:
         return COLOR_STYLE_METADATA;
     }
@@ -1153,8 +1188,14 @@ static int set_todo_status(unsigned long long id, todo_status status) {
         return R_ERROR;
     }
 
+    if(item->status == status) {
+        log_error("Todo %llu is already %s.\n", id, todo_status_string(status));
+        todo_list_free(&todos);
+        return R_ERROR;
+    }
+
     item->status = status;
-    log_debug("moved item status to in progess\n");
+    log_debug("Moving todo %llu to %s.\n", id, todo_status_string(status));
 
     // write todo list back to file
     struct todo_metadata md;
@@ -1169,7 +1210,7 @@ static int set_todo_status(unsigned long long id, todo_status status) {
         return R_ERROR;
     }
 
-    log_success("Moved %d (%s) to %s.\n", id, item->text, todo_status_string(item->status));
+    log_success("Moved %llu (%s) to %s.\n", id, item->text, todo_status_string(item->status));
     todo_list_free(&todos);
     return R_OK;
 }
@@ -1220,6 +1261,38 @@ static int command_todo_reopen(int argc, char *argv[]) {
     }
 
     return set_todo_status(id, OPEN);
+}
+
+static int command_todo_cancel(int argc, char *argv[]) {
+    log_debug("Moving item into cancelled\n");
+
+    if(argc != 1) {
+        log_error("You must specify exactly one task id to cancel.\n");
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    return set_todo_status(id, CANCELLED);
+}
+
+static int command_todo_defer(int argc, char *argv[]) {
+    log_debug("Moving item into deferred\n");
+
+    if(argc != 1) {
+        log_error("You must specify exactly one task id to defer.\n");
+        return R_ERROR;
+    }
+
+    unsigned long long id;
+    if(parse_todo_id(argv[0], &id) != R_OK) {
+        return R_ERROR;
+    }
+
+    return set_todo_status(id, DEFERRED);
 }
 
 static int command_todo_rewrite(int argc, char *argv[]) {
@@ -1563,6 +1636,8 @@ static const struct command_definition todo_commands[] = {
     {"start", "<id>", "Mark a todo as in progress", command_todo_start, nullptr, 0, true},
     {"done", "<id>", "Mark a todo as completed", command_todo_done, nullptr, 0, true},
     {"reopen", "<id>", "Reopen a todo", command_todo_reopen, nullptr, 0, true},
+    {"cancel", "<id>", "Mark a todo as cancelled", command_todo_cancel, nullptr, 0, true},
+    {"defer", "<id>", "Mark a todo as deferred", command_todo_defer, nullptr, 0, true},
     {"rewrite", "<id> <new_text> [--due <date>]", "Rewrite a todo", command_todo_rewrite, nullptr, 0, true},
     {"remove", "<id>", "Remove a todo", command_todo_remove, nullptr, 0, true},
     {"prune", "", "Remove completed todos", command_todo_prune, nullptr, 0, true}

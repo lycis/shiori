@@ -29,6 +29,46 @@ Todo Can Move Through Lifecycle
     Data File Should Contain    TODOS.md    * [ ] Ship release
     No Rewrite Artifacts Should Remain
 
+Todo Can Be Cancelled And Deferred
+    ${add}=    Run Shiori    todo    add    Flexible task
+    Shiori Should Succeed    ${add}
+
+    ${cancel}=    Run Shiori    todo    cancel    0
+    Shiori Should Succeed    ${cancel}
+    Data File Should Contain    TODOS.md    * [-] Flexible task
+    ${show_cancelled}=    Run Shiori    todo    show    0
+    Shiori Should Succeed    ${show_cancelled}
+    Should Contain    ${show_cancelled.stdout}    Status: CANCELLED
+
+    ${reopen}=    Run Shiori    todo    reopen    0
+    Shiori Should Succeed    ${reopen}
+    Data File Should Contain    TODOS.md    * [ ] Flexible task
+
+    ${defer}=    Run Shiori    todo    defer    0
+    Shiori Should Succeed    ${defer}
+    Data File Should Contain    TODOS.md    * [>] Flexible task
+    ${show_deferred}=    Run Shiori    todo    show    0
+    Shiori Should Succeed    ${show_deferred}
+    Should Contain    ${show_deferred.stdout}    Status: DEFERRED
+
+    ${start}=    Run Shiori    todo    start    0
+    Shiori Should Succeed    ${start}
+    Data File Should Contain    TODOS.md    * [/] Flexible task
+    No Rewrite Artifacts Should Remain
+
+Rejected Todo Transition Leaves Storage Unchanged
+    ${add}=    Run Shiori    todo    add    Already open
+    Shiori Should Succeed    ${add}
+    ${before}=    Get File    ${TEST_DATA}${/}TODOS.md    encoding=UTF-8
+
+    ${result}=    Run Shiori    todo    reopen    0
+    Shiori Should Fail    ${result}
+    Combined Output Should Contain    ${result}    already OPEN
+
+    ${after}=    Get File    ${TEST_DATA}${/}TODOS.md    encoding=UTF-8
+    Should Be Equal    ${after}    ${before}
+    No Rewrite Artifacts Should Remain
+
 Todo Topic Is Stored Displayed And Preserved
     ${add}=    Run Shiori    todo    add    --topic    Release Planning    Ship release
     Shiori Should Succeed    ${add}
@@ -139,6 +179,56 @@ Todo List Filters Status And Tags
     Shiori Should Succeed    ${filtered}
     Should Contain        ${filtered.stdout}    Done #work #urgent
     Should Not Contain    ${filtered.stdout}    Open #work
+
+Todo List Filters Cancelled And Deferred Statuses
+    ${open}=    Run Shiori    todo    add    Open task
+    Shiori Should Succeed    ${open}
+    ${cancelled}=    Run Shiori    todo    add    Cancelled task
+    Shiori Should Succeed    ${cancelled}
+    ${deferred}=    Run Shiori    todo    add    Deferred task
+    Shiori Should Succeed    ${deferred}
+    ${mark_cancelled}=    Run Shiori    todo    cancel    1
+    Shiori Should Succeed    ${mark_cancelled}
+    ${mark_deferred}=    Run Shiori    todo    defer    2
+    Shiori Should Succeed    ${mark_deferred}
+
+    ${default}=    Run Shiori    todo    list
+    Shiori Should Succeed    ${default}
+    Should Contain        ${default.stdout}    Open task
+    Should Contain        ${default.stdout}    Deferred task
+    Should Not Contain    ${default.stdout}    Cancelled task
+
+    ${cancelled_only}=    Run Shiori    todo    list    --cancelled
+    Shiori Should Succeed    ${cancelled_only}
+    Should Contain        ${cancelled_only.stdout}    Cancelled task
+    Should Not Contain    ${cancelled_only.stdout}    Deferred task
+
+    ${deferred_only}=    Run Shiori    todo    list    --deferred
+    Shiori Should Succeed    ${deferred_only}
+    Should Contain        ${deferred_only.stdout}    Deferred task
+    Should Not Contain    ${deferred_only.stdout}    Open task
+
+    ${all}=    Run Shiori    todo    list    --all
+    Shiori Should Succeed    ${all}
+    Should Contain    ${all.stdout}    Open task
+    Should Contain    ${all.stdout}    Cancelled task
+    Should Contain    ${all.stdout}    Deferred task
+
+Todo Help And Completion Include New Status Commands
+    ${help}=    Run Shiori    todo    help
+    Shiori Should Succeed    ${help}
+    Should Contain    ${help.stdout}    cancel
+    Should Contain    ${help.stdout}    defer
+
+    ${list_help}=    Run Shiori    todo    list    --help
+    Shiori Should Succeed    ${list_help}
+    Should Contain    ${list_help.stdout}    --cancelled
+    Should Contain    ${list_help.stdout}    --deferred
+
+    ${completion}=    Run Shiori    util    completion    powershell
+    Shiori Should Succeed    ${completion}
+    Should Contain    ${completion.stdout}    'cancel'
+    Should Contain    ${completion.stdout}    'defer'
 
 Todo List Filters Due Date With Calendar Boundaries
     ${today}=          Evaluate    datetime.date.today()    modules=datetime

@@ -2,6 +2,13 @@
 
 Notable changes to Shiori are documented in this file.
 
+## [0.3.0] - Unreleased
+
+### Added
+
+- Cancelled (`[-]`) and deferred (`[>]`) todo statuses, including lifecycle
+  commands, list filters, dashboard presentation, help, and completion.
+
 ## [0.2.0] - 2026-08-23
 
 Shiori 0.2.0 expands the original scratchpad into a more complete local notes

@@ -215,6 +215,10 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
         item->status = DONE;
     } else if(markdown[0] == '/') {
         item->status = IN_PROGRESS;
+    } else if(markdown[0] == '-') {
+        item->status = CANCELLED;
+    } else if(markdown[0] == '>') {
+        item->status = DEFERRED;
     } else {
         log_error("Invalid TODO status '%c'.\n", markdown[0]);
         return R_ERROR;

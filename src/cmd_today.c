@@ -150,7 +150,7 @@ int command_today(int argc, char *argv[]) {
     // get all todos for today
     struct todo_list todo_list;
     todo_list_init(&todo_list);
-    if(read_todos("TODOS.md", &todo_list) != R_OK) {
+    if(read_todos(g_config.todo_filename, &todo_list) != R_OK) {
         todo_list_free(&todo_list);
         return R_ERROR;
     }
@@ -168,6 +168,9 @@ int command_today(int argc, char *argv[]) {
     struct todo_list today_todos;
     todo_list_init(&today_todos);
 
+    struct todo_list deferred_todos;
+    todo_list_init(&deferred_todos);
+
     for(size_t i = 0; i < todo_list.count; ++i) {
         log_debug(
             "Found todo (%llu) with status %s.\n",
@@ -177,8 +180,22 @@ int command_today(int argc, char *argv[]) {
 
         struct todo *item = &todo_list.items[i];
 
-        if(item->status == DONE) {
-            continue; // don't care for done
+        if(item->status == DONE || item->status == CANCELLED) {
+            continue; // Terminal states are not part of the active dashboard.
+        }
+
+        if(item->status == DEFERRED) {
+            if(todo_list_add(&deferred_todos, item) != R_OK) {
+                log_error("Failed building today overview.\n");
+                todo_list_free(&deferred_todos);
+                todo_list_free(&overdue_todos);
+                todo_list_free(&today_todos);
+                todo_list_free(&in_progress_todos);
+                todo_list_free(&open_todos);
+                todo_list_free(&todo_list);
+                return R_ERROR;
+            }
+            continue;
         }
 
         struct todo_list *target = nullptr;
@@ -203,6 +220,7 @@ int command_today(int argc, char *argv[]) {
 
         if(target != nullptr && todo_list_add(target, item) != R_OK) {
             log_error("Failed building today overview.\n");
+            todo_list_free(&deferred_todos);
             todo_list_free(&overdue_todos);
             todo_list_free(&today_todos);
             todo_list_free(&in_progress_todos);
@@ -269,6 +287,29 @@ int command_today(int argc, char *argv[]) {
     }
     printf("\n");
     todo_list_free(&today_todos);
+
+    // Deferred tasks are suspended and therefore do not appear as due or overdue.
+    printf(
+        "  %s%s%s%s\n",
+        color_style_sequence(COLOR_STYLE_BOLD),
+        color_style_sequence(COLOR_STYLE_INFO),
+        "⏸️ Deferred",
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
+    for(size_t i = 0; i < deferred_todos.count; ++i) {
+        struct todo *item = &deferred_todos.items[i];
+        printf(
+            "    %s» %4llu%s  %s",
+            color_style_sequence(COLOR_STYLE_INFO),
+            item->id,
+            color_style_sequence(COLOR_STYLE_RESET),
+            item->text
+        );
+        print_todo_topic_suffix(item);
+        printf("\n");
+    }
+    todo_list_free(&deferred_todos);
+    printf("\n");
 
     // print active todos
     printf(

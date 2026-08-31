@@ -496,15 +496,23 @@ Use the task ID to move it through its lifecycle:
 shiori todo start 1
 shiori todo done 1
 shiori todo reopen 1
+shiori todo cancel 1
+shiori todo defer 1
 ```
 
 - `start` moves a task to in progress.
 - `done` marks a task as completed.
 - `reopen` returns a task to open.
+- `cancel` marks a task as cancelled.
+- `defer` suspends a task until it is started, completed, reopened, or cancelled.
+
+Every command may move a todo from any different status. Requesting the status a
+todo already has is rejected without rewriting `TODOS.md`.
 
 ### List and filter
 
-By default, the list contains open and in-progress todos:
+By default, the list contains open, in-progress, and deferred todos. Completed
+and cancelled todos are hidden:
 
 ```console
 shiori todo list
@@ -516,6 +524,8 @@ Filter by status:
 shiori todo list --open
 shiori todo list --in-progress
 shiori todo list --done
+shiori todo list --cancelled
+shiori todo list --deferred
 shiori todo list --all
 ```
 
@@ -599,9 +609,12 @@ The **Notes** section follows the selected date and displays assigned topics. Ac
 
 - **Overdue** contains unfinished todos due before the selected date.
 - **Due Today** contains unfinished todos due on the selected date, or an “all clear” message when empty.
+- **Deferred** contains suspended todos regardless of their due date.
 - **In Progress** and **Open** contain the remaining active todos.
 
-Completed todos are not shown in the dashboard. Assigned todo topics appear beside their task text in every dashboard section.
+Completed and cancelled todos are not shown in the dashboard. Deferred todos do
+not appear as due or overdue until moved to another status. Assigned todo topics
+appear beside their task text in every dashboard section.
 
 Use `shiori today --help` for the built-in reference.
 
@@ -749,7 +762,12 @@ last_id: 4
 * [x] update screenshots #shiori/id/3 #shiori/created/2026-08-11
 ```
 
-Checkbox markers represent open (`[ ]`), in progress (`[/]`), and done (`[x]`). The optional `#shiori/due/YYYY-MM-DD` tag stores a due date. The front matter maintains the next stable ID. Todo rewrites also use temporary and backup files, but unlike note rewrites they remove the backup after a successful replacement.
+Checkbox markers represent open (`[ ]`), in progress (`[/]`), done (`[x]`),
+cancelled (`[-]`), and deferred (`[>]`). Existing lowercase and uppercase done
+markers remain accepted. The optional `#shiori/due/YYYY-MM-DD` tag stores a due
+date. The front matter maintains the next stable ID. Todo rewrites also use
+temporary and backup files, but unlike note rewrites they remove the backup after
+a successful replacement.
 
 ## Using Shiori with Obsidian
 

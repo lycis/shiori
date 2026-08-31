@@ -10,7 +10,9 @@
 typedef enum {
     OPEN,
     IN_PROGRESS,
-    DONE
+    DONE,
+    CANCELLED,
+    DEFERRED
 } todo_status;
 
 struct todo {
