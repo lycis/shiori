@@ -33,6 +33,15 @@ int command_config(int argc, char *argv[]) {
             "  after_command: %s\n",
             g_config.hooks.after_command[0] != '\0' ? g_config.hooks.after_command : "(not configured)"
         );
+        printf("\n");
+        printf("aliases:\n");
+        if(g_config.alias_count == 0) {
+            printf("  (none configured)\n");
+        } else {
+            for(size_t index = 0; index < g_config.alias_count; ++index) {
+                printf("  %s: %s\n", g_config.aliases[index].name, g_config.aliases[index].expansion);
+            }
+        }
     } else {
         log_error("Unknown config command. See --help\n", argv[0]);
         return R_ERROR;

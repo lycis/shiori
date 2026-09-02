@@ -1,6 +1,7 @@
 
 #include "config.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -104,7 +105,60 @@ static bool is_known_config_path(const char *path) {
             return true;
         }
     }
-    return false;
+    return strncmp(path, "aliases.", strlen("aliases.")) == 0;
+}
+
+static bool is_empty_alias_expansion(const char *value) {
+    while(*value != '\0') {
+        if(!isspace((unsigned char)*value)) {
+            return false;
+        }
+        ++value;
+    }
+    return true;
+}
+
+static int load_aliases(const struct config_document *document) {
+    const char *prefix = "aliases.";
+    size_t prefix_length = strlen(prefix);
+
+    for(size_t index = 0; index < document->count; ++index) {
+        const struct config_entry *entry = &document->entries[index];
+        if(strncmp(entry->path, prefix, prefix_length) != 0) {
+            continue;
+        }
+
+        const char *name = entry->path + prefix_length;
+        if(*name == '\0' || strchr(name, '.') != nullptr) {
+            log_error("invalid configuration (line %zu): aliases must be direct entries.\n", entry->line);
+            return R_ERROR;
+        }
+        if(entry->type != CONFIG_VALUE_STRING) {
+            log_error("invalid configuration (line %zu): %s must be a string.\n", entry->line, entry->path);
+            return R_ERROR;
+        }
+        if(is_empty_alias_expansion(entry->value.string_value)) {
+            log_error("invalid configuration (line %zu): %s must not be empty.\n", entry->line, entry->path);
+            return R_ERROR;
+        }
+        if(g_config.alias_count >= MAX_CONFIG_ALIASES) {
+            log_error("invalid configuration: no more than %d aliases may be configured.\n", MAX_CONFIG_ALIASES);
+            return R_ERROR;
+        }
+
+        struct config_alias *alias = &g_config.aliases[g_config.alias_count];
+        if(strcpy_s(alias->name, sizeof(alias->name), name) != 0) {
+            log_error("invalid configuration (line %zu): alias name '%s' is too long.\n", entry->line, name);
+            return R_ERROR;
+        }
+        if(strcpy_s(alias->expansion, sizeof(alias->expansion), entry->value.string_value) != 0) {
+            log_error("invalid configuration (line %zu): %s is too long.\n", entry->line, entry->path);
+            return R_ERROR;
+        }
+        ++g_config.alias_count;
+    }
+
+    return R_OK;
 }
 
 static int copy_config_string(
@@ -145,6 +199,10 @@ static int load_application_config(const struct config_document *document) {
             log_error("invalid configuration (line %zu): unknown key '%s'.\n", entry->line, entry->path);
             return R_ERROR;
         }
+    }
+
+    if(load_aliases(document) != R_OK) {
+        return R_ERROR;
     }
 
     const struct config_entry *version = config_get(document, "version");
@@ -231,6 +289,15 @@ static int load_application_config(const struct config_document *document) {
     }
 
     return validate_storage_filenames();
+}
+
+const struct config_alias *config_find_alias(const char *name) {
+    for(size_t index = 0; index < g_config.alias_count; ++index) {
+        if(strcmp(g_config.aliases[index].name, name) == 0) {
+            return &g_config.aliases[index];
+        }
+    }
+    return nullptr;
 }
 
 enum config_read_result read_config_file_optional(void) {

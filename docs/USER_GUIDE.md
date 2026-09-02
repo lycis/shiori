@@ -9,6 +9,7 @@ This guide covers installation, configuration, every current workflow, and the o
 - [Installation](#installation)
 - [Initialization and configuration](#initialization-and-configuration)
 - [Hooks and automation](#hooks-and-automation)
+- [Command aliases](#command-aliases)
 - [Command overview](#command-overview)
 - [Managing notes](#managing-notes)
 - [Capture sessions](#capture-sessions)
@@ -142,6 +143,30 @@ Shiori searches for `.shiori` in this order:
 2. the user's home directory
 
 A project-specific configuration therefore takes precedence over a user-level fallback.
+
+## Command aliases
+
+The `aliases` map gives frequently used built-in commands shorter or more
+memorable names:
+
+```text
+aliases:
+  tasks: todo list
+  done: todo list --done
+  remember: 'add "Remember this"'
+```
+
+Invoke an alias like any other command. Arguments supplied at invocation time
+are appended after the fixed arguments in its expansion, so `shiori tasks
+--topic work` runs `shiori todo list --topic work`. Alias expansions support
+single- and double-quoted arguments and backslash escaping. Aliases may target
+other aliases; recursive chains are rejected with the complete cycle path.
+
+Built-in command names always take precedence and cannot be overridden by an
+alias. An alias must ultimately resolve to a built-in command; external command
+plugins are not supported. Alias values are command arguments, not shell code,
+and are never evaluated by a command shell. `shiori config show` displays all
+configured aliases.
 
 ### Configuration file syntax
 

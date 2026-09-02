@@ -1,5 +1,6 @@
 #include "commands.h"
 
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -192,22 +193,171 @@ static int execute_command(const struct command_definition *command, int argc, c
     return command->handler(argc, argv);
 }
 
+#define MAX_RESOLVED_ARGUMENTS 64
+#define MAX_ALIAS_EXPANSIONS MAX_CONFIG_ALIASES
+
 struct resolved_command {
     const struct command_definition *definition;
     char *name;
     int argc;
-    char **argv;
+    char *arguments[MAX_RESOLVED_ARGUMENTS];
+    char expansion_storage[MAX_ALIAS_EXPANSIONS][MAX_ALIAS_EXPANSION];
+    bool config_loaded;
 };
 
-static struct resolved_command resolve_command(char *command, int argc, char *argv[]) {
-    size_t command_count = 0;
-    const struct command_definition *commands = get_commands(&command_count);
-    return (struct resolved_command){
-        .definition = find_command_definition(commands, command_count, command),
-        .name = command,
-        .argc = argc,
-        .argv = argv,
-    };
+static int tokenize_alias(char *input, char *tokens[], int *token_count) {
+    char *read = input;
+    char *write = input;
+    int count = 0;
+
+    while(*read != '\0') {
+        while(isspace((unsigned char)*read)) {
+            ++read;
+        }
+        if(*read == '\0') {
+            break;
+        }
+        if(count >= MAX_RESOLVED_ARGUMENTS) {
+            *token_count = MAX_RESOLVED_ARGUMENTS + 1;
+            return R_ERROR;
+        }
+
+        tokens[count++] = write;
+        char quote = '\0';
+        while(*read != '\0') {
+            if(quote == '\0' && isspace((unsigned char)*read)) {
+                break;
+            }
+            if(*read == '\'' || *read == '"') {
+                if(quote == '\0') {
+                    quote = *read++;
+                    continue;
+                }
+                if(quote == *read) {
+                    quote = '\0';
+                    ++read;
+                    continue;
+                }
+            }
+            if(*read == '\\' && read[1] != '\0') {
+                ++read;
+            }
+            *write++ = *read++;
+        }
+        if(quote != '\0') {
+            return R_ERROR;
+        }
+        if(*read != '\0') {
+            ++read;
+        }
+        *write++ = '\0';
+    }
+
+    *token_count = count;
+    return R_OK;
+}
+
+static int resolve_command(char *command, int argc, char *argv[], struct resolved_command *resolved) {
+    const char *visited[MAX_ALIAS_EXPANSIONS];
+    int visited_count = 0;
+    bool config_loaded = false;
+
+    if(argc > MAX_RESOLVED_ARGUMENTS) {
+        log_error("Too many command arguments; maximum is %d.\n", MAX_RESOLVED_ARGUMENTS);
+        return R_ERROR;
+    }
+    memset(resolved, 0, sizeof(*resolved));
+    memcpy(resolved->arguments, argv, (size_t)argc * sizeof(*argv));
+
+    char *resolved_name = command;
+    int resolved_argc = argc;
+    while(true) {
+        size_t command_count = 0;
+        const struct command_definition *commands = get_commands(&command_count);
+        const struct command_definition *definition = find_command_definition(commands, command_count, resolved_name);
+        if(definition != nullptr) {
+            resolved->definition = definition;
+            resolved->name = resolved_name;
+            resolved->argc = resolved_argc;
+            resolved->config_loaded = config_loaded;
+            return R_OK;
+        }
+
+        if(!config_loaded) {
+            enum config_read_result config_result = read_config_file_optional();
+            if(config_result == CONFIG_READ_ERROR) {
+                return R_ERROR;
+            }
+            if(config_result == CONFIG_READ_NOT_FOUND) {
+                log_error("Unknown command: %s\n", resolved_name);
+                return R_ERROR;
+            }
+            config_loaded = true;
+        }
+
+        const struct config_alias *alias = config_find_alias(resolved_name);
+        if(alias == nullptr) {
+            log_error("Unknown command: %s\n", resolved_name);
+            return R_ERROR;
+        }
+        for(int index = 0; index < visited_count; ++index) {
+            if(strcmp(visited[index], alias->name) == 0) {
+                log_error("Recursive command alias detected: ");
+                for(int path_index = 0; path_index < visited_count; ++path_index) {
+                    fprintf(stderr, "%s -> ", visited[path_index]);
+                }
+                fprintf(stderr, "%s\n", alias->name);
+                return R_ERROR;
+            }
+        }
+        if(visited_count >= MAX_ALIAS_EXPANSIONS) {
+            log_error("Command alias expansion exceeds the maximum depth of %d.\n", MAX_ALIAS_EXPANSIONS);
+            return R_ERROR;
+        }
+        visited[visited_count] = alias->name;
+        if(strcpy_s(
+               resolved->expansion_storage[visited_count],
+               sizeof(resolved->expansion_storage[visited_count]),
+               alias->expansion
+           ) != 0) {
+            return R_ERROR;
+        }
+
+        char *tokens[MAX_RESOLVED_ARGUMENTS];
+        int token_count = 0;
+        int token_result = tokenize_alias(resolved->expansion_storage[visited_count], tokens, &token_count);
+        if(token_count > MAX_RESOLVED_ARGUMENTS) {
+            log_error(
+                "Command alias '%s' expands beyond the maximum of %d arguments.\n",
+                alias->name,
+                MAX_RESOLVED_ARGUMENTS
+            );
+            return R_ERROR;
+        }
+        if(token_result != R_OK || token_count == 0 || tokens[0][0] == '\0') {
+            log_error("Invalid command alias expansion for '%s'.\n", alias->name);
+            return R_ERROR;
+        }
+        ++visited_count;
+
+        int prepended_count = token_count - 1;
+        if(resolved_argc + prepended_count > MAX_RESOLVED_ARGUMENTS) {
+            log_error(
+                "Command alias '%s' expands beyond the maximum of %d arguments.\n",
+                alias->name,
+                MAX_RESOLVED_ARGUMENTS
+            );
+            return R_ERROR;
+        }
+        memmove(
+            &resolved->arguments[prepended_count],
+            resolved->arguments,
+            (size_t)resolved_argc * sizeof(*resolved->arguments)
+        );
+        memcpy(resolved->arguments, &tokens[1], (size_t)prepended_count * sizeof(*tokens));
+        resolved_argc += prepended_count;
+        resolved_name = tokens[0];
+    }
 }
 
 static int execute_resolved_command(const struct resolved_command *command) {
@@ -216,24 +366,27 @@ static int execute_resolved_command(const struct resolved_command *command) {
         return R_ERROR;
     }
 
-    if(command->definition->requires_config) {
+    if(command->definition->requires_config && !command->config_loaded) {
         if(read_config_file() != R_OK) {
             return R_ERROR;
         }
     }
 
-    int rc = execute_command(command->definition, command->argc, command->argv);
+    int rc = execute_command(command->definition, command->argc, (char **)command->arguments);
 
     // call after command hook
     if(command->definition->requires_config && g_config.hooks.after_command[0] != '\0') {
-        hook_after_command(command->name, command->argc, command->argv);
+        hook_after_command(command->name, command->argc, (char **)command->arguments);
     }
 
     return rc;
 }
 
 int run_command(char *command, int argc, char *argv[]) {
-    struct resolved_command resolved = resolve_command(command, argc, argv);
+    struct resolved_command resolved;
+    if(resolve_command(command, argc, argv, &resolved) != R_OK) {
+        return R_ERROR;
+    }
     return execute_resolved_command(&resolved);
 }
 
