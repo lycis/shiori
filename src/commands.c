@@ -192,30 +192,49 @@ static int execute_command(const struct command_definition *command, int argc, c
     return command->handler(argc, argv);
 }
 
-int run_command(char *command, int argc, char *argv[]) {
+struct resolved_command {
+    const struct command_definition *definition;
+    char *name;
+    int argc;
+    char **argv;
+};
+
+static struct resolved_command resolve_command(char *command, int argc, char *argv[]) {
     size_t command_count = 0;
     const struct command_definition *commands = get_commands(&command_count);
-    const struct command_definition *current_command = find_command_definition(commands, command_count, command);
+    return (struct resolved_command){
+        .definition = find_command_definition(commands, command_count, command),
+        .name = command,
+        .argc = argc,
+        .argv = argv,
+    };
+}
 
-    if(current_command == nullptr) {
-        log_error("Unknown command: %s\n", command);
+static int execute_resolved_command(const struct resolved_command *command) {
+    if(command->definition == nullptr) {
+        log_error("Unknown command: %s\n", command->name);
         return R_ERROR;
     }
 
-    if(current_command->requires_config) {
+    if(command->definition->requires_config) {
         if(read_config_file() != R_OK) {
             return R_ERROR;
         }
     }
 
-    int rc = execute_command(current_command, argc, argv);
+    int rc = execute_command(command->definition, command->argc, command->argv);
 
     // call after command hook
-    if(current_command->requires_config && g_config.hooks.after_command[0] != '\0') {
-        hook_after_command(command, argc, argv);
+    if(command->definition->requires_config && g_config.hooks.after_command[0] != '\0') {
+        hook_after_command(command->name, command->argc, command->argv);
     }
 
     return rc;
+}
+
+int run_command(char *command, int argc, char *argv[]) {
+    struct resolved_command resolved = resolve_command(command, argc, argv);
+    return execute_resolved_command(&resolved);
 }
 
 int print_subcommand_help(
