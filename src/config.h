@@ -17,6 +17,13 @@ struct configuration {
 
 extern struct configuration g_config;
 
+enum config_read_result {
+    CONFIG_READ_OK,
+    CONFIG_READ_NOT_FOUND,
+    CONFIG_READ_ERROR,
+};
+
 [[nodiscard]] int read_config_file(void);
+[[nodiscard]] enum config_read_result read_config_file_optional(void);
 
 #endif

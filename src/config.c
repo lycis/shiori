@@ -233,7 +233,7 @@ static int load_application_config(const struct config_document *document) {
     return validate_storage_filenames();
 }
 
-int read_config_file(void) {
+enum config_read_result read_config_file_optional(void) {
     log_debug("Reading config file.\n");
 
     // clear the whole config
@@ -251,14 +251,13 @@ int read_config_file(void) {
 
         if(get_user_home(user_home, sizeof(user_home)) != R_OK) {
             log_error("Could not determine user home directory.\n");
-            return R_ERROR;
+            return CONFIG_READ_ERROR;
         }
 
         snprintf(config_path, sizeof(config_path), "%s%s%s", user_home, get_path_separator(), CONFIG_FILE_NAME);
 
         if(file_access_utf8(config_path, F_OK) != 0) {
-            log_error("%s config file not found. Please run `%s init` first.\n", CONFIG_FILE_NAME, APP_NAME);
-            return R_ERROR;
+            return CONFIG_READ_NOT_FOUND;
         }
     }
 
@@ -266,7 +265,7 @@ int read_config_file(void) {
     int err = file_open_utf8(&config_file, config_path, "r");
     if(err != 0 || config_file == nullptr) {
         log_error("Error opening %s file\n", CONFIG_FILE_NAME);
-        return R_ERROR;
+        return CONFIG_READ_ERROR;
     }
 
     struct config_document document;
@@ -275,18 +274,27 @@ int read_config_file(void) {
     fclose(config_file);
     if(parse_result != R_OK) {
         log_error("%s:%zu:%zu: %s.\n", config_path, parse_error.line, parse_error.column, parse_error.message);
-        return R_ERROR;
+        return CONFIG_READ_ERROR;
     }
 
     int load_result = load_application_config(&document);
     config_document_destroy(&document);
     if(load_result != R_OK) {
-        return R_ERROR;
+        return CONFIG_READ_ERROR;
     }
 
     if(!g_config.color) {
         color_set_enabled(false);
     }
 
-    return R_OK;
+    return CONFIG_READ_OK;
+}
+
+int read_config_file(void) {
+    enum config_read_result result = read_config_file_optional();
+    if(result == CONFIG_READ_NOT_FOUND) {
+        log_error("%s config file not found. Please run `%s init` first.\n", CONFIG_FILE_NAME, APP_NAME);
+    }
+
+    return result == CONFIG_READ_OK ? R_OK : R_ERROR;
 }
