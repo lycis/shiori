@@ -303,7 +303,6 @@ const struct config_alias *config_find_alias(const char *name) {
 enum config_read_result read_config_file_optional(void) {
     log_debug("Reading config file.\n");
 
-    // clear the whole config
     memset(&g_config, 0, sizeof(g_config));
     g_config.color = true;
     strcpy_s(g_config.todo_filename, sizeof(g_config.todo_filename), "TODOS.md");

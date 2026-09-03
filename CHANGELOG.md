@@ -8,6 +8,8 @@ Notable changes to Shiori are documented in this file.
 
 - Configurable aliases for built-in commands, including fixed arguments,
   chaining, and cycle detection.
+- Alias-aware top-level and built-in subcommand completion in the interactive
+  console.
 - Cancelled (`[-]`) and deferred (`[>]`) todo statuses, including lifecycle
   commands, list filters, dashboard presentation, help, and completion.
 

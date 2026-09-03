@@ -1,6 +1,8 @@
 #ifndef SHIORI_COMMAND_H
 #define SHIORI_COMMAND_H
 
+#define MAX_COMMAND_ARGUMENTS 64
+
 typedef int (*command_handler_fn)(int argc, char *argv[]);
 
 struct command_definition {
@@ -51,6 +53,7 @@ find_command_definition(const struct command_definition *commands, size_t comman
 const struct command_definition *find_subcommand(const struct command_definition *parent, const char *name);
 
 int run_command(char *command, int argc, char *argv[]);
+int tokenize_command_alias(char *input, char *tokens[], int *token_count);
 
 int print_subcommand_help(
     const char *command_name,

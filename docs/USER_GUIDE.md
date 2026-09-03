@@ -168,6 +168,10 @@ plugins are not supported. Alias values are command arguments, not shell code,
 and are never evaluated by a command shell. `shiori config show` displays all
 configured aliases.
 
+The interactive console includes configured aliases in top-level completion.
+When an alias resolves to a built-in command group, its built-in subcommands are
+also offered; for example, an alias for `todo` completes `todo` subcommands.
+
 ### Configuration file syntax
 
 The `.shiori` format is intentionally YAML-like, but it is not YAML. It supports

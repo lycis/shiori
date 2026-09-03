@@ -4,6 +4,7 @@
 #include "cli.h"
 #include "commands.h"
 #include "common.h"
+#include "config.h"
 #include "logging.h"
 #include "platform.h"
 
@@ -56,6 +57,71 @@ static void add_console_special_completions(struct completion_result *result, co
     }
 }
 
+static bool completion_contains(const struct completion_result *result, const char *candidate) {
+    for(size_t index = 0; index < result->count; ++index) {
+        if(strcmp(result->items[index], candidate) == 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void add_alias_completions(struct completion_result *result, const char *input) {
+    size_t input_length = input == nullptr ? 0 : strlen(input);
+    size_t command_count = 0;
+    const struct command_definition *commands = get_commands(&command_count);
+
+    for(size_t index = 0; index < g_config.alias_count && result->count < MAX_COMPLETIONS; ++index) {
+        const char *name = g_config.aliases[index].name;
+        if((input_length == 0 || strncmp(name, input, input_length) == 0) &&
+           find_command_definition(commands, command_count, name) == nullptr && !completion_contains(result, name)) {
+            result->items[result->count++] = name;
+        }
+    }
+}
+
+static int
+expand_completion_aliases(char *argv[], int *argc, char expansion_storage[MAX_CONFIG_ALIASES][MAX_ALIAS_EXPANSION]) {
+    const char *visited[MAX_CONFIG_ALIASES];
+    int visited_count = 0;
+
+    while(*argc > 0) {
+        size_t command_count = 0;
+        const struct command_definition *commands = get_commands(&command_count);
+        if(find_command_definition(commands, command_count, argv[0]) != nullptr) {
+            return R_OK;
+        }
+
+        const struct config_alias *alias = config_find_alias(argv[0]);
+        if(alias == nullptr || visited_count >= MAX_CONFIG_ALIASES) {
+            return R_ERROR;
+        }
+        for(int index = 0; index < visited_count; ++index) {
+            if(strcmp(visited[index], alias->name) == 0) {
+                return R_ERROR;
+            }
+        }
+        visited[visited_count] = alias->name;
+
+        if(strcpy_s(expansion_storage[visited_count], MAX_ALIAS_EXPANSION, alias->expansion) != 0) {
+            return R_ERROR;
+        }
+        char *tokens[MAX_COMMAND_ARGUMENTS];
+        int token_count = 0;
+        int token_result = tokenize_command_alias(expansion_storage[visited_count], tokens, &token_count);
+        ++visited_count;
+
+        if(token_result != R_OK || token_count == 0 || *argc - 1 + token_count > MAX_COMMAND_ARGUMENTS + 1) {
+            return R_ERROR;
+        }
+        memmove(&argv[token_count], &argv[1], (size_t)(*argc - 1) * sizeof(*argv));
+        memcpy(argv, tokens, (size_t)token_count * sizeof(*tokens));
+        *argc = *argc - 1 + token_count;
+    }
+
+    return R_OK;
+}
+
 static struct completion_result console_completion(const char *input) {
     struct completion_result result = {};
 
@@ -67,6 +133,7 @@ static struct completion_result console_completion(const char *input) {
     }
 
     char buffer[DEFAULT_BUFFER_SIZE];
+    char expansion_storage[MAX_CONFIG_ALIASES][MAX_ALIAS_EXPANSION];
 
     if(strcpy_s(buffer, sizeof(buffer), input) != 0) {
         return result;
@@ -74,39 +141,31 @@ static struct completion_result console_completion(const char *input) {
 
     bool trailing_space = ends_with_whitespace(input);
 
-    char *argv[32];
+    char *argv[MAX_COMMAND_ARGUMENTS + 1];
     int argc = 0;
 
     char *context = nullptr;
     char *token = strtok_s(buffer, " \t", &context);
 
-    while(token != nullptr && argc < 32) {
+    while(token != nullptr && argc < MAX_COMMAND_ARGUMENTS + 1) {
         argv[argc++] = token;
         token = strtok_s(nullptr, " \t", &context);
     }
+    if(token != nullptr) {
+        return result;
+    }
 
-    /*
-     * If there are no tokens yet, complete at the top level.
-     * (May not be used right now if completion only starts
-     * after at least one typed character, but it keeps the
-     * function complete.)
-     */
     if(argc == 0) {
         result = complete_command_definitions("", current_commands, command_count);
+        add_alias_completions(&result, "");
         add_console_special_completions(&result, "");
         return result;
     }
 
-    /*
-     * If input ends with whitespace:
-     *
-     * Example:
-     *   "todo "
-     *
-     * Then "todo" is complete, and we want to suggest all of
-     * its subcommands.
-     */
     if(trailing_space) {
+        if(expand_completion_aliases(argv, &argc, expansion_storage) != R_OK) {
+            return result;
+        }
         for(int i = 0; i < argc; ++i) {
             const struct command_definition *definition =
                 find_command_definition(current_commands, command_count, argv[i]);
@@ -122,15 +181,12 @@ static struct completion_result console_completion(const char *input) {
         return complete_command_definitions("", current_commands, command_count);
     }
 
-    /*
-     * Otherwise, the last token is partial and should be completed.
-     *
-     * Example:
-     *   "todo l"
-     *
-     * Resolve "todo", then complete "l" within its subcommands.
-     */
     for(int i = 0; i < argc - 1; ++i) {
+        if(i == 0) {
+            if(expand_completion_aliases(argv, &argc, expansion_storage) != R_OK) {
+                return result;
+            }
+        }
         const struct command_definition *definition = find_command_definition(current_commands, command_count, argv[i]);
 
         if(definition == nullptr || definition->subcommands == nullptr || definition->subcommand_count == 0) {
@@ -143,10 +199,8 @@ static struct completion_result console_completion(const char *input) {
 
     result = complete_command_definitions(argv[argc - 1], current_commands, command_count);
 
-    /*
-     * Only add console-local commands at the top level.
-     */
     if(argc == 1) {
+        add_alias_completions(&result, argv[0]);
         add_console_special_completions(&result, argv[0]);
     }
 
@@ -211,19 +265,21 @@ int command_console(int argc, char *argv[]) {
             break;
         }
 
-        /*
-         * Split command into argv.
-         */
-        char *command_argv[64];
+        char *command_argv[MAX_COMMAND_ARGUMENTS + 1];
         int command_argc = 0;
 
         char *context = nullptr;
 
         char *token = strtok_s(command, " \t", &context);
 
-        while(token != nullptr && command_argc < 64) {
+        while(token != nullptr && command_argc < MAX_COMMAND_ARGUMENTS + 1) {
             command_argv[command_argc++] = token;
             token = strtok_s(nullptr, " \t", &context);
+        }
+
+        if(token != nullptr) {
+            log_error("Too many command arguments; maximum is %d.\n", MAX_COMMAND_ARGUMENTS);
+            continue;
         }
 
         if(command_argc == 0) {

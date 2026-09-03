@@ -193,19 +193,18 @@ static int execute_command(const struct command_definition *command, int argc, c
     return command->handler(argc, argv);
 }
 
-#define MAX_RESOLVED_ARGUMENTS 64
 #define MAX_ALIAS_EXPANSIONS MAX_CONFIG_ALIASES
 
 struct resolved_command {
     const struct command_definition *definition;
     char *name;
     int argc;
-    char *arguments[MAX_RESOLVED_ARGUMENTS];
+    char *arguments[MAX_COMMAND_ARGUMENTS];
     char expansion_storage[MAX_ALIAS_EXPANSIONS][MAX_ALIAS_EXPANSION];
     bool config_loaded;
 };
 
-static int tokenize_alias(char *input, char *tokens[], int *token_count) {
+int tokenize_command_alias(char *input, char *tokens[], int *token_count) {
     char *read = input;
     char *write = input;
     int count = 0;
@@ -217,8 +216,8 @@ static int tokenize_alias(char *input, char *tokens[], int *token_count) {
         if(*read == '\0') {
             break;
         }
-        if(count >= MAX_RESOLVED_ARGUMENTS) {
-            *token_count = MAX_RESOLVED_ARGUMENTS + 1;
+        if(count >= MAX_COMMAND_ARGUMENTS) {
+            *token_count = MAX_COMMAND_ARGUMENTS + 1;
             return R_ERROR;
         }
 
@@ -262,8 +261,8 @@ static int resolve_command(char *command, int argc, char *argv[], struct resolve
     int visited_count = 0;
     bool config_loaded = false;
 
-    if(argc > MAX_RESOLVED_ARGUMENTS) {
-        log_error("Too many command arguments; maximum is %d.\n", MAX_RESOLVED_ARGUMENTS);
+    if(argc > MAX_COMMAND_ARGUMENTS) {
+        log_error("Too many command arguments; maximum is %d.\n", MAX_COMMAND_ARGUMENTS);
         return R_ERROR;
     }
     memset(resolved, 0, sizeof(*resolved));
@@ -323,14 +322,14 @@ static int resolve_command(char *command, int argc, char *argv[], struct resolve
             return R_ERROR;
         }
 
-        char *tokens[MAX_RESOLVED_ARGUMENTS];
+        char *tokens[MAX_COMMAND_ARGUMENTS];
         int token_count = 0;
-        int token_result = tokenize_alias(resolved->expansion_storage[visited_count], tokens, &token_count);
-        if(token_count > MAX_RESOLVED_ARGUMENTS) {
+        int token_result = tokenize_command_alias(resolved->expansion_storage[visited_count], tokens, &token_count);
+        if(token_count > MAX_COMMAND_ARGUMENTS) {
             log_error(
                 "Command alias '%s' expands beyond the maximum of %d arguments.\n",
                 alias->name,
-                MAX_RESOLVED_ARGUMENTS
+                MAX_COMMAND_ARGUMENTS
             );
             return R_ERROR;
         }
@@ -341,11 +340,11 @@ static int resolve_command(char *command, int argc, char *argv[], struct resolve
         ++visited_count;
 
         int prepended_count = token_count - 1;
-        if(resolved_argc + prepended_count > MAX_RESOLVED_ARGUMENTS) {
+        if(resolved_argc + prepended_count > MAX_COMMAND_ARGUMENTS) {
             log_error(
                 "Command alias '%s' expands beyond the maximum of %d arguments.\n",
                 alias->name,
-                MAX_RESOLVED_ARGUMENTS
+                MAX_COMMAND_ARGUMENTS
             );
             return R_ERROR;
         }
@@ -374,7 +373,6 @@ static int execute_resolved_command(const struct resolved_command *command) {
 
     int rc = execute_command(command->definition, command->argc, (char **)command->arguments);
 
-    // call after command hook
     if(command->definition->requires_config && g_config.hooks.after_command[0] != '\0') {
         hook_after_command(command->name, command->argc, (char **)command->arguments);
     }
