@@ -68,7 +68,12 @@ hooks:
 
 Hooks are synchronous: Shiori starts the process and waits for it to exit before returning control to the terminal. A slow hook therefore makes the originating command appear slower.
 
-For recognized commands that load configuration, `after_command` runs after the command handler returns. It is still invoked when that handler reports an error. It is not invoked for `init`, `help`, or `version`, because those commands run before configuration is loaded. An unknown command does not trigger it.
+For recognized commands that require configuration, `after_command` runs after the command handler returns. It is still invoked when that handler reports an error. It is not invoked for `init`, `help`, or `version`, even when an alias loads configuration to resolve to one of them. An unknown command does not trigger it.
+
+[Command aliases](USER_GUIDE.md#command-aliases) are fully expanded before
+execution. Alias hops do not trigger hooks. A resolved command uses the same
+hook rules as a direct invocation. Cycles and invalid expansions do not trigger
+hooks.
 
 Interactive modes have slightly different granularity:
 
@@ -110,8 +115,11 @@ Before starting the hook, Shiori exports the command name, arguments, and Shiori
 | Variable | Meaning | Example |
 |---|---|---|
 | `SHIORI_VERSION` | Shiori application version. | `0.2.0` |
-| `SHIORI_COMMAND` | Top-level command name. | `todo` |
-| `SHIORI_COMMAND_ARGS` | Command arguments joined with single spaces. | `add --due tomorrow prepare release notes` |
+| `SHIORI_COMMAND` | Resolved top-level built-in command name, after alias expansion. | `todo` |
+| `SHIORI_COMMAND_ARGS` | Expanded command arguments joined with single spaces. | `add --due tomorrow prepare release notes` |
+
+With `tasks: todo list` under `aliases`, `shiori tasks --done` sets
+`SHIORI_COMMAND=todo` and `SHIORI_COMMAND_ARGS=list --done`.
 
 `SHIORI_COMMAND_ARGS` is a flattened display string. Original quoting and argument boundaries are not preserved, so do not treat it as a safely escaped command line or execute it directly.
 

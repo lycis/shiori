@@ -8,8 +8,9 @@ This guide covers installation, configuration, every current workflow, and the o
 
 - [Installation](#installation)
 - [Initialization and configuration](#initialization-and-configuration)
+  - [Command aliases](#command-aliases)
+  - [Configuration file syntax](#configuration-file-syntax)
 - [Hooks and automation](#hooks-and-automation)
-- [Command aliases](#command-aliases)
 - [Command overview](#command-overview)
 - [Managing notes](#managing-notes)
 - [Capture sessions](#capture-sessions)
@@ -144,7 +145,7 @@ Shiori searches for `.shiori` in this order:
 
 A project-specific configuration therefore takes precedence over a user-level fallback.
 
-## Command aliases
+### Command aliases
 
 The `aliases` map gives frequently used built-in commands shorter or more
 memorable names:
@@ -156,9 +157,11 @@ aliases:
   remember: 'add "Remember this"'
 ```
 
-Invoke an alias like any other command. Arguments supplied at invocation time
-are appended after the fixed arguments in its expansion, so `shiori tasks
---topic work` runs `shiori todo list --topic work`. Alias expansions support
+Command aliases are available on the 0.3.0 development trunk, not in the 0.2.0
+release. Invoke an alias like any other top-level command. Arguments supplied at
+invocation time are appended after the fixed arguments in its expansion.
+For example, `shiori tasks --topic work` runs `shiori todo list --topic work`.
+Alias expansions support
 single- and double-quoted arguments and backslash escaping. Aliases may target
 other aliases; recursive chains are rejected with the complete cycle path.
 
@@ -168,9 +171,55 @@ plugins are not supported. Alias values are command arguments, not shell code,
 and are never evaluated by a command shell. `shiori config show` displays all
 configured aliases.
 
+Only the first word is expanded. Subcommand names and ordinary arguments are
+not aliases. Each hop prepends its fixed arguments before the existing arguments.
+An unknown final target reports `Unknown command`. Cycles and invalid expansions
+do not execute a command or a hook. Hooks receive the expanded command and
+arguments under the target command's normal [hook rules](HOOKS.md#hook-execution-model).
+
+Aliases use the current-directory configuration or the home-directory fallback;
+the files are not merged. Direct `init`, `help`, and `version` still work without
+configuration. Invoking them through an alias requires valid configuration to
+discover the alias. Put global options before the alias, as in
+`shiori --no-color tasks`.
+
+The configuration parser first decodes the scalar value. Alias tokenization then
+splits that string at unquoted whitespace. Single or double quotes group text
+into one argument and are removed. An unmatched quote fails when expanded.
+A backslash escapes the next character, even inside single quotes. Two
+backslashes produce one literal backslash; a final backslash remains literal.
+For example, this adds the text `C:\Notes`:
+
+```text
+aliases:
+  pathnote: 'add C:\\Notes'
+```
+
+Outer single quotes preserve both backslashes for alias tokenization. Outer
+double quotes require another level of configuration escaping. Pipes, redirects,
+variable expansion, and command substitution are not evaluated. Arguments
+supplied by your shell retain their boundaries and UTF-8 text without reparsing.
+
+The implementation applies these limits:
+
+- At most 32 aliases per configuration.
+- Names of at most 63 bytes, using the configuration key grammar.
+- Decoded expansion strings of at most 2,047 bytes.
+- At most 64 tokens in each expansion, including the target command.
+- At most 64 arguments after the final command name, including fixed and supplied arguments.
+
+Each alias must be a direct child of `aliases` with a non-empty string value.
+Boolean, integer, whitespace-only, and nested-map values are rejected when
+configuration is loaded. Duplicate names are configuration errors. Empty targets
+after tokenization, malformed quoting, excessive token counts, and cycles fail
+when expanded. To configure no aliases, omit the map rather than leaving a bare
+`aliases:` line.
+
 The interactive console includes configured aliases in top-level completion.
 When an alias resolves to a built-in command group, its built-in subcommands are
 also offered; for example, an alias for `todo` completes `todo` subcommands.
+The generated PowerShell completion script does not offer configured aliases,
+but you can still invoke them by typing their names.
 
 ### Configuration file syntax
 
@@ -666,6 +715,9 @@ shiori util completion powershell > shiori-completion.ps1
 
 The alias `pwsh` is also accepted as the shell argument. The generated script is written to standard output.
 
+The script completes built-in commands only. Configured
+[command aliases](#command-aliases) work when typed but are not offered.
+
 ## Interactive console
 
 Keep Shiori open while capturing several thoughts:
@@ -686,7 +738,11 @@ Enter `exit` or `quit` to leave console mode.
 
 Press Escape to cancel the console session cleanly. Press Ctrl+C to interrupt Shiori immediately; the process restores the original terminal mode and exits with status `130`.
 
-As you type a command, Shiori displays matching suggestions in color. Press Tab to accept a single match; when several commands match, Tab expands the input to their longest shared prefix. Console completion includes Shiori commands plus `exit` and `quit`.
+As you type a command, Shiori displays matching suggestions in color. Press Tab to accept a single match; when several commands match, Tab expands the input to their longest shared prefix. Console completion includes built-in commands, configured aliases, and `exit` and `quit`.
+
+Alias expansions use the [alias quoting rules](#command-aliases). The entered
+console line still splits on spaces and tabs without quote grouping. Bare `exit`
+and `quit` leave the console rather than invoking aliases with those names.
 
 When several suggestions are visible, press Down to select the first suggestion or
 Up to select the last. Continue with Up or Down to move through the list; selection

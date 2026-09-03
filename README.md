@@ -103,6 +103,10 @@ See **[Building Shiori](BUILD.md)** for toolchain requirements, all build and te
 
 ## Commands at a glance
 
+The 0.3.0 development trunk supports [configured command aliases](docs/USER_GUIDE.md#command-aliases)
+for built-in commands, including fixed arguments, alias chains, and interactive
+console completion. This feature is not available in the 0.2.0 release.
+
 ```text
 shiori [options] <command> [options] [subcommand] ...
 ```

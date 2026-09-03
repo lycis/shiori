@@ -9,6 +9,8 @@ upgrading, even when a release provides an automatic migration.
 
 ## Upgrade from 0.2.0 to 0.3.0
 
+This section describes the unreleased 0.3.0 development trunk.
+
 Shiori 0.3.0 formalizes the `.shiori` configuration syntax and adds nested
 maps. Normal 0.2.0 configuration files remain valid and the format version
 stays at 1; no automatic rewrite is performed.
@@ -54,6 +56,24 @@ inconsistent nesting, and unsupported YAML constructs that older versions may
 have silently ignored or interpreted as plain text. Errors identify the source
 line and column. See the [configuration syntax reference](USER_GUIDE.md#configuration-file-syntax)
 when adjusting a hand-edited file.
+
+### Optional command aliases
+
+Add aliases manually if you want shortcuts for built-in commands:
+
+```text
+aliases:
+  tasks: todo list
+```
+
+No alias migration or storage rewrite is required. Keep configuration
+`version: 1`. The supported key is plural `aliases`; a singular `alias`
+section is not recognized. Built-in names retain precedence. Hooks receive
+the expanded built-in command and arguments.
+
+See [command aliases](USER_GUIDE.md#command-aliases) for quoting, validation,
+limits, and console completion. Generated PowerShell completion remains
+built-in-only.
 
 ## Upgrade from 0.1.0 to 0.2.0
 
