@@ -34,6 +34,42 @@ static int build_dashboard_heading(char *buffer, size_t size, time_t *date) {
     return R_OK;
 }
 
+static int print_todo_due_suffix(const struct todo *item) {
+    if(item->due == 0) {
+        return R_OK;
+    }
+
+    char due_date[11];
+    if(format_date(item->due, due_date, sizeof(due_date)) != R_OK) {
+        return R_ERROR;
+    }
+
+    printf(
+        "  %s📅 %s%s",
+        color_style_sequence(COLOR_STYLE_DUE_DATE),
+        due_date,
+        color_style_sequence(COLOR_STYLE_RESET)
+    );
+
+    return R_OK;
+}
+
+static void free_dashboard_todo_lists(
+    struct todo_list *all,
+    struct todo_list *overdue,
+    struct todo_list *today,
+    struct todo_list *deferred,
+    struct todo_list *in_progress,
+    struct todo_list *open
+) {
+    todo_list_free(overdue);
+    todo_list_free(today);
+    todo_list_free(deferred);
+    todo_list_free(in_progress);
+    todo_list_free(open);
+    todo_list_free(all);
+}
+
 int command_today(int argc, char *argv[]) {
     if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
 
@@ -250,6 +286,17 @@ int command_today(int argc, char *argv[]) {
                 color_style_sequence(COLOR_STYLE_RESET),
                 item->text
             );
+            if(print_todo_due_suffix(item) != R_OK) {
+                free_dashboard_todo_lists(
+                    &todo_list,
+                    &overdue_todos,
+                    &today_todos,
+                    &deferred_todos,
+                    &in_progress_todos,
+                    &open_todos
+                );
+                return R_ERROR;
+            }
             print_todo_topic_suffix(item);
             printf("\n");
         }
@@ -275,6 +322,17 @@ int command_today(int argc, char *argv[]) {
                 color_style_sequence(COLOR_STYLE_RESET),
                 item->text
             );
+            if(print_todo_due_suffix(item) != R_OK) {
+                free_dashboard_todo_lists(
+                    &todo_list,
+                    &overdue_todos,
+                    &today_todos,
+                    &deferred_todos,
+                    &in_progress_todos,
+                    &open_todos
+                );
+                return R_ERROR;
+            }
             print_todo_topic_suffix(item);
             printf("\n");
         }
@@ -305,6 +363,17 @@ int command_today(int argc, char *argv[]) {
             color_style_sequence(COLOR_STYLE_RESET),
             item->text
         );
+        if(print_todo_due_suffix(item) != R_OK) {
+            free_dashboard_todo_lists(
+                &todo_list,
+                &overdue_todos,
+                &today_todos,
+                &deferred_todos,
+                &in_progress_todos,
+                &open_todos
+            );
+            return R_ERROR;
+        }
         print_todo_topic_suffix(item);
         printf("\n");
     }
@@ -329,6 +398,17 @@ int command_today(int argc, char *argv[]) {
             color_style_sequence(COLOR_STYLE_RESET),
             item->text
         );
+        if(print_todo_due_suffix(item) != R_OK) {
+            free_dashboard_todo_lists(
+                &todo_list,
+                &overdue_todos,
+                &today_todos,
+                &deferred_todos,
+                &in_progress_todos,
+                &open_todos
+            );
+            return R_ERROR;
+        }
         print_todo_topic_suffix(item);
         printf("\n");
     }
@@ -353,6 +433,17 @@ int command_today(int argc, char *argv[]) {
             color_style_sequence(COLOR_STYLE_RESET),
             item->text
         );
+        if(print_todo_due_suffix(item) != R_OK) {
+            free_dashboard_todo_lists(
+                &todo_list,
+                &overdue_todos,
+                &today_todos,
+                &deferred_todos,
+                &in_progress_todos,
+                &open_todos
+            );
+            return R_ERROR;
+        }
         print_todo_topic_suffix(item);
         printf("\n");
     }

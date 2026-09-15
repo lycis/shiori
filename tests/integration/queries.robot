@@ -13,7 +13,7 @@ Prepare Query Workspace
     ...    ---${\n}version: 1${\n}---${\n}${\n}# 2030-04-05${\n}* Architecture decision #decision #work #work #shiori/topic/project <!-- shiori:id=20300405-0001 -->${\n}* Follow up #work #urgent <!-- shiori:id=20300405-0002 -->${\n}* Alpha plan #shiori/topic/Project%20Alpha <!-- shiori:id=20300405-0003 -->${\n}* Café plan #shiori/topic/Caf%C3%A9%20Planning <!-- shiori:id=20300405-0004 -->${\n}
     Create File
     ...    ${TEST_DATA}${/}TODOS.md
-    ...    ---${\n}version: 1${\n}last_id: 5${\n}---${\n}${\n}* [ ] Due item #work #shiori/id/0 #shiori/created/2030-04-01 #shiori/due/2030-04-05 #shiori/topic/project${\n}* [/] Active item #urgent #shiori/id/1 #shiori/created/2030-04-02 #shiori/topic/Todo%20Only${\n}* [X] Finished item #work #shiori/id/2 #shiori/created/2030-04-03${\n}* [-] Cancelled item #shiori/id/3 #shiori/created/2030-04-03 #shiori/due/2030-04-05${\n}* [>] Deferred item #shiori/id/4 #shiori/created/2030-04-03 #shiori/due/2030-04-04${\n}
+    ...    ---${\n}version: 1${\n}last_id: 8${\n}---${\n}${\n}* [ ] Due item #work #shiori/id/0 #shiori/created/2030-04-01 #shiori/due/2030-04-05 #shiori/topic/project${\n}* [/] Active item #urgent #shiori/id/1 #shiori/created/2030-04-02 #shiori/topic/Todo%20Only${\n}* [X] Finished item #work #shiori/id/2 #shiori/created/2030-04-03${\n}* [-] Cancelled item #shiori/id/3 #shiori/created/2030-04-03 #shiori/due/2030-04-05${\n}* [>] Deferred item #shiori/id/4 #shiori/created/2030-04-03 #shiori/due/2030-04-04${\n}* [/] Scheduled active item #shiori/id/5 #shiori/created/2030-04-03 #shiori/due/2030-04-06${\n}* [ ] Scheduled open item #shiori/id/6 #shiori/created/2030-04-03 #shiori/due/2030-04-07${\n}* [ ] Overdue item #shiori/id/7 #shiori/created/2030-04-03 #shiori/due/2030-04-04${\n}
 
 *** Test Cases ***
 Today Supports Explicit Date
@@ -28,6 +28,12 @@ Today Supports Explicit Date
     Should Not Contain    ${result.stdout}    Cancelled item
     Should Contain    ${result.stdout}    Deferred
     Should Contain    ${result.stdout}    Deferred item
+    Should Match Regexp        ${result.stdout}    (?m)^.*Due item.*📅 2030-04-05
+    Should Match Regexp        ${result.stdout}    (?m)^.*Deferred item.*📅 2030-04-04
+    Should Match Regexp        ${result.stdout}    (?m)^.*Scheduled active item.*📅 2030-04-06
+    Should Match Regexp        ${result.stdout}    (?m)^.*Scheduled open item.*📅 2030-04-07
+    Should Match Regexp        ${result.stdout}    (?m)^.*Overdue item.*📅 2030-04-04
+    Should Not Match Regexp    ${result.stdout}    (?m)^.*Active item.*📅
 
 Topic Lists Matching Notes And Todos
     ${result}=    Run Shiori    topic    project
