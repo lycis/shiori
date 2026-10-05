@@ -75,6 +75,14 @@ See [command aliases](USER_GUIDE.md#command-aliases) for quoting, validation,
 limits, and console completion. Generated PowerShell completion remains
 built-in-only.
 
+### Todo priorities in 0.3.0
+
+Existing todos require no migration. Priority is optional metadata in the
+existing version 1 todo format; the configuration format is unchanged.
+Older Shiori versions ignore priority metadata when reading, but their todo
+rewrites discard it. Back up `TODOS.md` before downgrading and avoid modifying
+prioritized todos with an older executable.
+
 ## Upgrade from 0.1.0 to 0.2.0
 
 Shiori 0.2.0 introduces notes format version 1 and stable note IDs. Existing

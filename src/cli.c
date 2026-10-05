@@ -443,3 +443,48 @@ struct completion_result find_completions(const char *input, const char *options
 
     return result;
 }
+
+struct completion_result complete_todo_priority(int argc, char *argv[], bool trailing_space) {
+    static const char *values[] = {"high", "medium", "low", "none"};
+    static const char *options[] = {"--priority", "-p"};
+    struct completion_result result = {};
+    int current = trailing_space ? argc : argc - 1;
+    bool priority_seen = false;
+    for(int i = 0; i < current; ++i) {
+        if(strcmp(argv[i], "--priority") == 0 || strcmp(argv[i], "-p") == 0) {
+            if(priority_seen) {
+                return result;
+            }
+            priority_seen = true;
+            if(i + 1 == current) {
+                if(!trailing_space) {
+                    return find_completions(argv[current], values, sizeof(values) / sizeof(values[0]));
+                }
+                for(size_t j = 0; j < sizeof(values) / sizeof(values[0]); ++j) {
+                    result.items[result.count++] = values[j];
+                }
+                return result;
+            }
+            i++;
+        } else if(
+            strcmp(argv[i], "--topic") == 0 || strcmp(argv[i], "-t") == 0 || strcmp(argv[i], "--due") == 0 ||
+            strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--tag") == 0
+        ) {
+            if(i + 1 == current) {
+                return result;
+            }
+            i++;
+        }
+    }
+    if(priority_seen) {
+        return result;
+    }
+    if(argc == 0 || trailing_space) {
+        for(size_t i = 0; i < sizeof(options) / sizeof(options[0]); ++i) {
+            result.items[result.count++] = options[i];
+        }
+    } else if(argv[current][0] == '-') {
+        return find_completions(argv[current], options, sizeof(options) / sizeof(options[0]));
+    }
+    return result;
+}

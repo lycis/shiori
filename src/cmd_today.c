@@ -297,6 +297,7 @@ int command_today(int argc, char *argv[]) {
                 );
                 return R_ERROR;
             }
+            print_todo_priority_suffix(item);
             print_todo_topic_suffix(item);
             printf("\n");
         }
@@ -333,6 +334,7 @@ int command_today(int argc, char *argv[]) {
                 );
                 return R_ERROR;
             }
+            print_todo_priority_suffix(item);
             print_todo_topic_suffix(item);
             printf("\n");
         }
@@ -374,6 +376,7 @@ int command_today(int argc, char *argv[]) {
             );
             return R_ERROR;
         }
+        print_todo_priority_suffix(item);
         print_todo_topic_suffix(item);
         printf("\n");
     }
@@ -409,6 +412,7 @@ int command_today(int argc, char *argv[]) {
             );
             return R_ERROR;
         }
+        print_todo_priority_suffix(item);
         print_todo_topic_suffix(item);
         printf("\n");
     }
@@ -444,6 +448,7 @@ int command_today(int argc, char *argv[]) {
             );
             return R_ERROR;
         }
+        print_todo_priority_suffix(item);
         print_todo_topic_suffix(item);
         printf("\n");
     }

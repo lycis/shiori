@@ -374,10 +374,22 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
     item->text[0] = '\0';
     item->topic[0] = '\0';
     item->due = 0;
+    item->priority = TODO_PRIORITY_NONE;
+    bool priority_seen = false;
 
     size_t used = 0;
 
     for(int i = 0; i < argc; ++i) {
+        if(strcmp(argv[i], "--priority") == 0 || strcmp(argv[i], "-p") == 0) {
+            if(priority_seen || i + 1 >= argc || parse_todo_priority(argv[i + 1], &item->priority) != R_OK) {
+                log_error("--priority requires one of high, medium, low, none and may appear only once.\n");
+                return R_ERROR;
+            }
+            priority_seen = true;
+            i++;
+            continue;
+        }
+
         if(strcmp(argv[i], "--due") == 0 || strcmp(argv[i], "-d") == 0) {
             if(i == argc - 1) {
                 log_error("--due requires a due date.\n");
@@ -417,6 +429,11 @@ int create_todo_from_args(int argc, char *argv[], struct todo *item) {
         }
 
         used += (size_t)written;
+    }
+
+    if(used == 0) {
+        log_error("Todo text cannot be empty.\n");
+        return R_ERROR;
     }
 
     struct todo_metadata md;
@@ -492,6 +509,12 @@ static int write_todo_markdown(FILE *file, const struct todo *item) {
         }
     }
 
+    if(item->priority != TODO_PRIORITY_NONE &&
+       fprintf(file, " #%s/priority/%s", APP_NAME, todo_priority_string(item->priority)) < 0) {
+        log_error("Failed writing priority for todo %llu.\n", item->id);
+        return R_ERROR;
+    }
+
     if(fputc('\n', file) == EOF) {
         log_error("Failed finishing todo %llu.\n", item->id);
         return R_ERROR;
@@ -526,6 +549,13 @@ int write_todo(char *filename, struct todo *item) {
 }
 
 int command_todo_add(int argc, char *argv[]) {
+    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
+        printf(
+            "Usage: %s todo add [--topic <topic>] [--due <date>] [-p, --priority <high|medium|low|none>] <text>\n",
+            APP_NAME
+        );
+        return R_OK;
+    }
     log_debug("Adding a new todo.\n");
 
     struct todo item;
@@ -543,6 +573,8 @@ int command_todo_add(int argc, char *argv[]) {
 }
 
 struct todo_filter {
+    bool priority_set;
+    enum todo_priority priority;
     bool show_open;
     bool show_in_progress;
     bool show_done;
@@ -575,6 +607,10 @@ static bool todo_has_tag(const struct todo *item, const char *tag) {
 }
 
 static bool todo_matches_filter(const struct todo *item, const struct todo_filter *filter) {
+    if(filter->priority_set && item->priority != filter->priority) {
+        return false;
+    }
+
     bool status_matches = false;
 
     switch(item->status) {
@@ -707,6 +743,7 @@ static int command_todo_list(int argc, char *argv[]) {
             "  %-18s Show todos due today\n"
             "  %-18s Show todos due Monday through Sunday this week\n"
             "  %-18s Show todos without a due date\n"
+            "  --priority, -p <high|medium|low|none> Filter by priority\n"
             "  %-18s Show this help\n"
             "\n"
             "Examples:\n"
@@ -761,6 +798,20 @@ static int command_todo_list(int argc, char *argv[]) {
         .show_cancelled = false,
         .show_deferred = true
     };
+
+    for(int i = 0; i < argc; ++i) {
+        if(strcmp(argv[i], "--priority") == 0 || strcmp(argv[i], "-p") == 0) {
+            if(filter.priority_set || i + 1 >= argc || parse_todo_priority(argv[i + 1], &filter.priority) != R_OK) {
+                log_error("--priority requires one of high, medium, low, none and may appear only once.\n");
+                todo_list_free(&todos);
+                return R_ERROR;
+            }
+            filter.priority_set = true;
+            i++;
+        } else if(strcmp(argv[i], "--tag") == 0 && i + 1 < argc) {
+            i++;
+        }
+    }
 
     if(initialize_date_filter(&filter, argc, argv) != R_OK) {
         todo_list_free(&todos);
@@ -857,6 +908,7 @@ static int command_todo_list(int argc, char *argv[]) {
             }
 
             printf("%s %-4llu %-40s ➕ %s%s", todo_status_icon(item->status), item->id, item->text, date, due_buffer);
+            print_todo_priority_suffix(item);
             print_todo_topic_suffix(item);
             printf("\n");
         }
@@ -1045,6 +1097,7 @@ static int command_todo_show(int argc, char *argv[]) {
         item->topic[0] != '\0' ? item->topic : "none",
         color_style_sequence(COLOR_STYLE_RESET)
     );
+    printf("  Priority: %s\n", todo_priority_string(item->priority));
     printf("  %s🏷️ Tags:%s ", color_style_sequence(COLOR_STYLE_METADATA), color_style_sequence(COLOR_STYLE_RESET));
     print_todo_tags(item->text);
 
@@ -1296,6 +1349,13 @@ static int command_todo_defer(int argc, char *argv[]) {
 }
 
 static int command_todo_rewrite(int argc, char *argv[]) {
+    if(has_switch(argc, argv, "--help", false) || has_switch(argc, argv, "-h", false)) {
+        printf(
+            "Usage: %s todo rewrite <id> [<text>] [--due <date|none>] [-p, --priority <high|medium|low|none>]\n",
+            APP_NAME
+        );
+        return R_OK;
+    }
     if(argc < 2) {
         log_error("You must specify a task id and something to change.\n");
         return R_ERROR;
@@ -1315,11 +1375,23 @@ static int command_todo_rewrite(int argc, char *argv[]) {
      */
     time_t new_due = 0;
     bool due_changed = false;
+    bool priority_changed = false;
+    enum todo_priority new_priority = TODO_PRIORITY_NONE;
 
     char *text_argv[argc - 1];
     int text_argc = 0;
 
     for(int i = 1; i < argc; ++i) {
+        if(strcmp(argv[i], "--priority") == 0 || strcmp(argv[i], "-p") == 0) {
+            if(priority_changed || i + 1 >= argc || parse_todo_priority(argv[i + 1], &new_priority) != R_OK) {
+                log_error("--priority requires one of high, medium, low, none and may appear only once.\n");
+                return R_ERROR;
+            }
+            priority_changed = true;
+            i++;
+            continue;
+        }
+
         if(strcmp(argv[i], "--due") == 0 || strcmp(argv[i], "-d") == 0) {
 
             if(i + 1 >= argc) {
@@ -1349,7 +1421,7 @@ static int command_todo_rewrite(int argc, char *argv[]) {
     /*
      * ID alone does not constitute a rewrite.
      */
-    if(text_argc == 0 && !due_changed) {
+    if(text_argc == 0 && !due_changed && !priority_changed) {
         log_error("Nothing to rewrite.\n");
         return R_ERROR;
     }
@@ -1392,6 +1464,9 @@ static int command_todo_rewrite(int argc, char *argv[]) {
     }
 
     time_t old_due = item->due;
+    if(priority_changed) {
+        item->priority = new_priority;
+    }
 
     /*
      * Update text, if provided.
@@ -1446,7 +1521,9 @@ static int command_todo_rewrite(int argc, char *argv[]) {
     /*
      * Success output depending on what changed.
      */
-    if(text_argc > 0 && due_changed) {
+    if(priority_changed) {
+        log_success("Updated todo %llu priority to %s.\n", id, todo_priority_string(new_priority));
+    } else if(text_argc > 0 && due_changed) {
         log_success("Updated todo %llu text and due date.\n", id);
     } else if(text_argc > 0) {
         log_success("Rewrote todo %llu: \"%s\" -> \"%s\"\n", id, old_text, item->text);
@@ -1630,7 +1707,13 @@ static int command_todo_help(int argc, char *argv[]);
 
 static const struct command_definition todo_commands[] = {
     {"help", "", "Display help and info for the `todo` commands", command_todo_help, nullptr, 0, true},
-    {"add", "[--topic <topic>] <text>", "Add a new todo", command_todo_add, nullptr, 0, true},
+    {"add",
+     "[--topic <topic>] [-p <high|medium|low|none>] <text>",
+     "Add a new todo",
+     command_todo_add,
+     nullptr,
+     0,
+     true},
     {"list", "", "List todos", command_todo_list, nullptr, 0, true},
     {"show", "<id>", "Show one todo", command_todo_show, nullptr, 0, true},
     {"start", "<id>", "Mark a todo as in progress", command_todo_start, nullptr, 0, true},
@@ -1638,7 +1721,13 @@ static const struct command_definition todo_commands[] = {
     {"reopen", "<id>", "Reopen a todo", command_todo_reopen, nullptr, 0, true},
     {"cancel", "<id>", "Mark a todo as cancelled", command_todo_cancel, nullptr, 0, true},
     {"defer", "<id>", "Mark a todo as deferred", command_todo_defer, nullptr, 0, true},
-    {"rewrite", "<id> <new_text> [--due <date>]", "Rewrite a todo", command_todo_rewrite, nullptr, 0, true},
+    {"rewrite",
+     "<id> [<new_text>] [--due <date>] [-p <high|medium|low|none>]",
+     "Rewrite a todo",
+     command_todo_rewrite,
+     nullptr,
+     0,
+     true},
     {"remove", "<id>", "Remove a todo", command_todo_remove, nullptr, 0, true},
     {"prune", "", "Remove completed todos", command_todo_prune, nullptr, 0, true}
 };

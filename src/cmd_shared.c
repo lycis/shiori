@@ -11,6 +11,12 @@
 #include "todo.h"
 #include "todo_list.h"
 
+void print_todo_priority_suffix(const struct todo *item) {
+    if(item->priority != TODO_PRIORITY_NONE) {
+        printf(" [%s]", todo_priority_string(item->priority));
+    }
+}
+
 void print_todo_topic_suffix(const struct todo *item) {
     if(item->topic[0] == '\0') {
         return;
@@ -346,6 +352,32 @@ static int create_todo_from_markdown(const char *markdown, struct todo *item) {
         }
     }
 
+    item->priority = TODO_PRIORITY_NONE;
+    bool priority_seen = false;
+    const char *token = id_tag;
+    const char *prefix = "#shiori/priority/";
+    while(*token != '\0') {
+        while(isspace((unsigned char)*token)) {
+            token++;
+        }
+        size_t length = strcspn(token, " \t\r\n");
+        if(strncmp(token, prefix, strlen(prefix)) == 0) {
+            char value[16];
+            size_t value_length = length - strlen(prefix);
+            if(priority_seen || value_length >= sizeof(value)) {
+                log_error("Invalid or duplicate TODO priority metadata.\n");
+                return R_ERROR;
+            }
+            memcpy(value, token + strlen(prefix), value_length);
+            value[value_length] = '\0';
+            if(parse_todo_priority(value, &item->priority) != R_OK) {
+                log_error("Invalid TODO priority '%s'.\n", value);
+                return R_ERROR;
+            }
+            priority_seen = true;
+        }
+        token += length;
+    }
     return R_OK;
 }
 

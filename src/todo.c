@@ -1,5 +1,35 @@
 #include "todo.h"
 
+#include <string.h>
+
+const char *todo_priority_string(enum todo_priority priority) {
+    switch(priority) {
+    case TODO_PRIORITY_HIGH:
+        return "high";
+    case TODO_PRIORITY_MEDIUM:
+        return "medium";
+    case TODO_PRIORITY_LOW:
+        return "low";
+    default:
+        return "none";
+    }
+}
+
+int parse_todo_priority(const char *value, enum todo_priority *priority) {
+    if(value == nullptr || priority == nullptr) {
+        return R_ERROR;
+    }
+    static const enum todo_priority priorities[] =
+        {TODO_PRIORITY_NONE, TODO_PRIORITY_HIGH, TODO_PRIORITY_MEDIUM, TODO_PRIORITY_LOW};
+    for(size_t i = 0; i < sizeof(priorities) / sizeof(priorities[0]); ++i) {
+        if(strcmp(value, todo_priority_string(priorities[i])) == 0) {
+            *priority = priorities[i];
+            return R_OK;
+        }
+    }
+    return R_ERROR;
+}
+
 const char *todo_status_icon(todo_status status) {
     switch(status) {
     case OPEN:

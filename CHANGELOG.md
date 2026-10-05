@@ -6,6 +6,9 @@ Notable changes to Shiori are documented in this file.
 
 ### Added
 
+- Optional high, medium, and low todo priorities, with creation and rewrite
+  options, filtering, consistent display, capture syntax, and completion.
+
 - Configurable aliases for built-in commands, including fixed arguments,
   chaining, and cycle detection.
 - Alias-aware top-level and built-in subcommand completion in the interactive

@@ -35,6 +35,7 @@ enum interactive_read_result {
     completion_fn complete,
     struct command_history *history
 );
+struct completion_result complete_todo_priority(int argc, char *argv[], bool trailing_space);
 struct completion_result find_completions(const char *input, const char *options[], size_t option_count);
 
 #endif

@@ -72,6 +72,7 @@ TERMINAL_LIFECYCLE_UNIT_TEST := $(UNIT_TEST_DIR)/terminal_lifecycle_test$(EXE)
 COLOR_UNIT_TEST := $(UNIT_TEST_DIR)/color_test$(EXE)
 INPUT_LAYOUT_UNIT_TEST := $(UNIT_TEST_DIR)/input_layout_test$(EXE)
 CONFIG_PARSER_UNIT_TEST := $(UNIT_TEST_DIR)/config_parser_test$(EXE)
+PRIORITY_UNIT_TEST := $(UNIT_TEST_DIR)/priority_test$(EXE)
 TOPIC_CODEC_UNIT_TEST := $(UNIT_TEST_DIR)/topic_codec_test$(EXE)
 
 .PHONY: all debug release sanitize clean run test test-unit test-integration test-sanitize format format-check tidy toolchain-check check check-sanitize
@@ -127,7 +128,8 @@ PYTHON ?= python
 
 test: test-unit test-integration
 
-test-unit: $(CLI_UNIT_TEST) $(TERMINAL_LIFECYCLE_UNIT_TEST) $(COLOR_UNIT_TEST) $(INPUT_LAYOUT_UNIT_TEST) $(CONFIG_PARSER_UNIT_TEST) $(TOPIC_CODEC_UNIT_TEST)
+test-unit: $(PRIORITY_UNIT_TEST) $(CLI_UNIT_TEST) $(TERMINAL_LIFECYCLE_UNIT_TEST) $(COLOR_UNIT_TEST) $(INPUT_LAYOUT_UNIT_TEST) $(CONFIG_PARSER_UNIT_TEST) $(TOPIC_CODEC_UNIT_TEST)
+	$(call RUN_BINARY,$(PRIORITY_UNIT_TEST))
 	$(call RUN_BINARY,$(CLI_UNIT_TEST))
 	$(call RUN_BINARY,$(TERMINAL_LIFECYCLE_UNIT_TEST))
 	$(call RUN_BINARY,$(COLOR_UNIT_TEST))
@@ -183,3 +185,7 @@ clean:
 	@$(RM_TARGET)
 
 -include $(DEPENDENCIES)
+
+$(PRIORITY_UNIT_TEST): tests/unit/priority_test.c $(UNIT_APP_OBJECTS)
+	@$(call MKDIR,$(@D))
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(DEBUGFLAGS) $^ $(LDFLAGS) -o $@

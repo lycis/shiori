@@ -24,6 +24,20 @@ static int split_args(char *input, char *argv[], int max_args) {
 }
 
 static struct completion_result capture_completion(const char *input) {
+    if(input[0] == '!') {
+        char buffer[DEFAULT_BUFFER_SIZE];
+        if(strcpy_s(buffer, sizeof(buffer), input + 1) != 0) {
+            return (struct completion_result){};
+        }
+        char *argv[32];
+        int argc = split_args(buffer, argv, 32);
+        size_t length = strlen(input);
+        return complete_todo_priority(
+            argc,
+            argv,
+            length > 0 && (input[length - 1] == ' ' || input[length - 1] == '\t')
+        );
+    }
     static const char *commands[] = {"/done", "/exit", "/quit"};
 
     return find_completions(input, commands, sizeof(commands) / sizeof(commands[0]));
@@ -44,6 +58,7 @@ int command_capture(int argc, char *argv[]) {
             "  %-22s Show this help\n"
             "\n"
             "Capture syntax:\n"
+            "  ! --priority <high|medium|low|none> <text>  Add a todo with priority\n"
             "  %-22s Add a note\n"
             "  %-22s Add a todo\n"
             "  %-22s Add a todo with a due date\n"

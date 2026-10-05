@@ -162,10 +162,15 @@ static struct completion_result console_completion(const char *input) {
         return result;
     }
 
+    if((trailing_space || argc >= 2) && expand_completion_aliases(argv, &argc, expansion_storage) != R_OK) {
+        return result;
+    }
+    if(argc >= 2 && strcmp(argv[0], "todo") == 0 &&
+       (strcmp(argv[1], "add") == 0 || strcmp(argv[1], "rewrite") == 0 || strcmp(argv[1], "list") == 0)) {
+        return complete_todo_priority(argc - 2, argv + 2, trailing_space);
+    }
+
     if(trailing_space) {
-        if(expand_completion_aliases(argv, &argc, expansion_storage) != R_OK) {
-            return result;
-        }
         for(int i = 0; i < argc; ++i) {
             const struct command_definition *definition =
                 find_command_definition(current_commands, command_count, argv[i]);
@@ -182,11 +187,6 @@ static struct completion_result console_completion(const char *input) {
     }
 
     for(int i = 0; i < argc - 1; ++i) {
-        if(i == 0) {
-            if(expand_completion_aliases(argv, &argc, expansion_storage) != R_OK) {
-                return result;
-            }
-        }
         const struct command_definition *definition = find_command_definition(current_commands, command_count, argv[i]);
 
         if(definition == nullptr || definition->subcommands == nullptr || definition->subcommand_count == 0) {

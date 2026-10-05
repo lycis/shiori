@@ -407,6 +407,8 @@ int command_tag(int argc, char *argv[]) {
             todos.items[i].text
         );
 
+        print_todo_priority_suffix(&todos.items[i]);
+
         if(todos.items[i].due != 0) {
             char due_date[11];
 

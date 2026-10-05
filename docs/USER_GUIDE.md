@@ -555,6 +555,36 @@ nonzero exit code when the ID is missing, malformed, or unknown. Interactive out
 uses the todo status icon and semantic colors; redirected output keeps the icons but
 omits ANSI color sequences so it remains suitable for scripts.
 
+### Todo priorities (0.3.0)
+
+Todos optionally carry `high`, `medium`, or `low` priority. The default `none`
+means no priority; it is distinct from `low`.
+
+```console
+shiori todo add --priority high --due tomorrow Ship release
+shiori todo rewrite 0 -p medium
+shiori todo rewrite 0 --priority none
+shiori todo list --priority high --tag work --open
+shiori todo list -p none
+```
+
+`-p` is the short form of `--priority`. Specify it only once per command.
+Priority changes can be combined with text and due-date changes; omitting the
+option preserves the existing priority. Priority filters combine with status,
+tag, and date filters. Lists keep their existing file order.
+
+Todo rows display `[high]`, `[medium]`, or `[low]` in list, today, topic, and tag
+views. Detailed `todo show` output always includes `Priority`, including `none`.
+
+In capture mode, enter `! --priority high --due tomorrow Ship release`.
+Console and capture completion suggest priority options and values.
+
+Storage uses an optional `#shiori/priority/high` (or `medium`/`low`) metadata tag
+after the ID and creation metadata. No tag is written for `none`; todos without
+one remain valid. Invalid or duplicate priority tags cause a read error so a
+rewrite cannot silently lose priority metadata. Internal metadata is excluded
+from ordinary tag queries.
+
 ### Due dates
 
 Add an optional due date with `--due` or `-d`. The date may be an ISO date or one of `today`, `tomorrow`, and `yesterday`:
